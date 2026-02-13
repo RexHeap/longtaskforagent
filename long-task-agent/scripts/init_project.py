@@ -7,6 +7,7 @@ Creates the persistent artifacts needed for multi-session agent work:
 - feature-list.json (empty template)
 - task-progress.md (empty progress log)
 - RELEASE_NOTES.md (living release notes, updated after every git commit)
+- examples/ directory with README.md (runnable examples for completed features)
 - init.sh / init.ps1 (environment bootstrap stubs)
 - Appends a reference line to CLAUDE.md (creates if not exists, never overwrites)
 
@@ -96,8 +97,19 @@ This file guides the agent through each work session. Follow these steps on EVER
 3. Mark `status` as `"passing"` in `feature-list.json` ONLY after ALL tests (UT + functional) pass
 4. If context budget remains, pick the next failing feature and repeat from Step 3
 
-### Step 6: Persist — save state for next session
-1. `git add` relevant files + `git commit` with descriptive message
+### Step 6: Add Examples — demonstrate the completed feature
+1. Determine if this feature is user-facing (API, UI, CLI, library) → if yes, create an example
+2. Create a runnable example file in `examples/`:
+   - Name pattern: `<feature-id-zero-padded>-<short-name>.<ext>` (e.g., `01-user-login.py`)
+   - **API feature** → script that calls the endpoint with sample data
+   - **UI feature** → step-by-step markdown walkthrough or automated demo script
+   - **Library/utility** → code that imports and uses the feature's API
+   - **CLI feature** → shell commands with expected output in comments
+3. Update `examples/README.md` — add the new example to the index table
+4. Skip this step ONLY for pure infrastructure features (CI config, internal refactoring, build tooling)
+
+### Step 7: Persist — save state for next session
+1. `git add` relevant files (including examples) + `git commit` with descriptive message
 2. **Update `RELEASE_NOTES.md`**: add entry under `[Unreleased]` with the feature title, ID, and change type (Added/Changed/Fixed)
 3. Append a session entry to `task-progress.md`:
    ```
@@ -105,6 +117,7 @@ This file guides the agent through each work session. Follow these steps on EVER
    **Focus**: [feature title(s)]
    **Completed**: [what was done]
    **Tests**: [UT count passing, functional tests passing (if UI)]
+   **Examples**: [example files added/updated, or "N/A (infrastructure)"]
    **Issues**: [any problems encountered]
    **Next Priority**: [next failing feature title and id]
    **Git Commits**: [commit hashes]
@@ -113,7 +126,7 @@ This file guides the agent through each work session. Follow these steps on EVER
 5. Commit the updated `task-progress.md`, `feature-list.json`, and `RELEASE_NOTES.md`
 6. Check `feature-list.json`: if ALL features are `"passing"`, announce **project completion** and stop
 
-### Step 7: Clear context and continue
+### Step 8: Clear context and continue
 If there are still failing features:
 1. Tell the user: "Feature [X] done. Clearing context to continue with feature [Y]."
 2. Execute `/clear`
@@ -124,6 +137,7 @@ This triggers the next session cycle starting from Step 1.
 ## Critical Rules
 - **Strict TDD**: NEVER write implementation before tests — always Red→Green→Refactor
 - **UI features require Chrome DevTools MCP testing**: use `take_snapshot`, `click`, `fill`, `take_screenshot` etc.
+- **Add examples for user-facing features** — create runnable examples in `examples/` after marking "passing"; skip only for infrastructure
 - **Update `RELEASE_NOTES.md` after every git commit** — keep it in sync with actual changes
 - NEVER remove or edit `verification_steps` in feature-list.json
 - NEVER mark a feature `"passing"` without ALL tests (UT + functional) actually passing
@@ -138,6 +152,8 @@ This triggers the next session cycle starting from Step 1.
 | `feature-list.json` | Structured task inventory (JSON format, never convert to other formats) |
 | `task-progress.md` | Session-by-session progress log |
 | `RELEASE_NOTES.md` | Living release notes, updated after every git commit |
+| `examples/` | Runnable examples demonstrating completed features |
+| `examples/README.md` | Index of all examples with run instructions |
 | `init.sh` / `init.ps1` | Environment bootstrap script |
 | `scripts/validate_features.py` | Validates feature-list.json structure |
 """
@@ -160,6 +176,23 @@ def create_release_notes(project_name: str) -> str:
 ---
 
 _Format: [Keep a Changelog](https://keepachangelog.com/) — Updated after every git commit._
+"""
+
+
+def create_examples_readme(project_name: str) -> str:
+    return f"""# {project_name} — Examples
+
+Runnable examples demonstrating completed features. Each example corresponds to a feature in `feature-list.json`.
+
+## Index
+
+| # | Feature | File | How to run |
+|---|---------|------|------------|
+| — | *(examples will be added as features are completed)* | — | — |
+
+---
+
+_Add a new row to this table each time you create an example for a completed feature._
 """
 
 
@@ -286,8 +319,16 @@ def main():
     scripts_dir = os.path.join(out_dir, "scripts")
     os.makedirs(scripts_dir, exist_ok=True)
 
+    # examples dir + README.md
+    examples_dir = os.path.join(out_dir, "examples")
+    os.makedirs(examples_dir, exist_ok=True)
+    examples_readme = os.path.join(examples_dir, "README.md")
+    with open(examples_readme, "w", encoding="utf-8") as f:
+        f.write(create_examples_readme(args.project_name))
+    print(f"Created: {examples_readme}")
+
     print(f"\nProject '{args.project_name}' initialized at {out_dir}")
-    print("Files: long-task-guide.md, CLAUDE.md, feature-list.json, task-progress.md, RELEASE_NOTES.md, init.sh, init.ps1")
+    print("Files: long-task-guide.md, CLAUDE.md, feature-list.json, task-progress.md, RELEASE_NOTES.md, examples/, init.sh, init.ps1")
     print("Next: Read requirement/design docs and populate feature-list.json")
 
 
