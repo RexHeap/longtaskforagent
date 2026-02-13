@@ -3,14 +3,12 @@
 Initialize a long-task-agent project structure.
 
 Creates the persistent artifacts needed for multi-session agent work:
-- long-task-guide.md (worker session guide with TDD workflow, auto-referenced from CLAUDE.md)
+- long-task-guide.md (worker session guide with TDD workflow)
 - feature-list.json (empty template)
 - task-progress.md (empty progress log)
 - RELEASE_NOTES.md (living release notes, updated after every git commit)
 - examples/ directory with README.md (runnable examples for completed features)
 - init.sh / init.ps1 (environment bootstrap stubs)
-- Appends a reference line to CLAUDE.md (creates if not exists, never overwrites)
-
 Usage:
     python init_project.py <project-name> [--path <output-dir>]
 """
@@ -21,17 +19,6 @@ import os
 import sys
 from datetime import datetime
 
-
-CLAUDE_MD_REFERENCE = (
-    "\n\n<!-- long-task-agent -->\n"
-    "## Long-Task Agent\n"
-    "This project uses a multi-session agent workflow. "
-    "Read `long-task-guide.md` at the start of EVERY session (including after /clear) "
-    "and follow its instructions to pick up the next task.\n"
-    "<!-- /long-task-agent -->\n"
-)
-
-MARKER = "<!-- long-task-agent -->"
 
 
 def create_feature_list(project_name: str) -> dict:
@@ -58,7 +45,7 @@ Design Doc: [TODO: path to design doc]
 def create_long_task_guide(project_name: str) -> str:
     return f"""# {project_name} — Long-Task Worker Guide
 
-This file guides the agent through each work session. Follow these steps on EVERY session start (including after /clear).
+This file guides the agent through each work session. Follow these steps on EVERY session start.
 
 ## Session Workflow
 
@@ -126,13 +113,11 @@ This file guides the agent through each work session. Follow these steps on EVER
 5. Commit the updated `task-progress.md`, `feature-list.json`, and `RELEASE_NOTES.md`
 6. Check `feature-list.json`: if ALL features are `"passing"`, announce **project completion** and stop
 
-### Step 8: Clear context and continue
+### Step 8: Continue
 If there are still failing features:
-1. Tell the user: "Feature [X] done. Clearing context to continue with feature [Y]."
-2. Execute `/clear`
-3. After context is cleared, send: **"Continue working on this project. Read long-task-guide.md for instructions."**
-
-This triggers the next session cycle starting from Step 1.
+1. Tell the user: "Feature [X] done. Continuing with feature [Y]."
+2. If context budget remains, proceed to Step 1 for the next feature
+3. If context is exhausted, end the session
 
 ## Critical Rules
 - **Strict TDD**: NEVER write implementation before tests — always Red→Green→Refactor
@@ -142,9 +127,9 @@ This triggers the next session cycle starting from Step 1.
 - NEVER remove or edit `verification_steps` in feature-list.json
 - NEVER mark a feature `"passing"` without ALL tests (UT + functional) actually passing
 - NEVER leave code in a broken state — revert if a feature is incomplete
-- ONE feature per context cycle (clear context after each)
-- ALWAYS update task-progress.md + RELEASE_NOTES.md before clearing context
-- ALWAYS commit working code before clearing context
+- ONE feature per context cycle
+- ALWAYS update task-progress.md + RELEASE_NOTES.md before ending session
+- ALWAYS commit working code before ending session
 
 ## Project Files
 | File | Purpose |
@@ -244,28 +229,6 @@ Write-Host "=== Environment ready ==="
 """
 
 
-def append_claude_md_reference(out_dir: str):
-    """Append long-task-agent reference to CLAUDE.md (idempotent)."""
-    cm_path = os.path.join(out_dir, "CLAUDE.md")
-
-    # Check if reference already exists
-    if os.path.exists(cm_path):
-        with open(cm_path, "r", encoding="utf-8") as f:
-            content = f.read()
-        if MARKER in content:
-            print(f"Skipped: {cm_path} (reference already exists)")
-            return
-        # Append reference
-        with open(cm_path, "a", encoding="utf-8") as f:
-            f.write(CLAUDE_MD_REFERENCE)
-        print(f"Updated: {cm_path} (appended long-task-agent reference)")
-    else:
-        # Create new CLAUDE.md with just the reference
-        with open(cm_path, "w", encoding="utf-8") as f:
-            f.write(f"# {os.path.basename(out_dir)}\n")
-            f.write(CLAUDE_MD_REFERENCE)
-        print(f"Created: {cm_path}")
-
 
 def main():
     parser = argparse.ArgumentParser(description="Initialize a long-task-agent project")
@@ -281,9 +244,6 @@ def main():
     with open(guide_path, "w", encoding="utf-8") as f:
         f.write(create_long_task_guide(args.project_name))
     print(f"Created: {guide_path}")
-
-    # CLAUDE.md (append reference, never overwrite)
-    append_claude_md_reference(out_dir)
 
     # feature-list.json
     fl_path = os.path.join(out_dir, "feature-list.json")
@@ -328,7 +288,7 @@ def main():
     print(f"Created: {examples_readme}")
 
     print(f"\nProject '{args.project_name}' initialized at {out_dir}")
-    print("Files: long-task-guide.md, CLAUDE.md, feature-list.json, task-progress.md, RELEASE_NOTES.md, examples/, init.sh, init.ps1")
+    print("Files: long-task-guide.md, feature-list.json, task-progress.md, RELEASE_NOTES.md, examples/, init.sh, init.ps1")
     print("Next: Read requirement/design docs and populate feature-list.json")
 
 
