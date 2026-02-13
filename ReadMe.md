@@ -18,14 +18,22 @@ long-task-agent/
 
 1. **两阶段架构**：
    - **Initializer（初始化会话）**：读取需求文档和设计文档，将需求分解为 10-200+ 个可验证的 feature，生成 `feature-list.json`（JSON 格式防止模型误改），创建环境启动脚本和进度日志
-   - **Worker（后续每个会话）**：按"定向 → 引导 → 实现 → 持久化"四步循环，每次只做一个 feature
-2. **持久化状态桥接**：通过 `feature-list.json`、`task-progress.md`、`init.sh/ps1`、Git 历史四个持久化产物在会话间传递上下文，避免新会话浪费 token 重新发现项目状态
-3. **严格约束防止失败**：
+   - **Worker（后续每个会话）**：按"定向 → 引导 → TDD Red → TDD Green → TDD Refactor → 验证标记 → 持久化"循环，每次只做一个 feature
+2. **持久化状态桥接**：通过 `feature-list.json`、`task-progress.md`、`RELEASE_NOTES.md`、`init.sh/ps1`、Git 历史五个持久化产物在会话间传递上下文，避免新会话浪费 token 重新发现项目状态
+3. **严格 TDD 开发**：
+   - 每个 feature 严格遵循 Red→Green→Refactor 流程
+   - 先写失败的测试，再写最小实现代码，最后重构
+   - 必须所有测试（UT + 功能测试）通过才能标记为 passing
+4. **双重验证体系**：
+   - **单元测试（UT）**：所有 feature 必须有单元测试
+   - **Chrome DevTools MCP 功能测试**：UI 类 feature 必须通过浏览器功能测试（snapshot / click / fill / screenshot）
+5. **Release Notes 持续维护**：每次 Git 提交后更新 `RELEASE_NOTES.md`，采用 Keep a Changelog 格式
+6. **严格约束防止失败**：
    - Feature 状态只有 `failing` / `passing`，不允许模糊中间态
    - 验证步骤一旦创建不可修改，防止降低标准
    - 每个会话只做一个 feature，防止上下文耗尽
    - 必须实际验证通过才能标记为 passing
-4. **输入要求**：需求文档 + 设计文档（用户提前准备好）
+7. **输入要求**：需求文档 + 设计文档（用户提前准备好）
 
 
 
@@ -36,29 +44,34 @@ long-task-agent/
 
 
 ```
-┌─── Worker Cycle ───┐
-│ 1. Orient          │  ← 读 task-progress.md + feature-list.json + git log
-│ 2. Bootstrap       │  ← 运行 init.sh/ps1，烟雾测试
-│ 3. Implement       │  ← 做 1 个 feature，验证，标记 passing
-│ 4. Persist         │  ← git commit + 更新进度文件
-│ 5. /clear          │  ← 清空上下文
-└────────┬───────────┘
+┌─── Worker Cycle ──────┐
+│ 1. Orient             │  ← 读 task-progress.md + feature-list.json + git log
+│ 2. Bootstrap          │  ← 运行 init.sh/ps1，烟雾测试
+│ 3. TDD Red            │  ← 先写失败的测试（UT + Chrome DevTools 功能测试）
+│ 4. TDD Green          │  ← 写最小实现代码使测试通过
+│ 5. TDD Refactor       │  ← 重构，保持测试绿色
+│ 6. Verify & Mark      │  ← 全部测试通过后标记 passing
+│ 7. Persist            │  ← git commit + 更新进度 + 更新 Release Notes
+│ 8. /clear             │  ← 清空上下文
+└────────┬──────────────┘
          │
   CLAUDE.md 自动加载（Claude Code 原生行为）
          │
   "Read long-task-guide.md" ← 引导指令
          │
-┌─── Worker Cycle ───┐
-│     重复...         │
-└────────────────────┘
+┌─── Worker Cycle ──────┐
+│     重复...            │
+└───────────────────────┘
 ```
 
 ### 关键设计
 
 | 机制                     | 说明                                                         |
 | ------------------------ | ------------------------------------------------------------ |
-| **`long-task-guide.md`** | 独立文件，存放完整 Worker 工作流指南，不会被 Claude Code 覆盖 |
+| **`long-task-guide.md`** | 独立文件，存放完整 Worker 工作流指南（含 TDD 流程），不会被 Claude Code 覆盖 |
 | **`CLAUDE.md` 追加引用** | 仅追加一个带 `<!-- long-task-agent -->` 标记的引用块，幂等操作，不覆盖已有内容 |
 | **`/clear` 后自动发现**  | Claude Code 启动时自动读取 `CLAUDE.md` → 发现引用 → 读取 `long-task-guide.md` → 按流程领取下一个 task |
 | **`feature-list.json`**  | JSON 格式防止模型篡改，只有 `failing`/`passing` 两种状态     |
 | **`task-progress.md`**   | 每个 session 追加日志，帮助下一个 session 快速了解上下文     |
+| **`RELEASE_NOTES.md`**   | 每次 Git 提交后刷新，Keep a Changelog 格式，关联 feature ID   |
+| **Chrome DevTools MCP**  | UI 功能测试：snapshot / click / fill / screenshot 验证用户交互 |
