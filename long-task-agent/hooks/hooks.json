@@ -1,0 +1,15 @@
+{
+  "hooks": [
+    {
+      "matcher": "SessionStart",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash long-task-agent/hooks/session-start.sh",
+          "timeout": 10000,
+          "async": false
+        }
+      ]
+    }
+  ]
+}

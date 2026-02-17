@@ -81,8 +81,18 @@ This file guides the agent through each work session. Follow these steps on EVER
 ### Step 5: TDD Refactor — clean up
 1. Refactor code while keeping all tests green
 2. Run full verification again
-3. Mark `status` as `"passing"` in `feature-list.json` ONLY after ALL tests (UT + functional) pass
-4. If context budget remains, pick the next failing feature and repeat from Step 3
+3. **Verification enforcement**: Execute each `verification_step`, read FULL output, confirm all green
+   - If you catch yourself thinking "should pass" or "probably works" — STOP and re-run
+   - Show actual test output as evidence before marking "passing"
+4. Mark `status` as `"passing"` in `feature-list.json` ONLY after ALL tests (UT + functional) pass with evidence
+
+### Step 5.5: Code Review — validate the implementation
+1. Run **two-stage code review** on the completed feature:
+   - **Stage 1: Spec Compliance** — Does implementation match all verification_steps? All edge cases covered?
+   - **Stage 2: Code Quality** — Follows project patterns? Error handling? Security? Test quality?
+2. Fix **Critical** and **Important** issues immediately; **Minor** issues can be deferred
+3. After fixes: re-run tests, re-review only changed items
+4. Maximum 3 review rounds — escalate to user if still failing
 
 ### Step 6: Add Examples — demonstrate the completed feature
 1. Determine if this feature is user-facing (API, UI, CLI, library) → if yes, create an example
@@ -121,15 +131,25 @@ If there are still failing features:
 
 ## Critical Rules
 - **Strict TDD**: NEVER write implementation before tests — always Red→Green→Refactor
+- **Verification enforcement**: NEVER mark "passing" without fresh evidence — run tests, read FULL output, confirm all green, THEN mark
+- **Code review after every feature**: Run two-stage review (spec compliance → code quality) before Persist
+- **Systematic debugging only**: NEVER guess-and-fix — always trace root cause before applying fixes
 - **UI features require Chrome DevTools MCP testing**: use `take_snapshot`, `click`, `fill`, `take_screenshot` etc.
 - **Add examples for user-facing features** — create runnable examples in `examples/` after marking "passing"; skip only for infrastructure
 - **Update `RELEASE_NOTES.md` after every git commit** — keep it in sync with actual changes
 - NEVER remove or edit `verification_steps` in feature-list.json
-- NEVER mark a feature `"passing"` without ALL tests (UT + functional) actually passing
 - NEVER leave code in a broken state — revert if a feature is incomplete
 - ONE feature per context cycle
 - ALWAYS update task-progress.md + RELEASE_NOTES.md before ending session
 - ALWAYS commit working code before ending session
+
+## Red Flags (Stop and Correct)
+If you catch yourself thinking any of these, STOP:
+- "This is too simple for design/review" → Still run lightweight version
+- "The tests should pass" → Run them and read the output
+- "Let me just try this quick fix" → Trace root cause first
+- "I'll add tests after" → TDD Red comes FIRST
+- "It probably works" → "Probably" = no evidence = re-verify
 
 ## Project Files
 | File | Purpose |
