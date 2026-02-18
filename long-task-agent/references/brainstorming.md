@@ -17,6 +17,11 @@ Mandatory design phase before any implementation. Ensures architectural decision
 2. Read the user-provided design doc (if any)
 3. Explore existing code/repos the project will build on or integrate with
 4. Identify constraints: tech stack, platform, integrations, performance requirements
+5. Check for a design document template:
+   - If the user specified a template path → read and validate it
+   - Else if `docs/templates/design-template.md` exists in the project directory → read it and confirm with the user: "Found design template at `docs/templates/design-template.md`. Use it for the design document structure?"
+   - Else → use the default template (no action needed)
+   - **Validation**: template must be a `.md` file containing at least one `## ` heading. If invalid, warn the user and offer to fall back to the default template.
 
 ### Step 2: Clarify Requirements
 
@@ -73,7 +78,25 @@ After all sections are approved, save the complete design to:
 docs/plans/YYYY-MM-DD-<topic>-design.md
 ```
 
-Design document structure:
+#### Using a custom template
+
+If a design template was found in Step 1:
+
+1. Read the template file in full
+2. Preserve the template's heading structure (all H1, H2, H3 headings)
+3. Replace guidance text under each heading with the approved design content for that topic
+4. Add standard metadata at the top if the template does not already include it:
+   ```
+   **Date**: YYYY-MM-DD
+   **Status**: Approved
+   **Template**: <path-to-template-file>
+   ```
+5. For template sections not covered during Step 4 approval, mark them "[Not applicable]" or fill with relevant content from the design discussion
+6. For approved content that does not map to any template section, append an "Additional Notes" section
+
+#### Using the default template
+
+If no custom template was provided, use this structure:
 
 ```markdown
 # [Project Name] — Design Document
@@ -104,6 +127,43 @@ Design document structure:
 
 ## Open Questions
 [Any remaining items to resolve during implementation]
+```
+
+#### Design template format
+
+A design template is a standard markdown file whose headings define the output structure. No special syntax is needed.
+
+- **H1 (`#`)** — Document title pattern (optional)
+- **H2 (`##`)** — Major sections (at least one required)
+- **H3 (`###`)** — Subsections (optional)
+- Body text under headings — guidance for the agent; replaced with real design content in the output
+
+**Conventional location**: `docs/templates/design-template.md` (auto-detected if present)
+
+**Example**:
+
+```markdown
+# [Project] — Technical Design
+
+**Date**: YYYY-MM-DD
+**Status**: Draft | Approved
+
+## Problem Statement
+Describe the problem being solved.
+
+## Goals and Non-Goals
+### Goals
+### Non-Goals
+
+## Proposed Solution
+### High-Level Design
+### Detailed Design
+
+## Alternatives Considered
+
+## Testing Plan
+
+## Open Questions
 ```
 
 ### Step 6: Transition to Initializer
@@ -140,3 +200,32 @@ Once the design document is saved and committed:
 | Small | 5-20 | 2-3 approach options + combined section approval |
 | Medium | 20-50 | Full multi-section approval |
 | Large | 50-200+ | Full multi-section approval + architecture diagrams |
+
+## Design Template Reference
+
+### What is a design template?
+
+A markdown file whose heading structure defines the format for design documents. When provided, the agent follows the template's section layout instead of the default.
+
+### How to specify a template
+
+| Method | How | Priority |
+|--------|-----|----------|
+| Explicit | User tells the agent: "Use `path/to/template.md` as the design template" | Highest |
+| Conventional location | Place a file at `docs/templates/design-template.md` in the project | Middle |
+| Default | No template specified — agent uses the built-in template | Lowest (fallback) |
+
+### Template validation rules
+
+- Must be a `.md` file
+- Must contain at least one `## ` (H2) heading
+- If validation fails: warn the user, offer to use the default template
+
+### What happens during Step 5
+
+| Scenario | Agent behavior |
+|----------|---------------|
+| Template section maps to an approved topic | Fill with approved content |
+| Template section was not discussed during approval | Mark "[Not applicable]" or fill with relevant discussion content |
+| Approved content has no matching template section | Append as "Additional Notes" at the end |
+| Template has metadata placeholders (Date, Status) | Fill with actual values |

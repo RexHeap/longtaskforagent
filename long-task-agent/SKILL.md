@@ -24,11 +24,11 @@ Determine which phase:
 
 **Hard gate**: No feature decomposition, scaffolding, or coding until design is approved.
 
-1. **Explore context** — Read requirement doc, design doc (if any), existing code
+1. **Explore context** — Read requirement doc, design doc (if any), existing code; check for design template (user-specified path or `docs/templates/design-template.md`)
 2. **Clarify requirements** — Ask user questions one at a time via `AskUserQuestion` for ambiguities
 3. **Propose 2-3 approaches** — Each with explicit pros, cons, and "best when" conditions; include a recommendation
 4. **Section-by-section approval** — Present architecture, data model, API design, UI/UX, testing strategy; wait for user approval per section (for simple projects: single combined approval)
-5. **Write design document** — Save approved design to `docs/plans/YYYY-MM-DD-<topic>-design.md`
+5. **Write design document** — Save approved design to `docs/plans/YYYY-MM-DD-<topic>-design.md` using custom template if provided (see [references/brainstorming.md](references/brainstorming.md))
 6. **Proceed to Initializer**
 
 For detailed process, see [references/brainstorming.md](references/brainstorming.md).

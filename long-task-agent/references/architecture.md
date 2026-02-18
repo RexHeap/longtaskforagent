@@ -171,11 +171,11 @@ Runs **before** the Initializer. See [brainstorming.md](brainstorming.md) for fu
 
 **Hard gate**: No feature decomposition, scaffolding, or coding until design is approved.
 
-1. **Explore context** — read requirement doc, design doc, existing code
+1. **Explore context** — read requirement doc, design doc, existing code; detect design template
 2. **Clarify requirements** — ask user one question at a time
 3. **Propose 2-3 approaches** — with explicit trade-offs and recommendation
 4. **Get section-by-section approval** — architecture, data model, API, UI, testing
-5. **Save design document** — `docs/plans/YYYY-MM-DD-<topic>-design.md`
+5. **Save design document** — `docs/plans/YYYY-MM-DD-<topic>-design.md` (uses custom template if provided)
 
 ## Initializer Session Workflow
 

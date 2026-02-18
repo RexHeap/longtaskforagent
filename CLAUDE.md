@@ -45,6 +45,7 @@ python long-task-agent/tests/test_init_project.py
    - Propose 2-3 approaches with trade-offs
    - Get section-by-section design approval
    - Save design doc to `docs/plans/YYYY-MM-DD-<topic>-design.md`
+   - Supports custom design template: specify a path or place template at `docs/templates/design-template.md`
    - **Hard gate**: no coding until design approved
 
 1. **Initializer Session** (runs once):
