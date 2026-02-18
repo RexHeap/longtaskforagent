@@ -498,7 +498,48 @@ For each surviving mutant:
 | Branch coverage | >= 80% | Conditional logic must be exercised both ways |
 | Mutation score | >= 80% | Tests must catch 4 out of 5 injected bugs |
 
-### Configuration in `feature-list.json`
+### Setting Thresholds at Project Init
+
+Use CLI flags to set thresholds and language when creating a project:
+
+```bash
+# Use language preset (auto-fills test/coverage/mutation tools):
+python init_project.py my-app --path ./my-app --lang python
+
+# Override default thresholds:
+python init_project.py my-app --path ./my-app --lang java \
+  --line-cov 85 --branch-cov 75 --mutation-score 70
+
+# Override individual tools:
+python init_project.py my-app --path ./my-app --lang python \
+  --test-framework unittest --coverage-tool coverage
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--lang` | `TODO` | Language preset (`python`/`java`/`typescript`/`c`/`cpp`). Auto-fills tool defaults. |
+| `--test-framework` | from preset | Override test framework (e.g., `pytest`, `junit`, `vitest`, `gtest`) |
+| `--coverage-tool` | from preset | Override coverage tool (e.g., `pytest-cov`, `jacoco`, `c8`, `gcov`) |
+| `--mutation-tool` | from preset | Override mutation tool (e.g., `mutmut`, `pitest`, `stryker`, `mull`) |
+| `--line-cov` | `90` | Minimum line coverage percentage |
+| `--branch-cov` | `80` | Minimum branch coverage percentage |
+| `--mutation-score` | `80` | Minimum mutation score percentage |
+
+### Language Presets
+
+When `--lang` is specified, the following defaults are applied (overridable with explicit flags):
+
+| Language | Test Framework | Coverage Tool | Mutation Tool |
+|----------|---------------|---------------|---------------|
+| `python` | pytest | pytest-cov | mutmut |
+| `java` | junit | jacoco | pitest |
+| `typescript` | vitest | c8 | stryker |
+| `c` | ctest | gcov | mull |
+| `cpp` / `c++` | gtest | gcov | mull |
+
+### Runtime Configuration in `feature-list.json`
+
+Thresholds and tools can also be changed at any time by editing `feature-list.json` directly:
 
 ```json
 {
@@ -519,9 +560,7 @@ For each surviving mutant:
 }
 ```
 
-### Supported `tech_stack.language` Values
-
-`python` | `java` | `typescript` | `c` | `cpp` (or `c++`)
+The Worker session reads these values at runtime — changes take effect immediately on the next cycle.
 
 ### Adjusting Thresholds
 

@@ -40,12 +40,13 @@ Run once, after design is approved. Steps:
 1. **Read the approved design document** from `docs/plans/`
 2. **Run `scripts/init_project.py`** to scaffold all persistent artifacts:
    ```
-   python <skill-dir>/scripts/init_project.py <project-name> --path <project-dir>
+   python <skill-dir>/scripts/init_project.py <project-name> --path <project-dir> --lang <language>
    ```
+   Use `--lang` to auto-fill tool presets; use `--line-cov`, `--branch-cov`, `--mutation-score` to override thresholds.
    Creates: `long-task-guide.md`, `feature-list.json`, `task-progress.md`, `RELEASE_NOTES.md`, `init.sh`, `init.ps1`
 3. **Copy `scripts/validate_features.py`** into `<project-dir>/scripts/`
-4. **Configure `tech_stack` and `quality_gates`** in `feature-list.json`:
-   - Set `language`, `test_framework`, `coverage_tool`, `mutation_tool` for the project
+4. **Verify `tech_stack` and `quality_gates`** in `feature-list.json`:
+   - Confirm `language`, `test_framework`, `coverage_tool`, `mutation_tool` match the project
    - Adjust `quality_gates` thresholds if needed (defaults: line 90%, branch 80%, mutation 80%)
 5. **Decompose requirements into features** — Populate `feature-list.json` guided by the approved design:
    - Each feature: `id`, `category`, `title`, `description`, `priority` (high/medium/low), `status` (always `"failing"` initially), `verification_steps` (concrete, specific), `dependencies` (feature id array)

@@ -11,6 +11,9 @@ Creates the persistent artifacts needed for multi-session agent work:
 - init.sh / init.ps1 (environment bootstrap stubs)
 Usage:
     python init_project.py <project-name> [--path <output-dir>]
+           [--lang <language>] [--test-framework <framework>]
+           [--coverage-tool <tool>] [--mutation-tool <tool>]
+           [--line-cov <0-100>] [--branch-cov <0-100>] [--mutation-score <0-100>]
 """
 
 import argparse
@@ -21,23 +24,67 @@ from datetime import datetime
 
 
 
-def create_feature_list(project_name: str) -> dict:
+def create_feature_list(
+    project_name: str,
+    language: str = "TODO",
+    test_framework: str = "TODO",
+    coverage_tool: str = "TODO",
+    mutation_tool: str = "TODO",
+    line_coverage_min: int = 90,
+    branch_coverage_min: int = 80,
+    mutation_score_min: int = 80,
+) -> dict:
     return {
         "project": project_name,
         "created": datetime.now().strftime("%Y-%m-%d"),
         "tech_stack": {
-            "language": "TODO",
-            "test_framework": "TODO",
-            "coverage_tool": "TODO",
-            "mutation_tool": "TODO"
+            "language": language,
+            "test_framework": test_framework,
+            "coverage_tool": coverage_tool,
+            "mutation_tool": mutation_tool
         },
         "quality_gates": {
-            "line_coverage_min": 90,
-            "branch_coverage_min": 80,
-            "mutation_score_min": 80
+            "line_coverage_min": line_coverage_min,
+            "branch_coverage_min": branch_coverage_min,
+            "mutation_score_min": mutation_score_min
         },
         "features": []
     }
+
+
+# Preset tool mappings per language
+LANG_PRESETS = {
+    "python": {
+        "test_framework": "pytest",
+        "coverage_tool": "pytest-cov",
+        "mutation_tool": "mutmut",
+    },
+    "java": {
+        "test_framework": "junit",
+        "coverage_tool": "jacoco",
+        "mutation_tool": "pitest",
+    },
+    "typescript": {
+        "test_framework": "vitest",
+        "coverage_tool": "c8",
+        "mutation_tool": "stryker",
+    },
+    "c": {
+        "test_framework": "ctest",
+        "coverage_tool": "gcov",
+        "mutation_tool": "mull",
+    },
+    "cpp": {
+        "test_framework": "gtest",
+        "coverage_tool": "gcov",
+        "mutation_tool": "mull",
+    },
+    "c++": {
+        "test_framework": "gtest",
+        "coverage_tool": "gcov",
+        "mutation_tool": "mull",
+    },
+}
 
 
 def create_progress_log(project_name: str) -> str:
@@ -300,10 +347,36 @@ def main():
     parser = argparse.ArgumentParser(description="Initialize a long-task-agent project")
     parser.add_argument("project_name", help="Name of the project")
     parser.add_argument("--path", default=".", help="Output directory (default: current dir)")
+
+    # Tech stack options
+    parser.add_argument("--lang", default=None,
+                        help="Project language (python/java/typescript/c/cpp). Auto-fills tool defaults.")
+    parser.add_argument("--test-framework", default=None,
+                        help="Test framework (e.g., pytest, junit, vitest, gtest)")
+    parser.add_argument("--coverage-tool", default=None,
+                        help="Coverage tool (e.g., pytest-cov, jacoco, c8, gcov)")
+    parser.add_argument("--mutation-tool", default=None,
+                        help="Mutation tool (e.g., mutmut, pitest, stryker, mull)")
+
+    # Quality gate thresholds
+    parser.add_argument("--line-cov", type=int, default=90,
+                        help="Min line coverage %% (default: 90)")
+    parser.add_argument("--branch-cov", type=int, default=80,
+                        help="Min branch coverage %% (default: 80)")
+    parser.add_argument("--mutation-score", type=int, default=80,
+                        help="Min mutation score %% (default: 80)")
+
     args = parser.parse_args()
 
     out_dir = os.path.abspath(args.path)
     os.makedirs(out_dir, exist_ok=True)
+
+    # Resolve tech stack from --lang preset, then override with explicit flags
+    language = args.lang or "TODO"
+    preset = LANG_PRESETS.get(language.lower(), {}) if language != "TODO" else {}
+    test_framework = args.test_framework or preset.get("test_framework", "TODO")
+    coverage_tool = args.coverage_tool or preset.get("coverage_tool", "TODO")
+    mutation_tool = args.mutation_tool or preset.get("mutation_tool", "TODO")
 
     # long-task-guide.md (worker session guide)
     guide_path = os.path.join(out_dir, "long-task-guide.md")
@@ -314,7 +387,16 @@ def main():
     # feature-list.json
     fl_path = os.path.join(out_dir, "feature-list.json")
     with open(fl_path, "w", encoding="utf-8") as f:
-        json.dump(create_feature_list(args.project_name), f, indent=2, ensure_ascii=False)
+        json.dump(create_feature_list(
+            args.project_name,
+            language=language,
+            test_framework=test_framework,
+            coverage_tool=coverage_tool,
+            mutation_tool=mutation_tool,
+            line_coverage_min=args.line_cov,
+            branch_coverage_min=args.branch_cov,
+            mutation_score_min=args.mutation_score,
+        ), f, indent=2, ensure_ascii=False)
     print(f"Created: {fl_path}")
 
     # task-progress.md

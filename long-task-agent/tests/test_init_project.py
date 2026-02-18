@@ -13,12 +13,12 @@ import tempfile
 SCRIPT_PATH = os.path.join(os.path.dirname(__file__), "..", "scripts", "init_project.py")
 
 
-def run_init(project_name, output_dir):
+def run_init(project_name, output_dir, extra_args=None):
     """Run init_project.py, return (exit_code, stdout, stderr)."""
-    result = subprocess.run(
-        [sys.executable, SCRIPT_PATH, project_name, "--path", output_dir],
-        capture_output=True, text=True
-    )
+    cmd = [sys.executable, SCRIPT_PATH, project_name, "--path", output_dir]
+    if extra_args:
+        cmd.extend(extra_args)
+    result = subprocess.run(cmd, capture_output=True, text=True)
     return result.returncode, result.stdout, result.stderr
 
 
@@ -194,6 +194,70 @@ def test_guide_contains_mutation_gate():
         shutil.rmtree(tmp)
 
 
+def test_lang_preset_fills_tools():
+    """--lang python should auto-fill pytest, pytest-cov, mutmut."""
+    tmp = tempfile.mkdtemp()
+    try:
+        run_init("test-project", tmp, ["--lang", "python"])
+        fl_path = os.path.join(tmp, "feature-list.json")
+        with open(fl_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        ts = data["tech_stack"]
+        assert ts["language"] == "python"
+        assert ts["test_framework"] == "pytest"
+        assert ts["coverage_tool"] == "pytest-cov"
+        assert ts["mutation_tool"] == "mutmut"
+    finally:
+        shutil.rmtree(tmp)
+
+
+def test_custom_thresholds():
+    """--line-cov, --branch-cov, --mutation-score should override defaults."""
+    tmp = tempfile.mkdtemp()
+    try:
+        run_init("test-project", tmp, [
+            "--lang", "java",
+            "--line-cov", "85",
+            "--branch-cov", "75",
+            "--mutation-score", "70"
+        ])
+        fl_path = os.path.join(tmp, "feature-list.json")
+        with open(fl_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        qg = data["quality_gates"]
+        assert qg["line_coverage_min"] == 85, f"Expected 85, got {qg['line_coverage_min']}"
+        assert qg["branch_coverage_min"] == 75, f"Expected 75, got {qg['branch_coverage_min']}"
+        assert qg["mutation_score_min"] == 70, f"Expected 70, got {qg['mutation_score_min']}"
+        # Also verify Java preset was applied
+        ts = data["tech_stack"]
+        assert ts["language"] == "java"
+        assert ts["test_framework"] == "junit"
+        assert ts["coverage_tool"] == "jacoco"
+        assert ts["mutation_tool"] == "pitest"
+    finally:
+        shutil.rmtree(tmp)
+
+
+def test_tool_override_with_preset():
+    """Explicit --coverage-tool should override the language preset."""
+    tmp = tempfile.mkdtemp()
+    try:
+        run_init("test-project", tmp, [
+            "--lang", "typescript",
+            "--coverage-tool", "nyc"
+        ])
+        fl_path = os.path.join(tmp, "feature-list.json")
+        with open(fl_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        ts = data["tech_stack"]
+        assert ts["language"] == "typescript"
+        assert ts["coverage_tool"] == "nyc", f"Expected nyc override, got {ts['coverage_tool']}"
+        assert ts["test_framework"] == "vitest"  # from preset
+        assert ts["mutation_tool"] == "stryker"   # from preset
+    finally:
+        shutil.rmtree(tmp)
+
+
 if __name__ == "__main__":
     tests = [
         test_creates_all_artifacts,
@@ -207,6 +271,9 @@ if __name__ == "__main__":
         test_feature_list_has_quality_gates,
         test_guide_contains_coverage_gate,
         test_guide_contains_mutation_gate,
+        test_lang_preset_fills_tools,
+        test_custom_thresholds,
+        test_tool_override_with_preset,
     ]
     passed = 0
     failed = 0

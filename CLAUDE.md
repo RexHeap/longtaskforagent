@@ -11,6 +11,13 @@ This is a **Claude Code skill** called `long-task-agent` that enables multi-sess
 ### Initialize a new long-task project
 ```bash
 python long-task-agent/scripts/init_project.py <project-name> --path <output-dir>
+
+# With language preset (auto-fills test/coverage/mutation tools):
+python long-task-agent/scripts/init_project.py <project-name> --path <output-dir> --lang python
+
+# With custom thresholds:
+python long-task-agent/scripts/init_project.py <project-name> --path <output-dir> --lang java \
+  --line-cov 85 --branch-cov 75 --mutation-score 70
 ```
 
 ### Validate feature-list.json
