@@ -25,12 +25,20 @@ Mandatory design phase before any implementation. Ensures architectural decision
 
 ### Step 2: Clarify Requirements
 
-Ask clarifying questions **one at a time** using `AskUserQuestion`:
+Ask clarifying questions **one at a time** using `AskUserQuestion`, focused on **purpose, constraints, and success criteria**.
 
+**How to ask:**
+- **Multiple choice preferred** — provide 2-4 options to reduce user cognitive load ("Auth approach? [JWT / session-based / OAuth 2.0 / other]")
+- **Assume and confirm** — state your assumption, let the user correct ("I'm assuming JWT for auth — correct, or do you prefer session-based?")
+- **Scenario-based for edge cases** — "What should happen when [X] fails?" is better than "How should errors be handled?"
+
+**What to clarify:**
 - Ambiguous requirements ("What does 'fast' mean — sub-100ms or sub-1s?")
 - Missing information ("The doc mentions auth but doesn't specify — JWT, session, or OAuth?")
 - Scope boundaries ("Should the MVP include feature X or is that post-launch?")
 - Priority conflicts ("Both A and B are marked high-priority but they conflict — which wins?")
+
+**When to stop:** Move to Step 3 when you can describe the system's purpose, key constraints, and how to verify success — without guessing.
 
 **Rule**: Do NOT batch questions. Ask one, wait for answer, then ask the next if needed.
 
