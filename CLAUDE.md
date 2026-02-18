@@ -25,10 +25,17 @@ python long-task-agent/scripts/init_project.py <project-name> --path <output-dir
 python long-task-agent/scripts/validate_features.py feature-list.json
 ```
 
+### Check required configurations
+```bash
+python long-task-agent/scripts/check_configs.py feature-list.json
+python long-task-agent/scripts/check_configs.py feature-list.json --feature 3
+```
+
 ### Run tests
 ```bash
 python long-task-agent/tests/test_validate_features.py
 python long-task-agent/tests/test_init_project.py
+python long-task-agent/tests/test_check_configs.py
 ```
 
 ### Shortcut commands
@@ -58,6 +65,7 @@ python long-task-agent/tests/test_init_project.py
 2. **Worker Session** (each context cycle):
    - Orient: read `task-progress.md`, `feature-list.json`, `git log`
    - Bootstrap: run init script, smoke test; optionally create git worktree for isolation
+   - **Config Gate**: check `required_configs` for target feature; block until resolved
    - **Plan**: write step-by-step implementation plan before coding
    - TDD Red: write failing tests (unit tests + Chrome DevTools MCP for UI)
    - TDD Green: implement minimal code to pass (self-execute or subagent-driven)
@@ -73,6 +81,7 @@ python long-task-agent/tests/test_init_project.py
 
 ### Critical Rules
 
+- **Config gate before planning**: Never plan or code when required configs for the target feature are missing
 - **Design before implementation**: Run brainstorming; no coding until design approved
 - **Strict TDD**: Always Red→Green→Coverage→Refactor→Mutation; never write implementation before tests
 - **Coverage gate after TDD Green**: Run coverage tool, verify line >= 90%, branch >= 80%
@@ -116,6 +125,17 @@ python long-task-agent/tests/test_init_project.py
     "branch_coverage_min": 80,
     "mutation_score_min": 80
   },
+  "required_configs": [
+    {
+      "name": "Config display name",
+      "type": "env|file",
+      "key": "ENV_VAR_NAME (for env type)",
+      "path": "path/to/file (for file type)",
+      "description": "What this config is for",
+      "required_by": [1, 3],
+      "check_hint": "How to set it up"
+    }
+  ],
   "features": [...]
 }
 ```
@@ -154,10 +174,12 @@ long-task-agent/
 │   └── session-start.sh            # Auto-inject context on session start
 ├── scripts/
 │   ├── init_project.py             # Project scaffolding
-│   └── validate_features.py        # Feature list validation
+│   ├── validate_features.py        # Feature list validation
+│   └── check_configs.py            # Required config checking
 ├── tests/
 │   ├── test_validate_features.py   # Validator unit tests
-│   └── test_init_project.py        # Scaffolding unit tests
+│   ├── test_init_project.py        # Scaffolding unit tests
+│   └── test_check_configs.py       # Config checker unit tests
 └── references/
     ├── architecture.md             # Detailed architecture patterns
     ├── brainstorming.md            # Brainstorming & design phase process

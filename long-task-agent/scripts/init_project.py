@@ -48,6 +48,7 @@ def create_feature_list(
             "branch_coverage_min": branch_coverage_min,
             "mutation_score_min": mutation_score_min
         },
+        "required_configs": [],
         "features": []
     }
 
@@ -120,6 +121,20 @@ This file guides the agent through each work session. Follow these steps on EVER
    - Linux/Mac: `bash init.sh`
 2. Quick smoke test: verify previously-passing features still work
 3. If any feature regressed, fix it FIRST before starting new work
+
+### Step 2.5: Config Gate — verify required configurations
+1. Read `required_configs` from `feature-list.json`
+2. Filter to configs where the current target feature's ID appears in `required_by`
+3. For each required config:
+   - Type `env`: check that the environment variable in `key` is set and non-empty
+   - Type `file`: check that the file at `path` exists and is non-empty
+4. If ALL required configs are present → proceed to Step 3
+5. If ANY are missing:
+   - List each missing config with its `name`, `description`, and `check_hint`
+   - Ask the user to set up the missing configs via `AskUserQuestion`
+   - After user confirms, re-check
+   - Do NOT proceed to Step 3 until all required configs pass
+6. Run: `python scripts/check_configs.py feature-list.json --feature <id>` to automate this check
 
 ### Step 3: TDD Red — write failing tests FIRST
 1. Pick the highest-priority failing feature from Step 1
@@ -217,6 +232,7 @@ If there are still failing features:
 3. If context is exhausted, end the session
 
 ## Critical Rules
+- **Config gate before planning**: NEVER start planning or coding if required configs for the target feature are missing — prompt user immediately
 - **Strict TDD**: NEVER write implementation before tests — always Red→Green→Coverage→Refactor→Mutation
 - **Coverage gate after TDD Green**: Run coverage tool, verify line >= threshold, branch >= threshold
 - **Mutation gate after TDD Refactor**: Run incremental mutation testing, verify score >= threshold
@@ -236,6 +252,7 @@ If there are still failing features:
 
 ## Red Flags (Stop and Correct)
 If you catch yourself thinking any of these, STOP:
+- "I'll mock that config later" → Check required_configs NOW before proceeding
 - "This is too simple for design/review" → Still run lightweight version
 - "The tests should pass" → Run them and read the output
 - "Let me just try this quick fix" → Trace root cause first

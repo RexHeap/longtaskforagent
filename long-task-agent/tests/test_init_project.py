@@ -258,6 +258,35 @@ def test_tool_override_with_preset():
         shutil.rmtree(tmp)
 
 
+def test_feature_list_has_required_configs():
+    """feature-list.json should contain required_configs as empty array."""
+    tmp = tempfile.mkdtemp()
+    try:
+        run_init("test-project", tmp)
+        fl_path = os.path.join(tmp, "feature-list.json")
+        with open(fl_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        assert "required_configs" in data, "Missing 'required_configs' key"
+        assert isinstance(data["required_configs"], list)
+        assert len(data["required_configs"]) == 0
+    finally:
+        shutil.rmtree(tmp)
+
+
+def test_guide_contains_config_gate():
+    """long-task-guide.md should contain Config Gate step."""
+    tmp = tempfile.mkdtemp()
+    try:
+        run_init("test-project", tmp)
+        guide_path = os.path.join(tmp, "long-task-guide.md")
+        with open(guide_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        assert "Config Gate" in content, "Missing Config Gate step in guide"
+        assert "required_configs" in content, "Guide should reference required_configs"
+    finally:
+        shutil.rmtree(tmp)
+
+
 if __name__ == "__main__":
     tests = [
         test_creates_all_artifacts,
@@ -274,6 +303,8 @@ if __name__ == "__main__":
         test_lang_preset_fills_tools,
         test_custom_thresholds,
         test_tool_override_with_preset,
+        test_feature_list_has_required_configs,
+        test_guide_contains_config_gate,
     ]
     passed = 0
     failed = 0

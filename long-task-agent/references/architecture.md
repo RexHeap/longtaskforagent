@@ -204,6 +204,15 @@ Each worker cycle follows this exact sequence.
 6. Run `init.sh` / `init.ps1` — start dev server / services
 7. Run smoke tests — verify previously-passing features still work
 
+### Phase 2.5: Config Gate (verify required configurations)
+7a. Read `required_configs` from `feature-list.json`
+7b. Filter to configs where the target feature's ID appears in `required_by`
+7c. For `env` type: check environment variable is set and non-empty
+7d. For `file` type: check file at `path` exists and is non-empty
+7e. If any missing: report with name, description, check_hint; ask user via `AskUserQuestion`; re-check after user responds
+7f. Only proceed to Phase 3 when all required configs pass
+7g. Shortcut: `python scripts/check_configs.py feature-list.json --feature <id>`
+
 ### Phase 3: TDD Red — write failing tests first
 8. Pick the highest-priority `"failing"` feature whose dependencies are all `"passing"`
 9. Write unit tests that cover the feature's `verification_steps` — tests MUST fail (no implementation yet)
@@ -292,6 +301,8 @@ Initializer → scaffold → populate features → commit → begin first Worker
 | Skipping progress file update | Next session wastes tokens rediscovering state | Always update before ending session |
 | Not committing at session end | Work may be lost, next session can't diff | Always commit working code |
 | Using markdown for feature list | Models tend to corrupt/reformat markdown lists | Use JSON for structured data |
+| Mocking configs that should be real | Tests pass but app fails with real services | Declare in `required_configs`, gate before planning |
+| Skipping config check before feature work | Wasted planning/TDD cycle when config turns out missing | Always run Config Gate for features with external deps |
 | Skipping design phase | Ad-hoc design causes inconsistency and rework | Run brainstorming, get approval first. See [brainstorming.md](brainstorming.md) |
 | Guess-and-fix debugging | Random fixes waste time and may introduce new bugs | Follow systematic debugging — trace root cause. See [systematic-debugging.md](systematic-debugging.md) |
 | Skipping code review | Spec violations and quality issues compound across features | Two-stage review after every feature. See [code-review.md](code-review.md) |
@@ -333,6 +344,13 @@ Initializer → scaffold → populate features → commit → begin first Worker
 ## TDD Workflow Detail
 
 ```
+┌─── Config Gate ──────────┐
+│ 0a. Read required_configs │
+│ 0b. Check env/file        │
+│ 0c. If missing → prompt   │
+│     user, block           │
+└──────────┬───────────────┘
+           ↓
 ┌─── TDD Red ─────────────┐
 │ 1. Read feature spec     │
 │ 2. Write unit tests      │

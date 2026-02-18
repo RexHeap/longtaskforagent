@@ -25,6 +25,8 @@ VALID_STATUSES = {"failing", "passing"}
 VALID_PRIORITIES = {"high", "medium", "low"}
 VALID_LANGUAGES = {"python", "java", "typescript", "c", "cpp", "c++"}
 QUALITY_GATE_KEYS = {"line_coverage_min", "branch_coverage_min", "mutation_score_min"}
+VALID_CONFIG_TYPES = {"env", "file"}
+REQUIRED_CONFIG_FIELDS = {"name", "type", "description", "required_by"}
 
 
 def validate(path: str) -> list[str]:
@@ -64,6 +66,55 @@ def validate(path: str) -> list[str]:
                         errors.append(
                             f"quality_gates.{key} must be a number between 0 and 100, got {val!r}"
                         )
+
+    # Validate required_configs if present
+    required_configs = data.get("required_configs")
+    if required_configs is not None:
+        if not isinstance(required_configs, list):
+            errors.append("required_configs must be an array")
+        else:
+            config_names_seen = set()
+            for ci, config in enumerate(required_configs):
+                cprefix = f"required_configs[{ci}]"
+
+                if not isinstance(config, dict):
+                    errors.append(f"{cprefix}: must be an object")
+                    continue
+
+                # Check common required fields
+                cmissing = REQUIRED_CONFIG_FIELDS - set(config.keys())
+                if cmissing:
+                    errors.append(f"{cprefix}: missing fields: {cmissing}")
+
+                # Check name uniqueness
+                cname = config.get("name")
+                if cname:
+                    if cname in config_names_seen:
+                        errors.append(f"{cprefix}: duplicate config name '{cname}'")
+                    config_names_seen.add(cname)
+
+                # Check type is valid
+                ctype = config.get("type")
+                if ctype and ctype not in VALID_CONFIG_TYPES:
+                    errors.append(
+                        f"{cprefix}: invalid type '{ctype}', must be one of {VALID_CONFIG_TYPES}"
+                    )
+
+                # Check type-specific required fields
+                if ctype == "env":
+                    if "key" not in config:
+                        errors.append(f"{cprefix}: env type requires 'key' field")
+                elif ctype == "file":
+                    if "path" not in config:
+                        errors.append(f"{cprefix}: file type requires 'path' field")
+
+                # Check required_by is a list of integers
+                req_by = config.get("required_by")
+                if req_by is not None:
+                    if not isinstance(req_by, list):
+                        errors.append(f"{cprefix}: required_by must be an array")
+                    elif not all(isinstance(x, int) for x in req_by):
+                        errors.append(f"{cprefix}: required_by must contain only integer feature IDs")
 
     features = data["features"]
     if not isinstance(features, list):
@@ -124,6 +175,18 @@ def validate(path: str) -> list[str]:
             if dep not in all_ids:
                 errors.append(f"Feature id={fid}: dependency id={dep} does not exist")
 
+    # Validate required_configs.required_by references existing feature IDs
+    if required_configs and isinstance(required_configs, list):
+        for ci, config in enumerate(required_configs):
+            if not isinstance(config, dict):
+                continue
+            for ref_id in config.get("required_by", []):
+                if isinstance(ref_id, int) and ref_id not in all_ids:
+                    errors.append(
+                        f"required_configs[{ci}] ('{config.get('name', '?')}'): "
+                        f"required_by references feature id={ref_id} which does not exist"
+                    )
+
     return errors
 
 
@@ -155,6 +218,11 @@ def main():
             branch_min = qg.get("branch_coverage_min", "N/A")
             mutation_min = qg.get("mutation_score_min", "N/A")
             summary += f" | Quality gates: line>={line_min}%, branch>={branch_min}%, mutation>={mutation_min}%"
+
+        # Show required configs count
+        rc = data.get("required_configs", [])
+        if rc:
+            summary += f" | Required configs: {len(rc)}"
 
         # Show tech stack if configured
         ts = data.get("tech_stack")

@@ -85,6 +85,15 @@ Required evidence:
 - Scope: incremental (changed files only) or full (milestone)
 ```
 
+### For Required Configurations
+```
+Required evidence:
+- check_configs.py output showing all configs present
+- For env type: environment variable name and confirmation it's set (not the value — never log secrets)
+- For file type: file path and confirmation it exists and is non-empty
+- Actual command that was run: python scripts/check_configs.py feature-list.json --feature <id>
+```
+
 ### For Build / Compile
 ```
 Required evidence:
@@ -97,6 +106,7 @@ Required evidence:
 
 | Event | Verification Required |
 |-------|----------------------|
+| Before planning (Config Gate) | check_configs.py output for target feature |
 | After TDD Green (all tests pass) | Full test suite output |
 | After TDD Refactor | Full test suite output (confirm still passing) |
 | Before marking "passing" | Feature-specific verification_steps executed |
@@ -110,6 +120,7 @@ Required evidence:
 
 | Anti-Pattern | Why It Fails | Correct Approach |
 |---|---|---|
+| Skip config check because "I'll just mock it" | Integration fails when real config is needed | Run Config Gate before planning; declare all external deps |
 | Mark "passing" after writing code (without running tests) | Code may have syntax errors, logic bugs, or missing imports | Run tests, read output, then mark |
 | Trust that refactoring didn't break anything | Refactoring can introduce subtle bugs | Re-run full suite after every refactor |
 | Skip re-verification at session start | Previously passing features may have regressed | Always smoke-test passing features |
