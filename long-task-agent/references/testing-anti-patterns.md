@@ -130,6 +130,46 @@ def test_create_user():
 
 **Fix**: Use parameterized tests for variations. Extract shared setup into fixtures. But avoid over-abstracting — tests should be readable without jumping through hoops.
 
+### 11. Gaming Coverage with Assert-Free Tests
+
+**Symptom**: High coverage numbers but tests have weak or no assertions.
+
+**Example (BAD)**:
+```python
+def test_process_data():
+    process_data(sample_input)  # 100% line coverage, 0% verification
+```
+
+**Why it fails**: Exercising code paths without verifying correctness gives false confidence. Tests will never fail even if the function returns garbage.
+
+**Fix**: Every test must assert observable outcomes. Mutation testing exposes this — if a mutant survives, the test isn't actually checking the result.
+
+```python
+def test_process_data():
+    result = process_data(sample_input)
+    assert result.status == "success"
+    assert result.count == 42
+```
+
+### 12. Ignoring Surviving Mutants
+
+**Symptom**: Mutation score below threshold but feature is marked as "passing" anyway.
+
+**Why it fails**: Surviving mutants are bugs your tests can't catch. If you change `>` to `>=` and no test fails, your boundary logic is untested.
+
+**Fix**: For each surviving mutant:
+- **Real gap**: add a test that kills it
+- **Equivalent mutant**: document why the change produces identical behavior (e.g., `# equivalent mutant: condition is always true due to precondition on line X`)
+- **Never ignore**: every survivor must be addressed (fixed or documented)
+
+### 13. Running Mutation Tests on Untested Code
+
+**Symptom**: Running mutation tests before achieving coverage threshold. Many mutants show "no coverage".
+
+**Why it fails**: Mutation testing on uncovered code produces many false survivors and wastes time — there's no test to kill the mutant in the first place.
+
+**Fix**: Always pass the coverage gate before running mutation tests. Coverage first, mutation second.
+
 ## Quick Reference: Test Writing Checklist
 
 Before marking a test as complete:
@@ -142,3 +182,6 @@ Before marking a test as complete:
 - [ ] Test tests behavior, not implementation details
 - [ ] No test-only methods added to production code
 - [ ] Mocks are at boundaries, not internal layers
+- [ ] Coverage meets project thresholds (line >= 90%, branch >= 80%)
+- [ ] Mutation score meets threshold (>= 80%) for changed files
+- [ ] No surviving mutants without justification

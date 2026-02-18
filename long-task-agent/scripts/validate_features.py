@@ -9,6 +9,8 @@ Checks:
 - Status values are valid
 - Dependencies reference existing feature IDs
 - Verification steps are non-empty
+- tech_stack.language is a supported value (if present)
+- quality_gates values are numbers between 0 and 100 (if present)
 
 Usage:
     python validate_features.py <path/to/feature-list.json>
@@ -21,6 +23,8 @@ import sys
 REQUIRED_FIELDS = {"id", "category", "title", "description", "priority", "status", "verification_steps"}
 VALID_STATUSES = {"failing", "passing"}
 VALID_PRIORITIES = {"high", "medium", "low"}
+VALID_LANGUAGES = {"python", "java", "typescript", "c", "cpp", "c++"}
+QUALITY_GATE_KEYS = {"line_coverage_min", "branch_coverage_min", "mutation_score_min"}
 
 
 def validate(path: str) -> list[str]:
@@ -34,6 +38,32 @@ def validate(path: str) -> list[str]:
 
     if "features" not in data:
         return ['"features" key missing from root object']
+
+    # Validate tech_stack if present
+    tech_stack = data.get("tech_stack")
+    if tech_stack:
+        if not isinstance(tech_stack, dict):
+            errors.append("tech_stack must be an object")
+        else:
+            lang = tech_stack.get("language", "").lower()
+            if lang and lang != "todo" and lang not in VALID_LANGUAGES:
+                errors.append(
+                    f"tech_stack.language '{lang}' not in supported: {sorted(VALID_LANGUAGES)}"
+                )
+
+    # Validate quality_gates if present
+    quality_gates = data.get("quality_gates")
+    if quality_gates:
+        if not isinstance(quality_gates, dict):
+            errors.append("quality_gates must be an object")
+        else:
+            for key in QUALITY_GATE_KEYS:
+                val = quality_gates.get(key)
+                if val is not None:
+                    if not isinstance(val, (int, float)) or val < 0 or val > 100:
+                        errors.append(
+                            f"quality_gates.{key} must be a number between 0 and 100, got {val!r}"
+                        )
 
     features = data["features"]
     if not isinstance(features, list):
@@ -116,7 +146,24 @@ def main():
         features = data["features"]
         passing = sum(1 for f in features if f.get("status") == "passing")
         failing = sum(1 for f in features if f.get("status") == "failing")
-        print(f"VALID — {len(features)} features ({passing} passing, {failing} failing)")
+        summary = f"VALID — {len(features)} features ({passing} passing, {failing} failing)"
+
+        # Show quality gates if configured
+        qg = data.get("quality_gates")
+        if qg:
+            line_min = qg.get("line_coverage_min", "N/A")
+            branch_min = qg.get("branch_coverage_min", "N/A")
+            mutation_min = qg.get("mutation_score_min", "N/A")
+            summary += f" | Quality gates: line>={line_min}%, branch>={branch_min}%, mutation>={mutation_min}%"
+
+        # Show tech stack if configured
+        ts = data.get("tech_stack")
+        if ts:
+            lang = ts.get("language", "N/A")
+            if lang != "TODO":
+                summary += f" | Language: {lang}"
+
+        print(summary)
         sys.exit(0)
 
 

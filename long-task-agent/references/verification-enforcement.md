@@ -34,6 +34,8 @@ If you catch yourself using any of these words about feature status, STOP and re
 | "based on the implementation" | Trusting code, not tests | Tests verify behavior, not code |
 | "the tests should be green" | Predicting, not observing | Run tests and read output |
 | "I've verified" (without showing output) | Claiming without evidence | Show the actual output |
+| "coverage is probably fine" | Haven't run coverage tool | Run coverage now |
+| "mutation score should be high enough" | Haven't run mutation tool | Run mutation tests now |
 
 ## Verification Evidence Requirements
 
@@ -63,6 +65,26 @@ Required evidence:
 - Error case responses
 ```
 
+### For Test Coverage
+```
+Required evidence:
+- Coverage tool output showing line % and branch %
+- Line coverage >= project threshold (default 90%)
+- Branch coverage >= project threshold (default 80%)
+- List of uncovered lines (if any, with justification)
+- Actual coverage command that was run
+```
+
+### For Mutation Testing
+```
+Required evidence:
+- Mutation tool output showing killed/survived/total
+- Mutation score >= project threshold (default 80%)
+- List of surviving mutants (if any, with justification or fix)
+- Actual mutation command that was run
+- Scope: incremental (changed files only) or full (milestone)
+```
+
 ### For Build / Compile
 ```
 Required evidence:
@@ -80,6 +102,8 @@ Required evidence:
 | Before marking "passing" | Feature-specific verification_steps executed |
 | Before code review | Re-run tests to ensure clean state |
 | Session start (smoke test) | Re-verify previously passing features |
+| After TDD Green (coverage gate) | Coverage report with line/branch percentages |
+| After TDD Refactor (mutation gate) | Mutation report with kill rate |
 | Before git commit | Full test suite (no broken code committed) |
 
 ## Anti-Patterns

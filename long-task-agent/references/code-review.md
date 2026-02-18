@@ -40,6 +40,10 @@ Checklist:
 - [ ] No obvious performance issues
 - [ ] Types used correctly (if applicable)
 - [ ] Tests are independent, deterministic, and meaningful
+- [ ] Test coverage meets project thresholds (line >= 90%, branch >= 80%)
+- [ ] Mutation score meets threshold (>= 80%) for changed files
+- [ ] No surviving mutants without documented justification
+- [ ] Coverage and mutation tools configured for the project's language
 
 **If issues found**: Fix by severity (Critical → Important → Minor), re-review changed items only.
 

@@ -56,10 +56,13 @@ Only runs after Stage 1 passes. Evaluates implementation quality.
    - No hardcoded secrets or credentials?
    - OWASP top 10 considerations?
 
-6. **Test Quality**:
+6. **Test Quality & Effectiveness**:
    - Tests are independent and deterministic?
    - No testing of mock behavior?
    - No test-only methods in production code?
+   - **Coverage**: Line coverage >= project threshold? Branch coverage >= threshold?
+   - **Mutation score**: Meets threshold? Surviving mutants justified?
+   - **Coverage gaps**: Any uncovered critical paths?
 
 **Verdict**: PASS or list issues by severity
 

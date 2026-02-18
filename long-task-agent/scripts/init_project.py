@@ -25,6 +25,17 @@ def create_feature_list(project_name: str) -> dict:
     return {
         "project": project_name,
         "created": datetime.now().strftime("%Y-%m-%d"),
+        "tech_stack": {
+            "language": "TODO",
+            "test_framework": "TODO",
+            "coverage_tool": "TODO",
+            "mutation_tool": "TODO"
+        },
+        "quality_gates": {
+            "line_coverage_min": 90,
+            "branch_coverage_min": 80,
+            "mutation_score_min": 80
+        },
         "features": []
     }
 
@@ -78,13 +89,40 @@ This file guides the agent through each work session. Follow these steps on EVER
 1. Write **minimal code** to make ALL tests pass (unit tests + functional tests)
 2. Run full test suite — confirm all new tests green, no regressions on existing features
 
+### Step 4.5: Coverage Gate — verify test coverage
+1. Run the coverage tool for your project's language (check `tech_stack` in `feature-list.json`)
+2. Verify: line coverage >= `quality_gates.line_coverage_min` (default 90%)
+3. Verify: branch coverage >= `quality_gates.branch_coverage_min` (default 80%)
+4. If BELOW threshold: add more tests (return to Step 3 to write additional test cases)
+5. Record the coverage report output as verification evidence
+
+**Coverage commands by language**:
+- Python: `pytest --cov=src --cov-branch --cov-report=term-missing`
+- Java: `mvn test jacoco:report` / `gradle test jacocoTestReport`
+- TypeScript: `npx c8 --branches --reporter=text npm test`
+- C/C++: compile with `--coverage`, run tests, then `gcov *.c && lcov --capture -d . -o cov.info && lcov --summary cov.info`
+
 ### Step 5: TDD Refactor — clean up
 1. Refactor code while keeping all tests green
 2. Run full verification again
 3. **Verification enforcement**: Execute each `verification_step`, read FULL output, confirm all green
    - If you catch yourself thinking "should pass" or "probably works" — STOP and re-run
    - Show actual test output as evidence before marking "passing"
-4. Mark `status` as `"passing"` in `feature-list.json` ONLY after ALL tests (UT + functional) pass with evidence
+
+### Step 5.5m: Mutation Gate — verify test effectiveness
+1. Run the mutation tool in **incremental mode** (only files changed for this feature)
+2. Verify: mutation score >= `quality_gates.mutation_score_min` (default 80%)
+3. If BELOW threshold: improve test assertions to kill surviving mutants (return to Step 3)
+4. Record the mutation report output as verification evidence
+5. At major project milestones: run full mutation testing (all source files)
+
+**Mutation commands by language**:
+- Python: `mutmut run --paths-to-mutate=<changed-files>`
+- Java: `mvn pitest:mutationCoverage -DtargetClasses=<changed-classes>`
+- TypeScript: `npx stryker run --mutate='<changed-files>'`
+- C/C++: `mull-runner <test-binary>` (compile with Mull plugin)
+
+4. Mark `status` as `"passing"` in `feature-list.json` ONLY after ALL tests pass, coverage gate met, and mutation gate met
 
 ### Step 5.5: Code Review — validate the implementation
 1. Run **two-stage code review** on the completed feature:
@@ -114,6 +152,8 @@ This file guides the agent through each work session. Follow these steps on EVER
    **Focus**: [feature title(s)]
    **Completed**: [what was done]
    **Tests**: [UT count passing, functional tests passing (if UI)]
+   **Coverage**: [line %/branch % — e.g., "92%/85%"]
+   **Mutation Score**: [score % — e.g., "83% (incremental)"]
    **Examples**: [example files added/updated, or "N/A (infrastructure)"]
    **Issues**: [any problems encountered]
    **Next Priority**: [next failing feature title and id]
@@ -130,8 +170,12 @@ If there are still failing features:
 3. If context is exhausted, end the session
 
 ## Critical Rules
-- **Strict TDD**: NEVER write implementation before tests — always Red→Green→Refactor
-- **Verification enforcement**: NEVER mark "passing" without fresh evidence — run tests, read FULL output, confirm all green, THEN mark
+- **Strict TDD**: NEVER write implementation before tests — always Red→Green→Coverage→Refactor→Mutation
+- **Coverage gate after TDD Green**: Run coverage tool, verify line >= threshold, branch >= threshold
+- **Mutation gate after TDD Refactor**: Run incremental mutation testing, verify score >= threshold
+- **Coverage before mutation**: Always pass coverage gate first; mutation on uncovered code is wasteful
+- **Incremental mutation for features, full at milestones**: Diff-based per feature, full run at project milestones
+- **Verification enforcement**: NEVER mark "passing" without fresh evidence — run tests, coverage, mutation; read FULL output, THEN mark
 - **Code review after every feature**: Run two-stage review (spec compliance → code quality) before Persist
 - **Systematic debugging only**: NEVER guess-and-fix — always trace root cause before applying fixes
 - **UI features require Chrome DevTools MCP testing**: use `take_snapshot`, `click`, `fill`, `take_screenshot` etc.
@@ -150,6 +194,8 @@ If you catch yourself thinking any of these, STOP:
 - "Let me just try this quick fix" → Trace root cause first
 - "I'll add tests after" → TDD Red comes FIRST
 - "It probably works" → "Probably" = no evidence = re-verify
+- "Coverage looks fine" → Run the coverage tool and read the numbers
+- "Mutation score is probably OK" → Run mutation tests and read the report
 
 ## Project Files
 | File | Purpose |

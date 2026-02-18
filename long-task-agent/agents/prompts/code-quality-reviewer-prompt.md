@@ -17,6 +17,7 @@ You are a code quality reviewer. Spec compliance has already been verified — f
 4. **Security**: Input validation? No hardcoded secrets? OWASP top 10?
 5. **Performance**: Any obvious issues (N+1, unnecessary work)?
 6. **Test quality**: Independent? Deterministic? Testing behavior not mocks?
+7. **Test coverage & mutation**: Coverage meets thresholds (line >= 90%, branch >= 80%)? Mutation score acceptable (>= 80%)? Surviving mutants justified?
 
 ### Output Format
 ```

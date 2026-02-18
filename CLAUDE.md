@@ -53,8 +53,10 @@ python long-task-agent/tests/test_init_project.py
    - **Plan**: write step-by-step implementation plan before coding
    - TDD Red: write failing tests (unit tests + Chrome DevTools MCP for UI)
    - TDD Green: implement minimal code to pass (self-execute or subagent-driven)
+   - **Coverage Gate**: run coverage tool, verify line >= 90%, branch >= 80%
    - TDD Refactor: clean up while keeping tests green
-   - **Verify & Mark**: fresh evidence required — run tests, read output, then mark "passing"
+   - **Mutation Gate**: run incremental mutation testing, verify score >= 80%
+   - **Verify & Mark**: fresh evidence required — run tests, coverage, mutation; read output, then mark "passing"
    - **Code Review**: two-stage review (spec compliance → code quality)
    - Add Examples: create runnable examples in `examples/` for user-facing features
    - Persist: git commit, update `RELEASE_NOTES.md`, `task-progress.md`
@@ -64,8 +66,11 @@ python long-task-agent/tests/test_init_project.py
 ### Critical Rules
 
 - **Design before implementation**: Run brainstorming; no coding until design approved
-- **Strict TDD**: Always Red→Green→Refactor; never write implementation before tests
-- **Verification enforcement**: Never mark "passing" without fresh evidence (run tests, read output, confirm)
+- **Strict TDD**: Always Red→Green→Coverage→Refactor→Mutation; never write implementation before tests
+- **Coverage gate after TDD Green**: Run coverage tool, verify line >= 90%, branch >= 80%
+- **Mutation gate after TDD Refactor**: Run incremental mutation testing, verify score >= 80%
+- **Multi-language support**: Coverage/mutation tools per language (Python, Java, TypeScript, C, C++) — see `references/coverage-and-mutation.md`
+- **Verification enforcement**: Never mark "passing" without fresh evidence (run tests, coverage, mutation; read output, confirm)
 - **Code review after every feature**: Two-stage (spec compliance → code quality) before Persist
 - **Systematic debugging**: Never guess-and-fix; always trace root cause first
 - **One feature per cycle**: Prevents context exhaustion
@@ -85,9 +90,29 @@ python long-task-agent/tests/test_init_project.py
 | `init.sh` / `init.ps1` | Deterministic environment bootstrap |
 | `long-task-guide.md` | Worker session workflow guide |
 
-### Feature Schema
+### Feature List Schema
 
-Each feature in `feature-list.json`:
+`feature-list.json` root structure:
+```json
+{
+  "project": "project-name",
+  "created": "2025-01-15",
+  "tech_stack": {
+    "language": "python|java|typescript|c|cpp",
+    "test_framework": "pytest|junit|vitest|gtest|...",
+    "coverage_tool": "pytest-cov|jacoco|c8|gcov|...",
+    "mutation_tool": "mutmut|pitest|stryker|mull|..."
+  },
+  "quality_gates": {
+    "line_coverage_min": 90,
+    "branch_coverage_min": 80,
+    "mutation_score_min": 80
+  },
+  "features": [...]
+}
+```
+
+Each feature in `features` array:
 ```json
 {
   "id": 1,
@@ -135,6 +160,7 @@ long-task-agent/
     ├── subagent-development.md     # Subagent-driven development mode
     ├── worktree-isolation.md       # Git worktree isolation & branch finishing
     ├── testing-anti-patterns.md    # Common testing mistakes catalog
+    ├── coverage-and-mutation.md   # Coverage tracking & mutation testing (multi-language)
     └── roadmap.md                  # Future enhancements roadmap
 ```
 
@@ -149,3 +175,4 @@ long-task-agent/
 - [long-task-agent/references/systematic-debugging.md](long-task-agent/references/systematic-debugging.md) - Systematic debugging
 - [long-task-agent/references/subagent-development.md](long-task-agent/references/subagent-development.md) - Subagent-driven development
 - [long-task-agent/references/worktree-isolation.md](long-task-agent/references/worktree-isolation.md) - Worktree isolation & branch finishing
+- [long-task-agent/references/coverage-and-mutation.md](long-task-agent/references/coverage-and-mutation.md) - Coverage tracking & mutation testing (multi-language)

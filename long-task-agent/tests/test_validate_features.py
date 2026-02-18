@@ -142,6 +142,154 @@ def test_empty_verification_steps():
     assert code != 0, f"Expected non-zero exit for empty verification_steps: {stdout}"
 
 
+def test_valid_tech_stack():
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "tech_stack": {
+            "language": "python",
+            "test_framework": "pytest",
+            "coverage_tool": "pytest-cov",
+            "mutation_tool": "mutmut"
+        },
+        "quality_gates": {
+            "line_coverage_min": 90,
+            "branch_coverage_min": 80,
+            "mutation_score_min": 80
+        },
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "A",
+                "description": "A", "priority": "high", "status": "failing",
+                "verification_steps": ["Step 1"], "dependencies": []
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code == 0, f"Expected exit 0 for valid tech_stack: {stdout}"
+    assert "VALID" in stdout
+
+
+def test_invalid_language():
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "tech_stack": {
+            "language": "ruby",
+            "test_framework": "rspec",
+            "coverage_tool": "simplecov",
+            "mutation_tool": "mutant"
+        },
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "A",
+                "description": "A", "priority": "high", "status": "failing",
+                "verification_steps": ["Step 1"], "dependencies": []
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code != 0, f"Expected non-zero exit for unsupported language: {stdout}"
+
+
+def test_todo_language_is_valid():
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "tech_stack": {"language": "TODO"},
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "A",
+                "description": "A", "priority": "high", "status": "failing",
+                "verification_steps": ["Step 1"], "dependencies": []
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code == 0, f"Expected exit 0 for TODO language: {stdout}"
+
+
+def test_invalid_quality_gate_value():
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "quality_gates": {
+            "line_coverage_min": 150,
+            "branch_coverage_min": 80,
+            "mutation_score_min": 80
+        },
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "A",
+                "description": "A", "priority": "high", "status": "failing",
+                "verification_steps": ["Step 1"], "dependencies": []
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code != 0, f"Expected non-zero exit for quality gate > 100: {stdout}"
+
+
+def test_negative_quality_gate_value():
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "quality_gates": {
+            "line_coverage_min": -10,
+            "branch_coverage_min": 80,
+            "mutation_score_min": 80
+        },
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "A",
+                "description": "A", "priority": "high", "status": "failing",
+                "verification_steps": ["Step 1"], "dependencies": []
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code != 0, f"Expected non-zero exit for negative quality gate: {stdout}"
+
+
+def test_quality_gate_string_value():
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "quality_gates": {
+            "line_coverage_min": "high",
+            "branch_coverage_min": 80,
+            "mutation_score_min": 80
+        },
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "A",
+                "description": "A", "priority": "high", "status": "failing",
+                "verification_steps": ["Step 1"], "dependencies": []
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code != 0, f"Expected non-zero exit for string quality gate: {stdout}"
+
+
+def test_all_supported_languages():
+    for lang in ["python", "java", "typescript", "c", "cpp", "c++"]:
+        data = {
+            "project": "test-project",
+            "created": "2025-01-01",
+            "tech_stack": {"language": lang},
+            "features": [
+                {
+                    "id": 1, "category": "core", "title": "A",
+                    "description": "A", "priority": "high", "status": "failing",
+                    "verification_steps": ["Step 1"], "dependencies": []
+                }
+            ]
+        }
+        code, stdout, _ = run_validator(data)
+        assert code == 0, f"Expected exit 0 for language '{lang}': {stdout}"
+
+
 if __name__ == "__main__":
     tests = [
         test_valid_feature_list,
@@ -150,6 +298,13 @@ if __name__ == "__main__":
         test_duplicate_ids,
         test_invalid_dependency_reference,
         test_empty_verification_steps,
+        test_valid_tech_stack,
+        test_invalid_language,
+        test_todo_language_is_valid,
+        test_invalid_quality_gate_value,
+        test_negative_quality_gate_value,
+        test_quality_gate_string_value,
+        test_all_supported_languages,
     ]
     passed = 0
     failed = 0

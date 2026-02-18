@@ -213,10 +213,23 @@ Each worker cycle follows this exact sequence.
 11. Write minimal code to make ALL tests pass (unit tests + functional tests)
 12. Run full test suite — confirm all new tests green, no regressions
 
+### Phase 4.5: Coverage Gate — verify test coverage
+12a. Run coverage tool for the project's language (see [coverage-and-mutation.md](coverage-and-mutation.md))
+12b. Check: line coverage >= `quality_gates.line_coverage_min` (default 90%), branch coverage >= `quality_gates.branch_coverage_min` (default 80%)
+12c. If BELOW threshold: write additional tests (return to Phase 3 for new test cases)
+12d. Record coverage report output as evidence
+
 ### Phase 5: TDD Refactor — clean up
 13. Refactor code while keeping all tests green
 14. Run verification again — mark feature as `"passing"` in `feature-list.json` ONLY after ALL tests pass
 15. **Verification enforcement**: Execute each `verification_step`, read FULL output, confirm all green. If you catch yourself thinking "should pass" or "probably works" — STOP and re-run. See [verification-enforcement.md](verification-enforcement.md).
+
+### Phase 5.5m: Mutation Gate — verify test effectiveness
+15a. Run mutation tool in **incremental mode** (only files changed for this feature)
+15b. Check: mutation score >= `quality_gates.mutation_score_min` (default 80%)
+15c. If BELOW threshold: improve test assertions to kill surviving mutants (return to Phase 3)
+15d. Record mutation report output as evidence
+15e. At project milestones: run full mutation testing (all source files)
 
 ### Phase 5.5: Code Review
 16. Run two-stage review on the completed feature:
@@ -273,6 +286,9 @@ Initializer → scaffold → populate features → commit → begin first Worker
 | Not updating RELEASE_NOTES.md | Release notes drift from actual state; costly catch-up later | Update after every git commit |
 | Skipping examples for user-facing features | Users can't understand how to use new features; reduces project value | Add runnable example for every user-facing feature |
 | Editing verification_steps | Lowers the bar to match broken code | Steps are immutable once set |
+| Skipping coverage check | Tests may miss entire code paths | Run coverage after every TDD Green |
+| Skipping mutation testing | Tests may pass without catching real bugs | Run mutation after every TDD Refactor |
+| Gaming coverage with assert-free tests | High coverage but useless tests | Mutation testing catches this; strengthen assertions |
 | Skipping progress file update | Next session wastes tokens rediscovering state | Always update before ending session |
 | Not committing at session end | Work may be lost, next session can't diff | Always commit working code |
 | Using markdown for feature list | Models tend to corrupt/reformat markdown lists | Use JSON for structured data |
@@ -304,6 +320,11 @@ Initializer → scaffold → populate features → commit → begin first Worker
   - `evaluate_script` — assert DOM state programmatically
 - Test flow: navigate → snapshot → interact → snapshot → assert expected state
 
+### For ALL features (Coverage & Mutation mandatory):
+- **Coverage**: Run language-specific coverage tool, verify line/branch thresholds met
+- **Mutation**: Run incremental mutation testing on changed files, verify mutation score threshold met
+- See [coverage-and-mutation.md](coverage-and-mutation.md) for per-language tool setup and commands
+
 ### For data / pipeline features:
 - Run with sample data and verify output
 - Check edge cases explicitly
@@ -325,12 +346,31 @@ Initializer → scaffold → populate features → commit → begin first Worker
 │ 6. Run tests → ALL PASS  │
 └──────────┬───────────────┘
            ↓
+┌─── Coverage Gate ────────┐
+│ 7. Run coverage tool     │
+│ 8. Line % >= threshold?  │
+│    Branch % >= threshold?│
+│ 9. If below → more tests │
+└──────────┬───────────────┘
+           ↓
 ┌─── TDD Refactor ────────┐
-│ 7. Clean up code         │
-│ 8. Run tests → STILL     │
-│    ALL PASS              │
-│ 9. Mark "passing"        │
-└──────────────────────────┘
+│ 10. Clean up code        │
+│ 11. Run tests → STILL    │
+│     ALL PASS             │
+└──────────┬───────────────┘
+           ↓
+┌─── Mutation Gate ────────┐
+│ 12. Run mutation tool    │
+│     (incremental)        │
+│ 13. Score >= threshold?  │
+│ 14. If below → improve   │
+│     assertions           │
+└──────────┬───────────────┘
+           ↓
+┌─── Verify & Mark ────────┐
+│ 15. All evidence recorded │
+│ 16. Mark "passing"        │
+└───────────────────────────┘
 ```
 
 ### Chrome DevTools MCP Functional Test Pattern
@@ -346,6 +386,17 @@ For each UI feature, create a test sequence:
 7. Assert expected outcome:        verify elements, text, or visual state
 8. Check for errors:               list_console_messages(types=["error"])
 ```
+
+## Multi-Language Tool Quick Reference
+
+Coverage and mutation tool commands per language. For full setup recipes, see [coverage-and-mutation.md](coverage-and-mutation.md).
+
+| Language | Coverage Command | Mutation Command (Incremental) |
+|----------|-----------------|-------------------------------|
+| Python | `pytest --cov=src --cov-branch --cov-report=term-missing` | `mutmut run --paths-to-mutate=<changed-files>` |
+| Java | `mvn test jacoco:report` | `mvn pitest:mutationCoverage -DtargetClasses=<changed>` |
+| TypeScript | `npx c8 --branches --reporter=text npm test` | `npx stryker run --mutate='<changed-files>'` |
+| C/C++ | `gcov -b src/*.c && lcov --capture -d . -o cov.info` | `mull-runner <test-binary>` |
 
 ## Release Notes Maintenance
 
