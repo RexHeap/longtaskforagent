@@ -25,6 +25,11 @@ python long-task-agent/scripts/init_project.py <project-name> --path <output-dir
 python long-task-agent/scripts/validate_features.py feature-list.json
 ```
 
+### Validate LLM-generated guide
+```bash
+python long-task-agent/scripts/validate_guide.py long-task-guide.md
+```
+
 ### Check required configurations
 ```bash
 python long-task-agent/scripts/check_configs.py feature-list.json
@@ -36,6 +41,7 @@ python long-task-agent/scripts/check_configs.py feature-list.json --feature 3
 python long-task-agent/tests/test_validate_features.py
 python long-task-agent/tests/test_init_project.py
 python long-task-agent/tests/test_check_configs.py
+python long-task-agent/tests/test_validate_guide.py
 ```
 
 ### Shortcut commands
@@ -57,9 +63,10 @@ python long-task-agent/tests/test_check_configs.py
 
 1. **Initializer Session** (runs once):
    - Reads approved design document
-   - Runs `init_project.py` to scaffold artifacts
+   - Runs `init_project.py` to scaffold deterministic artifacts (`feature-list.json`, `task-progress.md`, `RELEASE_NOTES.md`, `examples/`, `docs/plans/`)
+   - LLM generates project-tailored `long-task-guide.md` (validated by `validate_guide.py`)
+   - LLM generates real, runnable `init.sh`/`init.ps1` based on tech stack
    - Decomposes requirements into 10-200+ verifiable features in `feature-list.json`
-   - Customizes `init.sh`/`init.ps1` for tech stack
    - Creates project skeleton + initial git commit
 
 2. **Worker Session** (each context cycle):
@@ -104,8 +111,8 @@ python long-task-agent/tests/test_check_configs.py
 | `task-progress.md` | Session-by-session progress log |
 | `RELEASE_NOTES.md` | Living release notes (Keep a Changelog format) |
 | `examples/` | Runnable examples demonstrating completed features |
-| `init.sh` / `init.ps1` | Deterministic environment bootstrap |
-| `long-task-guide.md` | Worker session workflow guide |
+| `init.sh` / `init.ps1` | Environment bootstrap (LLM-generated, project-specific) |
+| `long-task-guide.md` | Worker session workflow guide (LLM-generated, validated by `validate_guide.py`) |
 
 ### Feature List Schema
 
@@ -173,13 +180,15 @@ long-task-agent/
 │   ├── hooks.json                  # Session start hook config
 │   └── session-start.sh            # Auto-inject context on session start
 ├── scripts/
-│   ├── init_project.py             # Project scaffolding
+│   ├── init_project.py             # Project scaffolding (deterministic artifacts only)
 │   ├── validate_features.py        # Feature list validation
+│   ├── validate_guide.py           # LLM-generated guide structural validation
 │   └── check_configs.py            # Required config checking
 ├── tests/
 │   ├── test_validate_features.py   # Validator unit tests
 │   ├── test_init_project.py        # Scaffolding unit tests
-│   └── test_check_configs.py       # Config checker unit tests
+│   ├── test_check_configs.py       # Config checker unit tests
+│   └── test_validate_guide.py      # Guide validator unit tests
 └── references/
     ├── architecture.md             # Detailed architecture patterns
     ├── brainstorming.md            # Brainstorming & design phase process
