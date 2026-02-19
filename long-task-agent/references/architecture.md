@@ -298,7 +298,7 @@ Initializer → scaffold → populate features → commit → begin first Worker
 | Attempting all features at once | Context exhaustion mid-implementation, cascading failures | One feature per session |
 | Declaring victory without testing | Features appear done but break in practice | Verify every feature through actual tests |
 | Writing code before tests (skipping TDD Red) | Tests end up testing implementation rather than behavior; missed edge cases | Always write failing tests first, then implement |
-| Skipping Chrome DevTools functional tests for UI | UI may render but not function correctly for users | Every UI feature needs snapshot/click/fill/screenshot verification |
+| Skipping Chrome DevTools functional tests for UI | UI may render but not function correctly for users | Every UI feature (ui=true) needs [devtools] verification steps; run DevTools Gate before planning |
 | Not updating RELEASE_NOTES.md | Release notes drift from actual state; costly catch-up later | Update after every git commit |
 | Skipping examples for user-facing features | Users can't understand how to use new features; reduces project value | Add runnable example for every user-facing feature |
 | Editing verification_steps | Lowers the bar to match broken code | Steps are immutable once set |
@@ -358,11 +358,18 @@ Initializer → scaffold → populate features → commit → begin first Worker
 │     user, block           │
 └──────────┬───────────────┘
            ↓
+┌─── DevTools Gate ────────┐
+│ 0d. If ui=true:           │
+│     check_devtools.py     │
+│ 0e. If not detected →     │
+│     prompt user, block    │
+└──────────┬───────────────┘
+           ↓
 ┌─── TDD Red ─────────────┐
 │ 1. Read feature spec     │
 │ 2. Write unit tests      │
-│ 3. Write functional      │
-│    tests (if UI)         │
+│ 3. Write [devtools]      │
+│    tests (if ui=true)    │
 │ 4. Run tests → ALL FAIL  │
 └──────────┬───────────────┘
            ↓
@@ -400,9 +407,21 @@ Initializer → scaffold → populate features → commit → begin first Worker
 
 ### Chrome DevTools MCP Functional Test Pattern
 
-For each UI feature, create a test sequence:
+**Applies to**: features with `"ui": true` in `feature-list.json`.
+
+**DevTools Gate**: Before planning a UI feature, run `check_devtools.py` to verify MCP availability:
 ```
-1. Navigate to relevant page:      navigate_page(url)
+python scripts/check_devtools.py feature-list.json --feature <id>
+```
+
+**`[devtools]` verification step prefix**: UI features must have at least one `verification_steps` entry starting with `[devtools]`. This prefix:
+- Signals to `validate_features.py` that the feature has browser-level verification
+- Tells the Worker to execute these steps using Chrome DevTools MCP tools
+- Example: `"[devtools] navigate to /login, verify form fields exist, fill credentials, submit, verify redirect to /dashboard"`
+
+**Test sequence** for each `[devtools]` step:
+```
+1. Navigate to relevant page:      navigate_page(url)  (use ui_entry if set)
 2. Capture initial state:          take_snapshot()
 3. Verify expected elements:       check uid presence in snapshot
 4. Perform user action:            click(uid) / fill(uid, value)

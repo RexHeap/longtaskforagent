@@ -11,6 +11,9 @@ Checks:
 - Verification steps are non-empty
 - tech_stack.language is a supported value (if present)
 - quality_gates values are numbers between 0 and 100 (if present)
+- ui field is boolean (if present)
+- ui_entry field is string (if present)
+- UI features (ui=true) have at least one [devtools]-prefixed verification step
 
 Usage:
     python validate_features.py <path/to/feature-list.json>
@@ -26,6 +29,7 @@ VALID_PRIORITIES = {"high", "medium", "low"}
 VALID_LANGUAGES = {"python", "java", "typescript", "c", "cpp", "c++"}
 QUALITY_GATE_KEYS = {"line_coverage_min", "branch_coverage_min", "mutation_score_min"}
 VALID_CONFIG_TYPES = {"env", "file"}
+DEVTOOLS_STEP_PREFIX = "[devtools]"
 REQUIRED_CONFIG_FIELDS = {"name", "type", "description", "required_by"}
 
 
@@ -156,6 +160,30 @@ def validate(path: str) -> list[str]:
         if steps is not None:
             if not isinstance(steps, list) or len(steps) == 0:
                 errors.append(f"{prefix} (id={fid}): verification_steps must be a non-empty array")
+
+        # Check ui field type
+        ui = feat.get("ui")
+        if ui is not None and not isinstance(ui, bool):
+            errors.append(f"{prefix} (id={fid}): 'ui' must be a boolean, got {type(ui).__name__}")
+
+        # Check ui_entry field type
+        ui_entry = feat.get("ui_entry")
+        if ui_entry is not None and not isinstance(ui_entry, str):
+            errors.append(f"{prefix} (id={fid}): 'ui_entry' must be a string, got {type(ui_entry).__name__}")
+
+        # Check ui features have at least one [devtools] verification step
+        if ui is True:
+            steps = feat.get("verification_steps")
+            if isinstance(steps, list) and len(steps) > 0:
+                has_devtools = any(
+                    isinstance(s, str) and s.strip().lower().startswith(DEVTOOLS_STEP_PREFIX)
+                    for s in steps
+                )
+                if not has_devtools:
+                    errors.append(
+                        f"{prefix} (id={fid}): UI feature (ui=true) must have at least one "
+                        f"verification_step starting with '{DEVTOOLS_STEP_PREFIX}'"
+                    )
 
         # Check dependencies
         deps = feat.get("dependencies", [])

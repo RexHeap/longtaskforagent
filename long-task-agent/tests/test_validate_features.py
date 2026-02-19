@@ -517,6 +517,145 @@ def test_no_required_configs_key_is_valid():
     assert code == 0, f"Expected exit 0 when required_configs is omitted: {stdout}"
 
 
+# --- UI field validation tests ---
+
+def test_ui_feature_with_devtools_step_valid():
+    """UI feature with [devtools] verification step should pass."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "features": [
+            {
+                "id": 1, "category": "frontend", "title": "Login Page",
+                "description": "Login form", "priority": "high", "status": "failing",
+                "verification_steps": [
+                    "[devtools] navigate to /login, verify form fields, fill credentials, submit",
+                    "Unit test: login logic"
+                ],
+                "dependencies": [],
+                "ui": True,
+                "ui_entry": "/login"
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code == 0, f"Expected exit 0 for valid UI feature: {stdout}"
+
+
+def test_ui_feature_without_devtools_step_fails():
+    """UI feature without any [devtools] verification step should fail."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "features": [
+            {
+                "id": 1, "category": "frontend", "title": "Login Page",
+                "description": "Login form", "priority": "high", "status": "failing",
+                "verification_steps": ["Run unit tests", "Check API response"],
+                "dependencies": [],
+                "ui": True
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code != 0, f"Expected non-zero for UI feature without [devtools] step: {stdout}"
+    assert "[devtools]" in stdout
+
+
+def test_non_ui_feature_no_devtools_step_ok():
+    """Non-UI feature without [devtools] step should pass (no requirement)."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "API endpoint",
+                "description": "Backend", "priority": "high", "status": "failing",
+                "verification_steps": ["Run unit tests"],
+                "dependencies": [],
+                "ui": False
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code == 0, f"Expected exit 0 for non-UI feature: {stdout}"
+
+
+def test_ui_field_not_boolean_fails():
+    """ui field that is not boolean should fail."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "features": [
+            {
+                "id": 1, "category": "frontend", "title": "Page",
+                "description": "A", "priority": "high", "status": "failing",
+                "verification_steps": ["Step 1"],
+                "dependencies": [],
+                "ui": "yes"
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code != 0, f"Expected non-zero for non-boolean ui field: {stdout}"
+
+
+def test_ui_entry_not_string_fails():
+    """ui_entry field that is not a string should fail."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "features": [
+            {
+                "id": 1, "category": "frontend", "title": "Page",
+                "description": "A", "priority": "high", "status": "failing",
+                "verification_steps": ["[devtools] check page"],
+                "dependencies": [],
+                "ui": True,
+                "ui_entry": 123
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code != 0, f"Expected non-zero for non-string ui_entry: {stdout}"
+
+
+def test_feature_without_ui_field_is_valid():
+    """Feature without ui field should pass (backward compat)."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "A",
+                "description": "A", "priority": "high", "status": "failing",
+                "verification_steps": ["Step 1"], "dependencies": []
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code == 0, f"Expected exit 0 when ui field absent: {stdout}"
+
+
+def test_devtools_step_case_insensitive():
+    """[devtools] prefix should be case-insensitive."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "features": [
+            {
+                "id": 1, "category": "frontend", "title": "Page",
+                "description": "A", "priority": "high", "status": "failing",
+                "verification_steps": ["[DevTools] Navigate to /page and verify"],
+                "dependencies": [],
+                "ui": True
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code == 0, f"Expected exit 0 for case-insensitive [DevTools]: {stdout}"
+
+
 if __name__ == "__main__":
     tests = [
         test_valid_feature_list,
@@ -541,6 +680,13 @@ if __name__ == "__main__":
         test_required_configs_not_array,
         test_empty_required_configs_is_valid,
         test_no_required_configs_key_is_valid,
+        test_ui_feature_with_devtools_step_valid,
+        test_ui_feature_without_devtools_step_fails,
+        test_non_ui_feature_no_devtools_step_ok,
+        test_ui_field_not_boolean_fails,
+        test_ui_entry_not_string_fails,
+        test_feature_without_ui_field_is_valid,
+        test_devtools_step_case_insensitive,
     ]
     passed = 0
     failed = 0

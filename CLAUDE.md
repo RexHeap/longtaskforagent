@@ -28,6 +28,7 @@ python long-task-agent/scripts/validate_features.py feature-list.json
 ### Validate LLM-generated guide
 ```bash
 python long-task-agent/scripts/validate_guide.py long-task-guide.md
+python long-task-agent/scripts/validate_guide.py long-task-guide.md --feature-list feature-list.json
 ```
 
 ### Check required configurations
@@ -36,12 +37,19 @@ python long-task-agent/scripts/check_configs.py feature-list.json
 python long-task-agent/scripts/check_configs.py feature-list.json --feature 3
 ```
 
+### Check Chrome DevTools MCP availability (for UI features)
+```bash
+python long-task-agent/scripts/check_devtools.py feature-list.json
+python long-task-agent/scripts/check_devtools.py feature-list.json --feature 3
+```
+
 ### Run tests
 ```bash
 python long-task-agent/tests/test_validate_features.py
 python long-task-agent/tests/test_init_project.py
 python long-task-agent/tests/test_check_configs.py
 python long-task-agent/tests/test_validate_guide.py
+python long-task-agent/tests/test_check_devtools.py
 ```
 
 ### Shortcut commands
@@ -73,6 +81,7 @@ python long-task-agent/tests/test_validate_guide.py
    - Orient: read `task-progress.md`, `feature-list.json`, `git log`
    - Bootstrap: run init script, smoke test; optionally create git worktree for isolation
    - **Config Gate**: check `required_configs` for target feature; block until resolved
+   - **DevTools Gate**: if target feature has `ui: true`, check Chrome DevTools MCP availability; block until resolved
    - **Plan**: write step-by-step implementation plan before coding
    - TDD Red: write failing tests (unit tests + Chrome DevTools MCP for UI)
    - TDD Green: implement minimal code to pass (self-execute or subagent-driven)
@@ -100,7 +109,7 @@ python long-task-agent/tests/test_validate_guide.py
 - **One feature per cycle**: Prevents context exhaustion
 - **JSON for feature list**: Models corrupt markdown more easily
 - **Immutable verification_steps**: Never remove or edit once created
-- **UI features require Chrome DevTools MCP testing**: Use `take_snapshot`, `click`, `fill`, `take_screenshot`
+- **UI features require Chrome DevTools MCP testing**: Mark with `"ui": true`, include `[devtools]`-prefixed verification steps, run DevTools Gate before planning
 - **Update RELEASE_NOTES.md after every git commit**: Keep a Changelog format
 
 ### Generated Persistent Artifacts
@@ -157,9 +166,17 @@ Each feature in `features` array:
   "priority": "high|medium|low",
   "status": "failing|passing",
   "verification_steps": ["step 1", "step 2"],
-  "dependencies": []
+  "dependencies": [],
+  "ui": false,
+  "ui_entry": "/optional-path"
 }
 ```
+
+UI feature fields (optional):
+- `"ui"`: boolean — when `true`, the feature requires Chrome DevTools MCP functional testing
+- `"ui_entry"`: string — entry URL path for the UI feature (used by Worker for `navigate_page`)
+- UI features **must** have at least one `verification_steps` entry prefixed with `[devtools]`
+  - Example: `"[devtools] navigate to /login, verify form fields, fill credentials, submit, verify redirect"`
 
 ## File Structure
 
@@ -181,14 +198,16 @@ long-task-agent/
 │   └── session-start.sh            # Auto-inject context on session start
 ├── scripts/
 │   ├── init_project.py             # Project scaffolding (deterministic artifacts only)
-│   ├── validate_features.py        # Feature list validation
+│   ├── validate_features.py        # Feature list validation (incl. UI field checks)
 │   ├── validate_guide.py           # LLM-generated guide structural validation
-│   └── check_configs.py            # Required config checking
+│   ├── check_configs.py            # Required config checking
+│   └── check_devtools.py           # Chrome DevTools MCP availability checking
 ├── tests/
 │   ├── test_validate_features.py   # Validator unit tests
 │   ├── test_init_project.py        # Scaffolding unit tests
 │   ├── test_check_configs.py       # Config checker unit tests
-│   └── test_validate_guide.py      # Guide validator unit tests
+│   ├── test_validate_guide.py      # Guide validator unit tests
+│   └── test_check_devtools.py      # DevTools checker unit tests
 └── references/
     ├── architecture.md             # Detailed architecture patterns
     ├── brainstorming.md            # Brainstorming & design phase process
