@@ -6,6 +6,7 @@ Creates the deterministic scaffold artifacts needed for multi-session agent work
 - feature-list.json (empty template with tech_stack, quality_gates, required_configs)
 - task-progress.md (empty progress log)
 - RELEASE_NOTES.md (living release notes, Keep a Changelog format)
+- CLAUDE.md (appended with long-task-agent reference for cross-session continuity)
 - examples/ directory with README.md (runnable examples for completed features)
 - scripts/ directory (for validate_features.py, check_configs.py, check_devtools.py)
 - docs/plans/ directory (for design docs and implementation plans)
@@ -32,6 +33,41 @@ import json
 import os
 import sys
 from datetime import datetime
+
+
+CLAUDE_MD_MARKER = "<!-- long-task-agent -->"
+
+CLAUDE_MD_REFERENCE = (
+    "\n\n<!-- long-task-agent -->\n"
+    "## Long-Task Agent\n\n"
+    "This project uses a multi-session agent workflow.\n"
+    "Read `long-task-guide.md` at the start of EVERY session "
+    "to orient yourself and pick up the next task.\n\n"
+    "Key files: `feature-list.json` (task inventory), "
+    "`task-progress.md` (session log), "
+    "`RELEASE_NOTES.md` (changelog).\n"
+    "<!-- /long-task-agent -->\n"
+)
+
+
+def append_claude_md_reference(out_dir: str, project_name: str):
+    """Append long-task-agent reference to CLAUDE.md (idempotent)."""
+    cm_path = os.path.join(out_dir, "CLAUDE.md")
+
+    if os.path.exists(cm_path):
+        with open(cm_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        if CLAUDE_MD_MARKER in content:
+            print(f"Skipped: {cm_path} (reference already exists)")
+            return
+        with open(cm_path, "a", encoding="utf-8") as f:
+            f.write(CLAUDE_MD_REFERENCE)
+        print(f"Updated: {cm_path} (appended long-task-agent reference)")
+    else:
+        with open(cm_path, "w", encoding="utf-8") as f:
+            f.write(f"# {project_name}\n")
+            f.write(CLAUDE_MD_REFERENCE)
+        print(f"Created: {cm_path}")
 
 
 
@@ -200,6 +236,9 @@ def main():
         ), f, indent=2, ensure_ascii=False)
     print(f"Created: {fl_path}")
 
+    # CLAUDE.md (append reference, never overwrite)
+    append_claude_md_reference(out_dir, args.project_name)
+
     # task-progress.md
     tp_path = os.path.join(out_dir, "task-progress.md")
     with open(tp_path, "w", encoding="utf-8") as f:
@@ -229,7 +268,7 @@ def main():
     print(f"Created: {examples_readme}")
 
     print(f"\nProject '{args.project_name}' initialized at {out_dir}")
-    print("Created: feature-list.json, task-progress.md, RELEASE_NOTES.md, examples/, scripts/, docs/plans/")
+    print("Created: feature-list.json, CLAUDE.md, task-progress.md, RELEASE_NOTES.md, examples/, scripts/, docs/plans/")
     print("TODO (LLM generates during Initializer phase):")
     print("  - long-task-guide.md  (tailored Worker guide from SKILL.md + references + design doc)")
     print("  - init.sh / init.ps1  (environment bootstrap from design doc tech stack)")

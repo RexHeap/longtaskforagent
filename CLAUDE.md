@@ -71,7 +71,7 @@ python long-task-agent/tests/test_check_devtools.py
 
 1. **Initializer Session** (runs once):
    - Reads approved design document
-   - Runs `init_project.py` to scaffold deterministic artifacts (`feature-list.json`, `task-progress.md`, `RELEASE_NOTES.md`, `examples/`, `docs/plans/`)
+   - Runs `init_project.py` to scaffold deterministic artifacts (`feature-list.json`, `CLAUDE.md` (appended), `task-progress.md`, `RELEASE_NOTES.md`, `examples/`, `docs/plans/`)
    - LLM generates project-tailored `long-task-guide.md` (validated by `validate_guide.py`)
    - LLM generates real, runnable `init.sh`/`init.ps1` based on tech stack
    - Decomposes requirements into 10-200+ verifiable features in `feature-list.json`
@@ -117,6 +117,7 @@ python long-task-agent/tests/test_check_devtools.py
 | File | Purpose |
 |------|---------|
 | `feature-list.json` | Structured task inventory with status (`failing`/`passing`) |
+| `CLAUDE.md` | Cross-session continuity reference (appended by `init_project.py`, idempotent) |
 | `task-progress.md` | Session-by-session progress log |
 | `RELEASE_NOTES.md` | Living release notes (Keep a Changelog format) |
 | `examples/` | Runnable examples demonstrating completed features |

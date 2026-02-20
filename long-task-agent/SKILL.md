@@ -43,7 +43,7 @@ Run once, after design is approved. Steps:
    python <skill-dir>/scripts/init_project.py <project-name> --path <project-dir> --lang <language>
    ```
    Use `--lang` to auto-fill tool presets; use `--line-cov`, `--branch-cov`, `--mutation-score` to override thresholds.
-   Creates: `feature-list.json`, `task-progress.md`, `RELEASE_NOTES.md`, `examples/`, `scripts/`, `docs/plans/`
+   Creates: `feature-list.json`, `CLAUDE.md` (appended), `task-progress.md`, `RELEASE_NOTES.md`, `examples/`, `scripts/`, `docs/plans/`
 3. **Copy `scripts/validate_features.py`**, `scripts/check_configs.py`, `scripts/check_devtools.py`, `scripts/validate_guide.py` into `<project-dir>/scripts/`
 4. **Verify `tech_stack` and `quality_gates`** in `feature-list.json`:
    - Confirm `language`, `test_framework`, `coverage_tool`, `mutation_tool` match the project

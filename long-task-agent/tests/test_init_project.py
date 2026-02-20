@@ -36,6 +36,7 @@ def test_creates_all_artifacts():
 
         expected_files = [
             "feature-list.json",
+            "CLAUDE.md",
             "task-progress.md",
             "RELEASE_NOTES.md",
             os.path.join("examples", "README.md"),
@@ -236,6 +237,68 @@ def test_tool_override_with_preset():
         shutil.rmtree(tmp)
 
 
+def test_creates_claude_md():
+    """CLAUDE.md should be created with marker and reference when it does not exist."""
+    tmp = tempfile.mkdtemp()
+    try:
+        run_init("test-project", tmp)
+        cm_path = os.path.join(tmp, "CLAUDE.md")
+        assert os.path.exists(cm_path), "CLAUDE.md should be created"
+        with open(cm_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        assert "<!-- long-task-agent -->" in content, "Should contain marker"
+        assert "test-project" in content, "Should contain project name"
+    finally:
+        shutil.rmtree(tmp)
+
+
+def test_appends_to_existing_claude_md():
+    """CLAUDE.md should be appended to (not overwritten) when it already exists."""
+    tmp = tempfile.mkdtemp()
+    try:
+        cm_path = os.path.join(tmp, "CLAUDE.md")
+        with open(cm_path, "w", encoding="utf-8") as f:
+            f.write("# Existing Content\n\nSome existing instructions.\n")
+        run_init("test-project", tmp)
+        with open(cm_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        assert content.startswith("# Existing Content"), "Original content should be preserved"
+        assert "<!-- long-task-agent -->" in content, "Should contain marker"
+        assert "long-task-guide.md" in content, "Should reference guide"
+    finally:
+        shutil.rmtree(tmp)
+
+
+def test_idempotent_claude_md():
+    """Running init twice should not duplicate the reference in CLAUDE.md."""
+    tmp = tempfile.mkdtemp()
+    try:
+        run_init("test-project", tmp)
+        run_init("test-project", tmp)
+        cm_path = os.path.join(tmp, "CLAUDE.md")
+        with open(cm_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        count = content.count("<!-- long-task-agent -->")
+        assert count == 1, f"Marker should appear exactly once, found {count}"
+    finally:
+        shutil.rmtree(tmp)
+
+
+def test_claude_md_contains_guide_reference():
+    """CLAUDE.md should reference long-task-guide.md, feature-list.json, task-progress.md."""
+    tmp = tempfile.mkdtemp()
+    try:
+        run_init("test-project", tmp)
+        cm_path = os.path.join(tmp, "CLAUDE.md")
+        with open(cm_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        assert "long-task-guide.md" in content, "Should reference guide"
+        assert "feature-list.json" in content, "Should reference feature list"
+        assert "task-progress.md" in content, "Should reference progress log"
+    finally:
+        shutil.rmtree(tmp)
+
+
 def test_stdout_mentions_llm_todo():
     """init_project.py output should remind about LLM-generated files."""
     tmp = tempfile.mkdtemp()
@@ -261,6 +324,10 @@ if __name__ == "__main__":
         test_lang_preset_fills_tools,
         test_custom_thresholds,
         test_tool_override_with_preset,
+        test_creates_claude_md,
+        test_appends_to_existing_claude_md,
+        test_idempotent_claude_md,
+        test_claude_md_contains_guide_reference,
         test_stdout_mentions_llm_todo,
     ]
     passed = 0
