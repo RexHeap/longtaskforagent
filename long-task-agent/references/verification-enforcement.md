@@ -1,0 +1,128 @@
+# Verification Enforcement
+
+## Iron Law
+
+**NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE.**
+
+Never say a feature "works", "passes", or "is done" unless you have just run the verification and read the output.
+
+## The Verification Gate
+
+Before marking ANY feature as `"passing"`, execute this exact sequence:
+
+```
+1. IDENTIFY  → What proof is needed? (test command, URL check, output comparison)
+2. EXECUTE   → Run the actual command / test / check
+3. READ      → Read the complete output (not just the last line)
+4. VERIFY    → Does the output match expectations? All tests green? No errors?
+5. THEN CLAIM → Only now update status to "passing"
+```
+
+**If any step fails → STOP. Do NOT mark as passing. Fix the issue first.**
+
+## Red Flag Words
+
+If you catch yourself using any of these words about feature status, STOP and re-verify:
+
+| Red Flag | What It Signals | Required Action |
+|----------|----------------|-----------------|
+| "should pass" | Haven't actually run the tests | Run the tests now |
+| "probably works" | Guessing, not verifying | Execute and verify |
+| "seems to be working" | Vague observation, not evidence | Get concrete test output |
+| "I believe this is correct" | Assertion without proof | Run verification command |
+| "this looks good" | Visual inspection, not execution | Run automated tests |
+| "based on the implementation" | Trusting code, not tests | Tests verify behavior, not code |
+| "the tests should be green" | Predicting, not observing | Run tests and read output |
+| "I've verified" (without showing output) | Claiming without evidence | Show the actual output |
+| "coverage is probably fine" | Haven't run coverage tool | Run coverage now |
+| "mutation score should be high enough" | Haven't run mutation tool | Run mutation tests now |
+
+## Verification Evidence Requirements
+
+### For Unit Tests
+```
+Required evidence: Full test runner output showing:
+- Number of tests run
+- Number passed / failed / skipped
+- 0 failures
+- Actual command that was run
+```
+
+### For Chrome DevTools MCP Functional Tests
+```
+Required evidence:
+- take_snapshot() output showing expected elements
+- Screenshot showing expected visual state
+- list_console_messages() showing no errors
+- Actual interaction results (click/fill responses)
+```
+
+### For API Endpoints
+```
+Required evidence:
+- Actual HTTP response status code
+- Response body content
+- Error case responses
+```
+
+### For Test Coverage
+```
+Required evidence:
+- Coverage tool output showing line % and branch %
+- Line coverage >= project threshold (default 90%)
+- Branch coverage >= project threshold (default 80%)
+- List of uncovered lines (if any, with justification)
+- Actual coverage command that was run
+```
+
+### For Mutation Testing
+```
+Required evidence:
+- Mutation tool output showing killed/survived/total
+- Mutation score >= project threshold (default 80%)
+- List of surviving mutants (if any, with justification or fix)
+- Actual mutation command that was run
+- Scope: incremental (changed files only) or full (milestone)
+```
+
+### For Required Configurations
+```
+Required evidence:
+- check_configs.py output showing all configs present
+- For env type: environment variable name and confirmation it's set (not the value — never log secrets)
+- For file type: file path and confirmation it exists and is non-empty
+- Actual command that was run: python scripts/check_configs.py feature-list.json --feature <id>
+```
+
+### For Build / Compile
+```
+Required evidence:
+- Build command output
+- Exit code 0
+- No warnings treated as errors
+```
+
+## Verification Timing
+
+| Event | Verification Required |
+|-------|----------------------|
+| Before planning (Config Gate) | check_configs.py output for target feature |
+| After TDD Green (all tests pass) | Full test suite output |
+| After TDD Refactor | Full test suite output (confirm still passing) |
+| Before marking "passing" | Feature-specific verification_steps executed |
+| Before code review | Re-run tests to ensure clean state |
+| Session start (smoke test) | Re-verify previously passing features |
+| After TDD Green (coverage gate) | Coverage report with line/branch percentages |
+| After TDD Refactor (mutation gate) | Mutation report with kill rate |
+| Before git commit | Full test suite (no broken code committed) |
+
+## Anti-Patterns
+
+| Anti-Pattern | Why It Fails | Correct Approach |
+|---|---|---|
+| Skip config check because "I'll just mock it" | Integration fails when real config is needed | Run Config Gate before planning; declare all external deps |
+| Mark "passing" after writing code (without running tests) | Code may have syntax errors, logic bugs, or missing imports | Run tests, read output, then mark |
+| Trust that refactoring didn't break anything | Refactoring can introduce subtle bugs | Re-run full suite after every refactor |
+| Skip re-verification at session start | Previously passing features may have regressed | Always smoke-test passing features |
+| Read only the summary line of test output | May miss individual test failures or warnings | Read the complete output |
+| Verify only the happy path | Edge cases and error paths may be broken | Run ALL verification_steps, including error scenarios |
