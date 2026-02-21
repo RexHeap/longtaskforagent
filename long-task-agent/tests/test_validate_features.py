@@ -656,6 +656,75 @@ def test_devtools_step_case_insensitive():
     assert code == 0, f"Expected exit 0 for case-insensitive [DevTools]: {stdout}"
 
 
+# --- EXPECT/REJECT format validation tests ---
+
+def test_devtools_step_with_expect_reject_no_warning():
+    """[devtools] step with both EXPECT and REJECT should produce no warnings."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "features": [
+            {
+                "id": 1, "category": "frontend", "title": "Login Page",
+                "description": "Login form", "priority": "high", "status": "failing",
+                "verification_steps": [
+                    "[devtools] /login | EXPECT: email input, password input | REJECT: placeholder TODO, console errors"
+                ],
+                "dependencies": [],
+                "ui": True
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code == 0, f"Expected exit 0 for valid EXPECT/REJECT format: {stdout}"
+    assert "warning" not in stdout.lower(), f"Expected no warnings: {stdout}"
+
+
+def test_devtools_step_missing_reject_warning():
+    """[devtools] step without REJECT clause should produce a warning (not error)."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "features": [
+            {
+                "id": 1, "category": "frontend", "title": "Login Page",
+                "description": "Login form", "priority": "high", "status": "failing",
+                "verification_steps": [
+                    "[devtools] /login | EXPECT: email input, password input"
+                ],
+                "dependencies": [],
+                "ui": True
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code == 0, f"Expected exit 0 (warning, not error) for missing REJECT: {stdout}"
+    assert "REJECT" in stdout, f"Expected warning about missing REJECT clause: {stdout}"
+
+
+def test_devtools_step_without_expect_reject_warning():
+    """[devtools] step without EXPECT or REJECT should produce warnings (not errors)."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "features": [
+            {
+                "id": 1, "category": "frontend", "title": "Login Page",
+                "description": "Login form", "priority": "high", "status": "failing",
+                "verification_steps": [
+                    "[devtools] navigate to /login, verify form fields, fill credentials"
+                ],
+                "dependencies": [],
+                "ui": True
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code == 0, f"Expected exit 0 (warnings, not errors) for old-style [devtools]: {stdout}"
+    assert "EXPECT" in stdout, f"Expected warning about missing EXPECT: {stdout}"
+    assert "REJECT" in stdout, f"Expected warning about missing REJECT: {stdout}"
+
+
 if __name__ == "__main__":
     tests = [
         test_valid_feature_list,
@@ -687,6 +756,9 @@ if __name__ == "__main__":
         test_ui_entry_not_string_fails,
         test_feature_without_ui_field_is_valid,
         test_devtools_step_case_insensitive,
+        test_devtools_step_with_expect_reject_no_warning,
+        test_devtools_step_missing_reject_warning,
+        test_devtools_step_without_expect_reject_warning,
     ]
     passed = 0
     failed = 0

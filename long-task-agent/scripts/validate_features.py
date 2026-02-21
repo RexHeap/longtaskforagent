@@ -33,17 +33,19 @@ DEVTOOLS_STEP_PREFIX = "[devtools]"
 REQUIRED_CONFIG_FIELDS = {"name", "type", "description", "required_by"}
 
 
-def validate(path: str) -> list[str]:
+def validate(path: str) -> tuple[list[str], list[str]]:
+    """Validate feature-list.json. Returns (errors, warnings)."""
     errors = []
+    warnings = []
 
     try:
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
     except (json.JSONDecodeError, FileNotFoundError) as e:
-        return [f"Cannot read feature-list.json: {e}"]
+        return [f"Cannot read feature-list.json: {e}"], []
 
     if "features" not in data:
-        return ['"features" key missing from root object']
+        return ['"features" key missing from root object'], []
 
     # Validate tech_stack if present
     tech_stack = data.get("tech_stack")
@@ -122,7 +124,7 @@ def validate(path: str) -> list[str]:
 
     features = data["features"]
     if not isinstance(features, list):
-        return ['"features" must be an array']
+        return ['"features" must be an array'], []
 
     ids_seen = set()
 
@@ -175,15 +177,30 @@ def validate(path: str) -> list[str]:
         if ui is True:
             steps = feat.get("verification_steps")
             if isinstance(steps, list) and len(steps) > 0:
-                has_devtools = any(
-                    isinstance(s, str) and s.strip().lower().startswith(DEVTOOLS_STEP_PREFIX)
-                    for s in steps
-                )
-                if not has_devtools:
+                devtools_steps = [
+                    s for s in steps
+                    if isinstance(s, str) and s.strip().lower().startswith(DEVTOOLS_STEP_PREFIX)
+                ]
+                if not devtools_steps:
                     errors.append(
                         f"{prefix} (id={fid}): UI feature (ui=true) must have at least one "
                         f"verification_step starting with '{DEVTOOLS_STEP_PREFIX}'"
                     )
+                else:
+                    # Check EXPECT/REJECT format in [devtools] steps (warnings, not errors)
+                    for step in devtools_steps:
+                        if "EXPECT:" not in step:
+                            warnings.append(
+                                f"{prefix} (id={fid}): [devtools] step missing EXPECT clause: "
+                                f"'{step[:60]}...'" if len(step) > 60 else
+                                f"{prefix} (id={fid}): [devtools] step missing EXPECT clause: '{step}'"
+                            )
+                        if "REJECT:" not in step:
+                            warnings.append(
+                                f"{prefix} (id={fid}): [devtools] step missing REJECT clause: "
+                                f"'{step[:60]}...'" if len(step) > 60 else
+                                f"{prefix} (id={fid}): [devtools] step missing REJECT clause: '{step}'"
+                            )
 
         # Check dependencies
         deps = feat.get("dependencies", [])
@@ -215,7 +232,7 @@ def validate(path: str) -> list[str]:
                         f"required_by references feature id={ref_id} which does not exist"
                     )
 
-    return errors
+    return errors, warnings
 
 
 def main():
@@ -223,7 +240,12 @@ def main():
         print("Usage: validate_features.py <path/to/feature-list.json>")
         sys.exit(1)
 
-    errors = validate(sys.argv[1])
+    result = validate(sys.argv[1])
+    # Support both old (list) and new (tuple) return formats
+    if isinstance(result, tuple):
+        errors, warnings = result
+    else:
+        errors, warnings = result, []
 
     if errors:
         print(f"VALIDATION FAILED — {len(errors)} error(s):\n")
@@ -259,7 +281,16 @@ def main():
             if lang != "TODO":
                 summary += f" | Language: {lang}"
 
+        if warnings:
+            summary += f" | {len(warnings)} warning(s)"
+
         print(summary)
+
+        if warnings:
+            print("\nWarnings:")
+            for w in warnings:
+                print(f"  - {w}")
+
         sys.exit(0)
 
 

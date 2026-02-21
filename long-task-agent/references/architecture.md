@@ -223,7 +223,24 @@ Each worker cycle follows this exact sequence.
 ### Phase 3: TDD Red — write failing tests first
 8. Pick the highest-priority `"failing"` feature whose dependencies are all `"passing"`
 9. Write unit tests that cover the feature's `verification_steps` — tests MUST fail (no implementation yet)
+   - Follow test scenario rules (see [test-scenario-rules.md](test-scenario-rules.md)):
+     - Include happy path, error handling, boundary, and security scenarios
+     - Ensure negative test ratio >= 40%
+     - Ensure low-value assertion ratio <= 20%
+     - Apply the "wrong implementation" challenge to each test
 10. If feature has UI: write Chrome DevTools MCP functional tests (snapshot, click, fill, screenshot assertions) — tests MUST fail
+    - Use EXPECT/REJECT format in `[devtools]` verification steps
+    - Include automated UI error detection script via `evaluate_script()`
+    - Include console error gate via `list_console_messages(types=["error"])`
+    - See [ui-error-detection.md](ui-error-detection.md) for full specification
+
+### Phase 3.5: Test Plan Review — verify test quality (HARD GATE)
+10a. Dispatch **independent subagent** (not self-review) with feature spec + test code + test run output
+10b. Subagent fills structured scoring rubric (sections A-D): scenario completeness, assertion quality, test independence, UI checks
+10c. **Verdict rule**: any NO in rubric → FAIL → fix tests and re-submit
+10d. Maximum 2 review rounds; if still failing, escalate to user via `AskUserQuestion`
+10e. Only proceed to Phase 4 when verdict is PASS
+10f. See [test-plan-review.md](test-plan-review.md) for full rubric and dispatch pattern
 
 ### Phase 4: TDD Green — implement to pass tests
 11. Write minimal code to make ALL tests pass (unit tests + functional tests)
@@ -314,13 +331,19 @@ Initializer → scaffold → populate features → commit → begin first Worker
 | Guess-and-fix debugging | Random fixes waste time and may introduce new bugs | Follow systematic debugging — trace root cause. See [systematic-debugging.md](systematic-debugging.md) |
 | Skipping code review | Spec violations and quality issues compound across features | Two-stage review after every feature. See [code-review.md](code-review.md) |
 | Claiming "it works" without evidence | Unverified claims lead to false confidence | Show actual test output before marking passing. See [verification-enforcement.md](verification-enforcement.md) |
+| Skipping Test Plan Review | Bad tests waste entire TDD cycle; low-value assertions inflate coverage | Dispatch independent subagent reviewer after TDD Red. See [test-plan-review.md](test-plan-review.md) |
+| Accepting low-value assertions | Tests with None/isinstance/import checks provide zero bug-finding ability | Enforce <= 20% low-value assertion ratio. See [testing-anti-patterns.md](testing-anti-patterns.md) #14 |
+| Missing REJECT clause in UI tests | LLM only confirms positive expectations, misses obvious UI errors | Require EXPECT/REJECT format for all [devtools] steps. See [ui-error-detection.md](ui-error-detection.md) |
+| Self-reviewing test suite | Same LLM has same blind spots as test author | Always dispatch independent subagent for Test Plan Review |
 
 ## Verification Strategy
 
 ### For ALL features (TDD mandatory):
 1. **Red**: Write failing tests first — tests define the expected behavior
-2. **Green**: Write minimal implementation to pass tests
-3. **Refactor**: Clean up while keeping tests green
+   - Follow [test-scenario-rules.md](test-scenario-rules.md): category coverage, negative ratio >= 40%, low-value assertions <= 20%
+2. **Test Plan Review**: Independent subagent reviews test quality before implementation — see [test-plan-review.md](test-plan-review.md)
+3. **Green**: Write minimal implementation to pass tests
+4. **Refactor**: Clean up while keeping tests green
 
 ### For API / backend features:
 - Unit tests for business logic (pytest, jest, etc.)
@@ -329,14 +352,12 @@ Initializer → scaffold → populate features → commit → begin first Worker
 
 ### For UI / frontend features (Chrome DevTools MCP required):
 - Unit tests for component logic
-- **Functional tests via Chrome DevTools MCP**:
-  - `take_snapshot` — capture accessibility tree, verify expected elements exist
-  - `click` / `fill` — simulate user interactions
-  - `take_screenshot` — capture visual state for verification
-  - `wait_for` — confirm dynamic content appears
-  - `list_console_messages` — check for runtime errors
-  - `evaluate_script` — assert DOM state programmatically
-- Test flow: navigate → snapshot → interact → snapshot → assert expected state
+- **Functional tests via Chrome DevTools MCP** (three-layer error detection):
+  - **Layer 1**: Automated error detection script via `evaluate_script()` — HARD FAIL if errors found
+  - **Layer 2**: EXPECT/REJECT format in verification steps — forces error-seeking
+  - **Layer 3**: Console error gate via `list_console_messages(types=["error"])` — HARD FAIL if errors
+  - See [ui-error-detection.md](ui-error-detection.md) for full specification
+- Test flow: navigate → wait → error detection → snapshot → EXPECT/REJECT → interact → error detection → snapshot → console check
 
 ### For ALL features (Coverage & Mutation mandatory):
 - **Coverage**: Run language-specific coverage tool, verify line/branch thresholds met
@@ -368,40 +389,54 @@ Initializer → scaffold → populate features → commit → begin first Worker
 ┌─── TDD Red ─────────────┐
 │ 1. Read feature spec     │
 │ 2. Write unit tests      │
+│    (scenario rules:      │
+│     40% negative,        │
+│     ≤20% low-value)      │
 │ 3. Write [devtools]      │
 │    tests (if ui=true)    │
+│    (EXPECT/REJECT +      │
+│     error detection)     │
 │ 4. Run tests → ALL FAIL  │
 └──────────┬───────────────┘
            ↓
+┌─── Test Plan Review ────┐
+│ 5. Dispatch subagent     │
+│    reviewer              │
+│ 6. Scoring rubric A-D    │
+│ 7. Any NO → FAIL →      │
+│    fix tests, re-review  │
+│ 8. Max 2 rounds          │
+└──────────┬───────────────┘
+           ↓
 ┌─── TDD Green ───────────┐
-│ 5. Write minimal code    │
-│ 6. Run tests → ALL PASS  │
+│ 9. Write minimal code    │
+│ 10. Run tests → ALL PASS │
 └──────────┬───────────────┘
            ↓
 ┌─── Coverage Gate ────────┐
-│ 7. Run coverage tool     │
-│ 8. Line % >= threshold?  │
-│    Branch % >= threshold?│
-│ 9. If below → more tests │
+│ 11. Run coverage tool    │
+│ 12. Line % >= threshold? │
+│     Branch % >= threshold│
+│ 13. If below → more tests│
 └──────────┬───────────────┘
            ↓
 ┌─── TDD Refactor ────────┐
-│ 10. Clean up code        │
-│ 11. Run tests → STILL    │
+│ 14. Clean up code        │
+│ 15. Run tests → STILL    │
 │     ALL PASS             │
 └──────────┬───────────────┘
            ↓
 ┌─── Mutation Gate ────────┐
-│ 12. Run mutation tool    │
+│ 16. Run mutation tool    │
 │     (incremental)        │
-│ 13. Score >= threshold?  │
-│ 14. If below → improve   │
+│ 17. Score >= threshold?  │
+│ 18. If below → improve   │
 │     assertions           │
 └──────────┬───────────────┘
            ↓
 ┌─── Verify & Mark ────────┐
-│ 15. All evidence recorded │
-│ 16. Mark "passing"        │
+│ 19. All evidence recorded │
+│ 20. Mark "passing"        │
 └───────────────────────────┘
 ```
 
@@ -414,22 +449,30 @@ Initializer → scaffold → populate features → commit → begin first Worker
 python scripts/check_devtools.py feature-list.json --feature <id>
 ```
 
-**`[devtools]` verification step prefix**: UI features must have at least one `verification_steps` entry starting with `[devtools]`. This prefix:
-- Signals to `validate_features.py` that the feature has browser-level verification
-- Tells the Worker to execute these steps using Chrome DevTools MCP tools
-- Example: `"[devtools] navigate to /login, verify form fields exist, fill credentials, submit, verify redirect to /dashboard"`
+**`[devtools]` verification step format**: UI features must have at least one `verification_steps` entry starting with `[devtools]`, using the **EXPECT/REJECT format**:
+- `[devtools] <page-path> | EXPECT: <positive criteria> | REJECT: <negative criteria>`
+- **EXPECT**: Elements, text, or states that MUST be present
+- **REJECT**: Conditions that MUST NOT be present (forces error-seeking behavior)
+- Both clauses are required — see [ui-error-detection.md](ui-error-detection.md) for details
+- Example: `"[devtools] /login | EXPECT: email input, password input, submit button | REJECT: placeholder 'TODO', overlapping elements, console errors"`
 
 **Test sequence** for each `[devtools]` step:
 ```
 1. Navigate to relevant page:      navigate_page(url)  (use ui_entry if set)
-2. Capture initial state:          take_snapshot()
-3. Verify expected elements:       check uid presence in snapshot
-4. Perform user action:            click(uid) / fill(uid, value)
-5. Wait for response:              wait_for(text)
-6. Capture result state:           take_snapshot() / take_screenshot()
-7. Assert expected outcome:        verify elements, text, or visual state
-8. Check for errors:               list_console_messages(types=["error"])
+2. Wait for page load:             wait_for(expected_text)
+3. Run automated error detection:  evaluate_script(ui_error_detector)  ← HARD FAIL if count > 0
+4. Capture initial state:          take_snapshot()
+5. Verify EXPECT criteria:         check uid/text presence in snapshot
+6. Verify REJECT criteria:         confirm REJECT conditions are NOT present
+7. Perform user action:            click(uid) / fill(uid, value)
+8. Wait for response:              wait_for(text)
+9. Run error detection again:      evaluate_script(ui_error_detector)  ← HARD FAIL if count > 0
+10. Capture result state:          take_snapshot() / take_screenshot()
+11. Assert expected outcome:       verify EXPECT elements, text, or visual state
+12. Check for console errors:      list_console_messages(types=["error"])  ← HARD FAIL if count > 0
 ```
+
+See [ui-error-detection.md](ui-error-detection.md) for the automated detection script and the three-layer detection model.
 
 ## Multi-Language Tool Quick Reference
 

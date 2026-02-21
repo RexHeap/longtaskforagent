@@ -170,6 +170,113 @@ def test_process_data():
 
 **Fix**: Always pass the coverage gate before running mutation tests. Coverage first, mutation second.
 
+### 14. Low-Value Assertions (Existence/Type/Import Tests)
+
+**Symptom**: Tests assert existence, type, or import success — things that would only fail if the language runtime itself is broken, not if the implementation has a bug.
+
+**Examples (ALL BAD)**:
+
+```python
+# BAD: Testing that a function returns something (not WHAT it returns)
+def test_get_user():
+    result = get_user(1)
+    assert result is not None
+
+# BAD: Testing that import works
+def test_import():
+    from mymodule import MyClass
+    assert MyClass is not None
+
+# BAD: Testing type instead of behavior
+def test_create_user():
+    result = create_user("Alice", "alice@example.com")
+    assert isinstance(result, User)
+
+# BAD: Testing that a list has items (but not WHICH items)
+def test_list_users():
+    result = list_users()
+    assert len(result) > 0
+
+# BAD: Testing that a dict has a key (but not WHAT value)
+def test_get_profile():
+    result = get_profile(1)
+    assert "name" in result
+
+# BAD: Testing truthiness instead of value
+def test_validate():
+    result = validate_email("test@example.com")
+    assert bool(result)
+
+# BAD: Testing that no exception is raised (without checking result)
+def test_process():
+    result = process_data(sample)  # No assertion on result at all
+```
+
+**Why they're harmful**:
+- They pass regardless of what the implementation actually returns, as long as it returns *something*
+- They inflate coverage and test counts with zero bug-finding ability
+- Mutation testing may not catch all of these — some mutations preserve type/existence
+- They crowd out meaningful assertions, creating false confidence in test suite quality
+
+**The "Wrong Implementation" Test**: For each assertion, ask: *"What wrong implementation would this test NOT catch?"* If the answer is "almost any wrong implementation" → the assertion is low-value.
+
+Example: `assert result is not None` — a function returning `User(name="WRONG", email="WRONG")` passes this test. A function returning `42` passes this test. A function returning `""` passes this test. It catches exactly one failure: returning `None`.
+
+**Fix — assert specific observable outcomes**:
+
+```python
+# GOOD: Assert specific values
+def test_get_user():
+    result = get_user(1)
+    assert result.name == "Alice"
+    assert result.email == "alice@example.com"
+
+# GOOD: Assert specific items in collection
+def test_list_users():
+    result = list_users()
+    assert len(result) == 3
+    assert result[0].name == "Alice"
+
+# GOOD: Assert specific response structure AND content
+def test_get_profile():
+    result = get_profile(1)
+    assert result["name"] == "Alice"
+    assert result["role"] == "admin"
+
+# GOOD: Assert specific boolean outcome for specific input
+def test_validate():
+    assert validate_email("test@example.com") is True
+    assert validate_email("not-an-email") is False
+
+# GOOD: Assert specific error for specific invalid input
+def test_create_user_invalid():
+    with pytest.raises(ValidationError, match="email is required"):
+        create_user(name="test", email="")
+
+# GOOD: Assert specific state change
+def test_process():
+    result = process_data(sample)
+    assert result.status == "completed"
+    assert result.processed_count == 42
+```
+
+**Quantitative rule**: In any test suite, the ratio of low-value assertions to total assertions must not exceed **20%**:
+
+```
+low_value_count / total_assertion_count <= 0.20
+```
+
+Low-value assertion patterns (for counting):
+- `assert x is not None` / `assert x is None` (when testing defaults, not behavior)
+- `assert isinstance(x, SomeType)`
+- `assert len(x) > 0` (without checking contents)
+- `assert "key" in dict` (without checking value)
+- `assert bool(x)` / `assert x` (truthiness only)
+- `from module import X; assert X is not None` (import test)
+- Tests with no assertion at all (already covered by anti-pattern #9)
+
+**Relationship to other anti-patterns**: This is more specific than #9 (assertion-free tests) and #11 (gaming coverage). A test can have assertions and still be low-value if those assertions only verify existence/type. Mutation testing (#12) catches some but not all low-value assertions — the 20% ratio rule provides an additional check at the Test Plan Review stage.
+
 ## Quick Reference: Test Writing Checklist
 
 Before marking a test as complete:
@@ -182,6 +289,9 @@ Before marking a test as complete:
 - [ ] Test tests behavior, not implementation details
 - [ ] No test-only methods added to production code
 - [ ] Mocks are at boundaries, not internal layers
+- [ ] No low-value assertions (None checks, isinstance, import, len>0, key-in-dict, truthiness)
+- [ ] Low-value assertion ratio <= 20% of total assertions
+- [ ] Each assertion would fail for a plausible wrong implementation ("wrong implementation" test)
 - [ ] Coverage meets project thresholds (line >= 90%, branch >= 80%)
 - [ ] Mutation score meets threshold (>= 80%) for changed files
 - [ ] No surviving mutants without justification

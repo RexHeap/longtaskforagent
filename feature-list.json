@@ -1,0 +1,211 @@
+{
+  "project": "test-quality-enhancement",
+  "created": "2026-02-22",
+  "tech_stack": {
+    "language": "python",
+    "test_framework": "pytest",
+    "coverage_tool": "pytest-cov",
+    "mutation_tool": "mutmut"
+  },
+  "quality_gates": {
+    "line_coverage_min": 90,
+    "branch_coverage_min": 80,
+    "mutation_score_min": 80
+  },
+  "required_configs": [],
+  "features": [
+    {
+      "id": 1,
+      "category": "reference-doc",
+      "title": "Anti-pattern #14: Low-Value Assertions",
+      "description": "Add new anti-pattern to testing-anti-patterns.md defining low-value assertion patterns (None checks, isinstance, import tests, len>0, key-in-dict, bool), with code examples, the 'wrong implementation' test, and the 20% ratio rule.",
+      "priority": "high",
+      "status": "passing",
+      "verification_steps": [
+        "Anti-pattern #14 section exists in testing-anti-patterns.md with title 'Low-Value Assertions'",
+        "Contains at least 6 BAD code examples (assert None, isinstance, import, len>0, key-in-dict, bool)",
+        "Contains corresponding GOOD fixes for each BAD example",
+        "Defines the 'wrong implementation' test criterion",
+        "States the quantitative rule: low_value_count / total_assertions <= 0.20",
+        "Test Writing Checklist updated with low-value assertion check item"
+      ],
+      "dependencies": [],
+      "ui": false
+    },
+    {
+      "id": 2,
+      "category": "reference-doc",
+      "title": "Test Scenario Rules Reference",
+      "description": "Create references/test-scenario-rules.md defining rules for LLM test scenario generation: category coverage (happy path, error handling, boundary, security), negative ratio >= 40%, assertion quality <= 20% low-value, the 'wrong implementation' challenge, and UI-specific rules.",
+      "priority": "high",
+      "status": "passing",
+      "verification_steps": [
+        "File references/test-scenario-rules.md exists",
+        "Defines 4 scenario categories: happy path, error handling, boundary/edge cases, security",
+        "States negative ratio rule: >= 40% of test functions must test non-happy-path",
+        "States assertion quality rule: <= 20% low-value assertions",
+        "Describes the 'wrong implementation' challenge with concrete example",
+        "Includes UI-specific rules section (EXPECT/REJECT format, automated detection, console gate)",
+        "Contains a quick-reference checklist for test authors"
+      ],
+      "dependencies": [],
+      "ui": false
+    },
+    {
+      "id": 3,
+      "category": "reference-doc",
+      "title": "UI Error Detection Reference",
+      "description": "Create references/ui-error-detection.md with three-layer UI error detection: Layer 1 automated JS detection script (zero-size elements, off-viewport, bad text, overlaps, empty containers, broken images), Layer 2 EXPECT/REJECT verification_step format, Layer 3 console error hard gate.",
+      "priority": "high",
+      "status": "passing",
+      "verification_steps": [
+        "File references/ui-error-detection.md exists",
+        "Contains complete JS detection script for evaluate_script() with all 6 checks (zero-size, off-viewport, bad-text, overlap, empty-container, broken-image)",
+        "Defines EXPECT/REJECT format: [devtools] <page> | EXPECT: <criteria> | REJECT: <criteria>",
+        "States console error hard gate rule with [expect-console-error] exception mechanism",
+        "States that automated detection errors count > 0 is a hard FAIL (not LLM judgment)",
+        "Includes integration guide showing how Worker executes each layer in sequence"
+      ],
+      "dependencies": [],
+      "ui": false
+    },
+    {
+      "id": 4,
+      "category": "reference-doc",
+      "title": "Test Plan Review Reference",
+      "description": "Create references/test-plan-review.md defining the Test Plan Review phase: purpose, when it runs (after TDD Red, before TDD Green), structured scoring rubric (Scenario Completeness, Assertion Quality, Test Independence, UI Checks), verdict computation rules, max 2 rounds, escalation.",
+      "priority": "high",
+      "status": "passing",
+      "verification_steps": [
+        "File references/test-plan-review.md exists",
+        "Defines timing: after TDD Red, before TDD Green, as hard gate",
+        "Contains structured scoring rubric with 4 sections (A-D) and binary YES/NO items",
+        "Section A: Scenario Completeness (4 items including negative ratio >= 40%)",
+        "Section B: Assertion Quality (4 items including low-value ratio <= 20%)",
+        "Section C: Test Independence (3 items including 'wrong implementation' check)",
+        "Section D: UI Checks (4 items, conditional on ui=true)",
+        "States verdict rule: any NO → FAIL, reviewer cannot override",
+        "States max 2 review rounds, then escalate to user",
+        "Describes dispatch as independent subagent (not self-review)"
+      ],
+      "dependencies": [1, 2, 3],
+      "ui": false
+    },
+    {
+      "id": 5,
+      "category": "agent-prompt",
+      "title": "Test Plan Reviewer Prompt Template",
+      "description": "Create agents/prompts/test-plan-reviewer-prompt.md with adversarial framing: Step 1 find at least 3 issues, Step 2 challenge own findings, Step 3 fill scoring rubric, Step 4 compute verdict. Includes template variables for feature spec, test code, test run output.",
+      "priority": "high",
+      "status": "passing",
+      "verification_steps": [
+        "File agents/prompts/test-plan-reviewer-prompt.md exists",
+        "Contains template variables: {{FEATURE_JSON}}, {{TEST_CODE}}, {{TEST_RUN_OUTPUT}}",
+        "Step 1 requires finding at least 3 potential issues before verdict",
+        "Step 2 requires challenging each finding with evidence",
+        "Step 3 contains the full scoring rubric from test-plan-review.md (sections A-D)",
+        "Step 4 states verdict is computed from rubric (not subjective)",
+        "Includes the 'wrong implementation' challenge: reviewer must imagine 2-3 plausible wrong implementations",
+        "States reviewer has NOT seen implementation code"
+      ],
+      "dependencies": [4],
+      "ui": false
+    },
+    {
+      "id": 6,
+      "category": "reference-doc",
+      "title": "Plan Template Alignment with Worker Workflow",
+      "description": "Update references/plan-writing.md: expand 4-task template to 7-task template adding Test Plan Review checkpoint (Task 2), Coverage Gate (Task 4), and Mutation Gate (Task 6). Update Verification checklist to include coverage/mutation/assertion quality items.",
+      "priority": "high",
+      "status": "passing",
+      "verification_steps": [
+        "plan-writing.md contains 7 tasks: Write tests, Test Plan Review, Implement, Coverage Gate, Refactor, Mutation Gate, Create example",
+        "Task 2 explicitly states it is a hard gate blocking implementation",
+        "Task 4 (Coverage Gate) references quality_gates thresholds",
+        "Task 6 (Mutation Gate) references quality_gates thresholds",
+        "Verification checklist includes coverage, mutation, and assertion quality items",
+        "Existing plan writing rules preserved and still valid"
+      ],
+      "dependencies": [4],
+      "ui": false
+    },
+    {
+      "id": 7,
+      "category": "agent-prompt",
+      "title": "SubAgent Review Enhancement",
+      "description": "Update agents/code-reviewer.md, agents/prompts/spec-reviewer-prompt.md, agents/prompts/code-quality-reviewer-prompt.md with adversarial framing (find 3 issues first), structured YES/NO scoring rubric, test quality checks (low-value assertions, negative ratio), and dual review mechanism for high-priority/UI features.",
+      "priority": "high",
+      "status": "passing",
+      "verification_steps": [
+        "code-reviewer.md describes adversarial review approach (find issues first, then verdict)",
+        "code-reviewer.md describes dual review mechanism for priority=high or ui=true features",
+        "spec-reviewer-prompt.md uses structured YES/NO scoring rubric instead of free-text verdict",
+        "spec-reviewer-prompt.md requires finding at least 3 potential issues before verdict",
+        "code-quality-reviewer-prompt.md includes test quality items: low-value assertion check, negative ratio",
+        "code-quality-reviewer-prompt.md uses structured YES/NO scoring rubric",
+        "All three files maintain backward compatibility with existing dispatch patterns"
+      ],
+      "dependencies": [1],
+      "ui": false
+    },
+    {
+      "id": 8,
+      "category": "architecture",
+      "title": "Architecture Document Update",
+      "description": "Update references/architecture.md: insert Test Plan Review phase into Worker workflow (between TDD Red and TDD Green), update TDD workflow ASCII diagram, add UI error detection to Chrome DevTools test pattern, add new anti-patterns (skipping test plan review, low-value assertions, missing REJECT clause).",
+      "priority": "high",
+      "status": "passing",
+      "verification_steps": [
+        "Worker Session Workflow section includes Test Plan Review between Phase 3 (TDD Red) and Phase 4 (TDD Green)",
+        "TDD Workflow Detail ASCII diagram includes Test Plan Review box",
+        "Chrome DevTools MCP Functional Test Pattern includes automated error detection script step",
+        "Chrome DevTools test pattern includes EXPECT/REJECT format requirement",
+        "Anti-Patterns table includes 'Skipping Test Plan Review' entry",
+        "Anti-Patterns table includes 'Accepting low-value assertions' entry",
+        "Verification Strategy section references test-scenario-rules.md and test-plan-review.md"
+      ],
+      "dependencies": [3, 4, 6],
+      "ui": false
+    },
+    {
+      "id": 9,
+      "category": "skill-definition",
+      "title": "SKILL.md and CLAUDE.md Update",
+      "description": "Update SKILL.md: add Test Plan Review step (3a) to Worker phase between TDD Red and TDD Green, update Critical Rules with test plan review and assertion quality rules, add Red Flags for skipping review. Update project CLAUDE.md with references to new docs.",
+      "priority": "high",
+      "status": "passing",
+      "verification_steps": [
+        "SKILL.md Phase 2 Worker includes step 3a 'Test Plan Review' between TDD Red (step 3) and TDD Green (step 4)",
+        "SKILL.md Critical Rules include 'Test Plan Review before implementation'",
+        "SKILL.md Critical Rules include 'Low-value assertions <= 20%'",
+        "SKILL.md Critical Rules include 'UI features require EXPECT/REJECT format and automated error detection'",
+        "SKILL.md Red Flags table includes 'I'll skip test review for this simple feature'",
+        "SKILL.md Resources table includes test-plan-review.md, test-scenario-rules.md, ui-error-detection.md",
+        "Project CLAUDE.md See Also section includes references to new docs"
+      ],
+      "dependencies": [4, 8],
+      "ui": false
+    },
+    {
+      "id": 10,
+      "category": "script",
+      "title": "Validate Features Script: EXPECT/REJECT Validation",
+      "description": "Update scripts/validate_features.py to validate that [devtools] verification steps in UI features use EXPECT/REJECT format. Add warning for missing REJECT clause. Update tests/test_validate_features.py with test cases for the new validation.",
+      "priority": "medium",
+      "status": "passing",
+      "verification_steps": [
+        "validate_features.py checks [devtools] steps for EXPECT/REJECT format presence",
+        "validate_features.py emits warning (not error) when [devtools] step lacks REJECT clause",
+        "validate_features.py emits warning when [devtools] step lacks EXPECT clause",
+        "Existing validation rules still pass (no regressions)",
+        "test_validate_features.py has test for valid EXPECT/REJECT format",
+        "test_validate_features.py has test for missing REJECT clause warning",
+        "test_validate_features.py has test for [devtools] step without EXPECT/REJECT (warning)",
+        "All existing tests pass",
+        "All new tests pass"
+      ],
+      "dependencies": [3],
+      "ui": false
+    }
+  ]
+}

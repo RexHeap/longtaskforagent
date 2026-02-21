@@ -176,8 +176,8 @@ Each feature in `features` array:
 UI feature fields (optional):
 - `"ui"`: boolean — when `true`, the feature requires Chrome DevTools MCP functional testing
 - `"ui_entry"`: string — entry URL path for the UI feature (used by Worker for `navigate_page`)
-- UI features **must** have at least one `verification_steps` entry prefixed with `[devtools]`
-  - Example: `"[devtools] navigate to /login, verify form fields, fill credentials, submit, verify redirect"`
+- UI features **must** have at least one `verification_steps` entry prefixed with `[devtools]` using EXPECT/REJECT format
+  - Example: `"[devtools] /login | EXPECT: email input, password input, submit button | REJECT: placeholder 'TODO', overlapping elements, console errors"`
 
 ## File Structure
 
@@ -189,7 +189,8 @@ long-task-agent/
 │   └── prompts/                    # Subagent prompt templates
 │       ├── implementer-prompt.md
 │       ├── spec-reviewer-prompt.md
-│       └── code-quality-reviewer-prompt.md
+│       ├── code-quality-reviewer-prompt.md
+│       └── test-plan-reviewer-prompt.md
 ├── commands/                       # User shortcut commands
 │   ├── init.md                     # /long-task:init
 │   ├── work.md                     # /long-task:work
@@ -218,7 +219,10 @@ long-task-agent/
     ├── systematic-debugging.md     # Four-phase debugging process
     ├── subagent-development.md     # Subagent-driven development mode
     ├── worktree-isolation.md       # Git worktree isolation & branch finishing
-    ├── testing-anti-patterns.md    # Common testing mistakes catalog
+    ├── testing-anti-patterns.md    # Common testing mistakes catalog (incl. #14 low-value assertions)
+    ├── test-scenario-rules.md     # Test scenario generation rules (category coverage, ratios)
+    ├── test-plan-review.md        # Test Plan Review phase (scoring rubric, dispatch)
+    ├── ui-error-detection.md      # Three-layer UI error detection specification
     ├── coverage-and-mutation.md   # Coverage tracking & mutation testing (multi-language)
     └── roadmap.md                  # Future enhancements roadmap
 ```
@@ -235,3 +239,16 @@ long-task-agent/
 - [long-task-agent/references/subagent-development.md](long-task-agent/references/subagent-development.md) - Subagent-driven development
 - [long-task-agent/references/worktree-isolation.md](long-task-agent/references/worktree-isolation.md) - Worktree isolation & branch finishing
 - [long-task-agent/references/coverage-and-mutation.md](long-task-agent/references/coverage-and-mutation.md) - Coverage tracking & mutation testing (multi-language)
+- [long-task-agent/references/test-scenario-rules.md](long-task-agent/references/test-scenario-rules.md) - Test scenario generation rules
+- [long-task-agent/references/test-plan-review.md](long-task-agent/references/test-plan-review.md) - Test Plan Review phase
+- [long-task-agent/references/ui-error-detection.md](long-task-agent/references/ui-error-detection.md) - UI error detection specification
+
+
+<!-- long-task-agent -->
+## Long-Task Agent
+
+This project uses a multi-session agent workflow.
+Read `long-task-guide.md` at the start of EVERY session to orient yourself and pick up the next task.
+
+Key files: `feature-list.json` (task inventory), `task-progress.md` (session log), `RELEASE_NOTES.md` (changelog).
+<!-- /long-task-agent -->
