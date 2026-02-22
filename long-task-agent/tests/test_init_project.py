@@ -173,6 +173,49 @@ def test_feature_list_has_required_configs():
         shutil.rmtree(tmp)
 
 
+def test_feature_list_has_constraints():
+    """feature-list.json should contain constraints as empty array."""
+    tmp = tempfile.mkdtemp()
+    try:
+        run_init("test-project", tmp)
+        fl_path = os.path.join(tmp, "feature-list.json")
+        with open(fl_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        assert "constraints" in data, "Missing 'constraints' key"
+        assert isinstance(data["constraints"], list)
+        assert len(data["constraints"]) == 0
+    finally:
+        shutil.rmtree(tmp)
+
+
+def test_feature_list_has_assumptions():
+    """feature-list.json should contain assumptions as empty array."""
+    tmp = tempfile.mkdtemp()
+    try:
+        run_init("test-project", tmp)
+        fl_path = os.path.join(tmp, "feature-list.json")
+        with open(fl_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        assert "assumptions" in data, "Missing 'assumptions' key"
+        assert isinstance(data["assumptions"], list)
+        assert len(data["assumptions"]) == 0
+    finally:
+        shutil.rmtree(tmp)
+
+
+def test_claude_md_references_project_context():
+    """CLAUDE.md should reference docs/project-context.md."""
+    tmp = tempfile.mkdtemp()
+    try:
+        run_init("test-project", tmp)
+        cm_path = os.path.join(tmp, "CLAUDE.md")
+        with open(cm_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        assert "project-context.md" in content, "Should reference docs/project-context.md"
+    finally:
+        shutil.rmtree(tmp)
+
+
 def test_lang_preset_fills_tools():
     """--lang python should auto-fill pytest, pytest-cov, mutmut."""
     tmp = tempfile.mkdtemp()
@@ -329,6 +372,9 @@ if __name__ == "__main__":
         test_idempotent_claude_md,
         test_claude_md_contains_guide_reference,
         test_stdout_mentions_llm_todo,
+        test_feature_list_has_constraints,
+        test_feature_list_has_assumptions,
+        test_claude_md_references_project_context,
     ]
     passed = 0
     failed = 0

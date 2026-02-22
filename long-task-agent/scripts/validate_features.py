@@ -73,6 +73,26 @@ def validate(path: str) -> tuple[list[str], list[str]]:
                             f"quality_gates.{key} must be a number between 0 and 100, got {val!r}"
                         )
 
+    # Validate constraints if present
+    constraints = data.get("constraints")
+    if constraints is not None:
+        if not isinstance(constraints, list):
+            errors.append('"constraints" must be an array')
+        else:
+            for ci, item in enumerate(constraints):
+                if not isinstance(item, str):
+                    errors.append(f"constraints[{ci}]: must be a string, got {type(item).__name__}")
+
+    # Validate assumptions if present
+    assumptions = data.get("assumptions")
+    if assumptions is not None:
+        if not isinstance(assumptions, list):
+            errors.append('"assumptions" must be an array')
+        else:
+            for ai, item in enumerate(assumptions):
+                if not isinstance(item, str):
+                    errors.append(f"assumptions[{ai}]: must be a string, got {type(item).__name__}")
+
     # Validate required_configs if present
     required_configs = data.get("required_configs")
     if required_configs is not None:
@@ -268,6 +288,14 @@ def main():
             branch_min = qg.get("branch_coverage_min", "N/A")
             mutation_min = qg.get("mutation_score_min", "N/A")
             summary += f" | Quality gates: line>={line_min}%, branch>={branch_min}%, mutation>={mutation_min}%"
+
+        # Show constraints/assumptions counts
+        ct = data.get("constraints", [])
+        if ct:
+            summary += f" | Constraints: {len(ct)}"
+        at = data.get("assumptions", [])
+        if at:
+            summary += f" | Assumptions: {len(at)}"
 
         # Show required configs count
         rc = data.get("required_configs", [])

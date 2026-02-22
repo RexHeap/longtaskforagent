@@ -38,7 +38,35 @@ Ask clarifying questions **one at a time** using `AskUserQuestion`, focused on *
 - Scope boundaries ("Should the MVP include feature X or is that post-launch?")
 - Priority conflicts ("Both A and B are marked high-priority but they conflict — which wins?")
 
-**When to stop:** Move to Step 3 when you can describe the system's purpose, key constraints, and how to verify success — without guessing.
+**Non-Functional Requirements probe** — ask when not explicitly covered in the requirement doc:
+- Performance: "What's the acceptable response time? Expected concurrent users / requests per second?"
+- Security: "Any auth, encryption, or compliance requirements? (e.g., OWASP Top 10, GDPR, HIPAA)"
+- Availability: "What's the uptime target? Any SLA/SLO? Acceptable downtime window?"
+- Scalability: "What user or data growth is expected in the next 12 months?"
+- Compatibility: "Target browsers / OS / runtime versions? Any accessibility requirements (WCAG)?"
+
+**System constraints probe** — capture hard limits that shape architecture:
+- Deployment: "Any hosting restrictions? (offline/intranet/specific cloud/no Docker)"
+- Existing infrastructure: "Must reuse any existing DB, API, or service? Must stay compatible with any version?"
+- Legal/license: "Any open-source license restrictions? (e.g., GPL forbidden)"
+- Team/budget: "Any runtime cost ceilings? Team size or skill constraints that affect tech choices?"
+
+**Assumptions probe** — surface implicit beliefs before they cause cross-session drift:
+- "What do you assume is true about the environment that callers won't need to verify?"
+- "Are there upstream services or data that are expected to be pre-validated before reaching this system?"
+- "Which behaviours from the existing system must be preserved unchanged?"
+
+**User personas probe** (ask when UI features are in scope):
+- "Who is the primary user? Technical level? (developer / analyst / end-customer / admin)"
+- "Any accessibility needs? Language/locale requirements?"
+- "What is the single most critical user workflow — the one that must never be broken?"
+
+**Glossary probe** (ask when domain terms appear in the requirement doc):
+- Identify terms that could be ambiguous (e.g., "user", "order", "account", "bill", "project")
+- Confirm the canonical name and definition for each ("When you say 'Invoice', do you mean the issued document or the internal DB record?")
+- Note synonyms that must NOT be used interchangeably in code
+
+**When to stop:** Move to Step 3 when you can describe the system's purpose, key NFRs, hard constraints, key assumptions, and how to verify success — without guessing.
 
 **Rule**: Do NOT batch questions. Ask one, wait for answer, then ask the next if needed.
 
@@ -115,6 +143,48 @@ If no custom template was provided, use this structure:
 ## Requirements Summary
 [Condensed requirements from user docs]
 
+## Non-Functional Requirements
+| Category     | Requirement                        | Measurable Criterion                        |
+|--------------|------------------------------------|---------------------------------------------|
+| Performance  | [e.g., API response time]          | [e.g., p95 latency < 200ms at 100 rps]     |
+| Security     | [e.g., authentication policy]      | [e.g., JWT + HTTPS only, OWASP Top 10]     |
+| Availability | [e.g., uptime target]              | [e.g., 99.9% monthly uptime]               |
+| Scalability  | [e.g., expected load growth]       | [e.g., support 10× users in 12 months]     |
+| Compliance   | [e.g., data regulations]           | [e.g., GDPR: no PII in logs]               |
+
+[If no NFRs apply, write "None identified" and state why]
+
+## System Constraints
+[Hard limits that affect architecture — one item per line, be specific]
+- [e.g., Must run offline — no external API calls permitted]
+- [e.g., Python 3.8+ only — no 3.10+ syntax]
+- [e.g., GPL-licensed dependencies prohibited]
+- [e.g., Must reuse existing PostgreSQL 14 instance]
+
+[If no constraints, write "None identified"]
+
+## Assumptions & Dependencies
+[Explicit beliefs about the environment or caller behaviour — one item per line]
+- [e.g., JWT validation is handled by API Gateway; business layer must NOT re-validate]
+- [e.g., Input data is pre-sanitised before reaching this service]
+- [e.g., Feature B will be completed before Feature C is implemented]
+
+[If none, write "None identified"]
+
+## Target Users
+| Persona         | Technical Level | Key Needs / Constraints                   |
+|-----------------|-----------------|-------------------------------------------|
+| [Persona name]  | [low/med/high]  | [e.g., max 3 steps per workflow, Chinese UI] |
+
+[Omit this section if no UI features are in scope]
+
+## Glossary
+| Term            | Canonical Definition                                   | Do NOT confuse with   |
+|-----------------|--------------------------------------------------------|-----------------------|
+| [Term]          | [Precise definition in this project's context]         | [Synonyms to avoid]   |
+
+[Omit or write "None identified" if no domain-ambiguous terms exist]
+
 ## Approach
 [Selected approach with justification]
 
@@ -180,6 +250,33 @@ Once the design document is saved and committed:
 - Proceed to the Initializer phase
 - Use the approved design to guide feature decomposition
 - Reference the design document path in `task-progress.md`
+
+**Before handing off to the Initializer**, extract SRS content from the design doc into the two worker-facing artifacts:
+
+1. **`feature-list.json` root fields** (Initializer populates these during decomposition):
+   - `constraints[]` — copy the "System Constraints" bullet list; each item is a string
+   - `assumptions[]` — copy the "Assumptions & Dependencies" bullet list; each item is a string
+   - NFR rows from "Non-Functional Requirements" → create `category: "non-functional"` features with measurable `verification_steps`
+
+2. **`docs/project-context.md`** (Initializer LLM generates this file):
+   - Contains "Target Users" table and "Glossary" table from the design doc
+   - Stored at `docs/project-context.md` in the project root
+   - Workers read this file when implementing UI features or when encountering domain term ambiguity
+   - Template:
+     ```markdown
+     # Project Context
+
+     ## Target Users
+     | Persona | Technical Level | Key Needs |
+     |---------|-----------------|-----------|
+     | ...     | ...             | ...       |
+
+     ## Glossary
+     | Term | Definition | Do NOT confuse with |
+     |------|-----------|---------------------|
+     | ...  | ...        | ...                 |
+     ```
+   - Omit sections that have "None identified" in the design doc
 
 ## Hard Gates
 

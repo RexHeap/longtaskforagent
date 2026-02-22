@@ -78,7 +78,7 @@ python long-task-agent/tests/test_check_devtools.py
    - Creates project skeleton + initial git commit
 
 2. **Worker Session** (each context cycle):
-   - Orient: read `task-progress.md`, `feature-list.json`, `git log`
+   - Orient: read `task-progress.md`, `feature-list.json` (note `constraints[]` and `assumptions[]`), `git log`; read `docs/project-context.md` for UI features or domain term ambiguity
    - Bootstrap: run init script, smoke test; optionally create git worktree for isolation
    - **Config Gate**: check `required_configs` for target feature; block until resolved
    - **DevTools Gate**: if target feature has `ui: true`, check Chrome DevTools MCP availability; block until resolved
@@ -116,13 +116,14 @@ python long-task-agent/tests/test_check_devtools.py
 
 | File | Purpose |
 |------|---------|
-| `feature-list.json` | Structured task inventory with status (`failing`/`passing`) |
-| `CLAUDE.md` | Cross-session continuity reference (appended by `init_project.py`, idempotent) |
+| `feature-list.json` | Structured task inventory with status (`failing`/`passing`); includes `constraints[]` and `assumptions[]` |
+| `CLAUDE.md` | Cross-session navigation index (appended by `init_project.py`, idempotent) |
 | `task-progress.md` | Session-by-session progress log |
 | `RELEASE_NOTES.md` | Living release notes (Keep a Changelog format) |
 | `examples/` | Runnable examples demonstrating completed features |
 | `init.sh` / `init.ps1` | Environment bootstrap (LLM-generated, project-specific) |
 | `long-task-guide.md` | Worker session workflow guide (LLM-generated, validated by `validate_guide.py`) |
+| `docs/project-context.md` | User personas and domain glossary (LLM-generated from design doc; read by Workers for UI features or domain term ambiguity) |
 
 ### Feature List Schema
 
@@ -142,6 +143,14 @@ python long-task-agent/tests/test_check_devtools.py
     "branch_coverage_min": 80,
     "mutation_score_min": 80
   },
+  "constraints": [
+    "Hard limit that shapes architecture — one string per item",
+    "e.g., Must run offline: no external API calls permitted"
+  ],
+  "assumptions": [
+    "Implicit belief about environment or callers — one string per item",
+    "e.g., JWT validation handled by API Gateway; business layer must NOT re-validate"
+  ],
   "required_configs": [
     {
       "name": "Config display name",

@@ -43,9 +43,10 @@ CLAUDE_MD_REFERENCE = (
     "This project uses a multi-session agent workflow.\n"
     "Read `long-task-guide.md` at the start of EVERY session "
     "to orient yourself and pick up the next task.\n\n"
-    "Key files: `feature-list.json` (task inventory), "
+    "Key files: `feature-list.json` (task inventory, constraints, assumptions), "
     "`task-progress.md` (session log), "
-    "`RELEASE_NOTES.md` (changelog).\n"
+    "`RELEASE_NOTES.md` (changelog), "
+    "`docs/project-context.md` (user personas, glossary).\n"
     "<!-- /long-task-agent -->\n"
 )
 
@@ -95,6 +96,8 @@ def create_feature_list(
             "branch_coverage_min": branch_coverage_min,
             "mutation_score_min": mutation_score_min
         },
+        "constraints": [],
+        "assumptions": [],
         "required_configs": [],
         "features": []
     }
@@ -270,8 +273,9 @@ def main():
     print(f"\nProject '{args.project_name}' initialized at {out_dir}")
     print("Created: feature-list.json, CLAUDE.md, task-progress.md, RELEASE_NOTES.md, examples/, scripts/, docs/plans/")
     print("TODO (LLM generates during Initializer phase):")
-    print("  - long-task-guide.md  (tailored Worker guide from SKILL.md + references + design doc)")
-    print("  - init.sh / init.ps1  (environment bootstrap from design doc tech stack)")
+    print("  - long-task-guide.md         (tailored Worker guide from SKILL.md + references + design doc)")
+    print("  - init.sh / init.ps1         (environment bootstrap from design doc tech stack)")
+    print("  - docs/project-context.md    (user personas + glossary from design doc)")
 
 
 if __name__ == "__main__":

@@ -31,12 +31,20 @@ Created: [date]
 
 ### 2. `feature-list.json`
 
-Structured task inventory. JSON format prevents accidental model corruption.
+Structured task inventory. JSON format prevents accidental model corruption. Also carries SRS-derived project-wide context (`constraints`, `assumptions`) so Workers read it in every Orient phase.
 
 ```json
 {
   "project": "project-name",
   "created": "2025-01-15",
+  "constraints": [
+    "Must run offline — no external API calls permitted",
+    "Python 3.8+ only — no 3.10+ match syntax"
+  ],
+  "assumptions": [
+    "JWT validation handled by API Gateway; business layer must NOT re-validate",
+    "Input data is pre-sanitised before reaching this service"
+  ],
   "features": [
     {
       "id": 1,
@@ -178,8 +186,9 @@ The initializer runs **once** after the design is approved. Its job:
 2. **Run `init_project.py`** — scaffolds deterministic artifacts: `feature-list.json`, `task-progress.md`, `RELEASE_NOTES.md`, `examples/`, `scripts/`, `docs/plans/`
 3. **LLM generates `long-task-guide.md`** — project-tailored Worker guide based on SKILL.md + references + design doc; only includes the project's language-specific commands; validated by `validate_guide.py`
 4. **LLM generates `init.sh`/`init.ps1`** — real, runnable bootstrap scripts based on the design doc's tech stack (not generic stubs)
-5. **Populate `feature-list.json`** — decompose requirements into 10-200+ verifiable features guided by the approved design; populate `required_configs` for external dependencies
-6. **Set up project skeleton** — directory structure, config files, package.json / pyproject.toml etc.
+5. **LLM generates `docs/project-context.md`** — extracts "Target Users" and "Glossary" from design doc; omit sections not present
+6. **Populate `feature-list.json`** — decompose requirements into 10-200+ verifiable features guided by the approved design; populate `constraints[]`, `assumptions[]`, NFR features, and `required_configs` for external dependencies
+7. **Set up project skeleton** — directory structure, config files, package.json / pyproject.toml etc.
 7. **Initial git commit** — establish baseline
 8. **Verify environment** — run init script, confirm basic setup works
 
@@ -194,7 +203,10 @@ The initializer runs **once** after the design is approved. Its job:
 | `long-task-guide.md` | **LLM** | Project-tailored; only relevant language/tools; validated by `validate_guide.py` |
 | `init.sh` / `init.ps1` | **LLM** | Completely project-specific; generic stubs are useless |
 | `features[]` content | **LLM** | Requires understanding design doc |
+| `constraints[]` content | **LLM** | Extracted from design doc "System Constraints" section |
+| `assumptions[]` content | **LLM** | Extracted from design doc "Assumptions" section |
 | `required_configs[]` | **LLM** | Requires identifying external dependencies from design doc |
+| `docs/project-context.md` | **LLM** | Extracted from design doc "Target Users" and "Glossary" sections |
 
 ## Worker Session Workflow (Context Cycle)
 
@@ -203,9 +215,10 @@ Each worker cycle follows this exact sequence.
 ### Phase 1: Orient (understand current state)
 1. `pwd` — confirm working directory
 2. Read `task-progress.md` — understand what happened before
-3. Read `feature-list.json` — find next priority failing feature
+3. Read `feature-list.json` — find next priority failing feature; note `constraints[]` and `assumptions[]` at root level
 4. `git log --oneline -20` — see recent commits
 5. `git diff HEAD~3` — check recent changes if needed
+6. If target feature has `"ui": true` OR description references domain terms → read `docs/project-context.md`
 
 ### Phase 2: Bootstrap (restore environment)
 6. Run `init.sh` / `init.ps1` — start dev server / services

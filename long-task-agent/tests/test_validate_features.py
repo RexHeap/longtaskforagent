@@ -517,6 +517,217 @@ def test_no_required_configs_key_is_valid():
     assert code == 0, f"Expected exit 0 when required_configs is omitted: {stdout}"
 
 
+# --- constraints[] validation tests ---
+
+def test_valid_constraints():
+    """constraints[] as array of strings should pass."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "constraints": [
+            "Must run offline — no external API calls",
+            "Python 3.8+ only"
+        ],
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "A",
+                "description": "A", "priority": "high", "status": "failing",
+                "verification_steps": ["Step 1"], "dependencies": []
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code == 0, f"Expected exit 0 for valid constraints: {stdout}"
+    assert "VALID" in stdout
+
+
+def test_constraints_not_array_fails():
+    """constraints that is not an array should fail."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "constraints": "not an array",
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "A",
+                "description": "A", "priority": "high", "status": "failing",
+                "verification_steps": ["Step 1"], "dependencies": []
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code != 0, f"Expected non-zero exit for non-array constraints: {stdout}"
+
+
+def test_constraints_non_string_item_fails():
+    """constraints[] with a non-string item should fail."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "constraints": ["Valid constraint", 42],
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "A",
+                "description": "A", "priority": "high", "status": "failing",
+                "verification_steps": ["Step 1"], "dependencies": []
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code != 0, f"Expected non-zero exit for non-string constraint item: {stdout}"
+
+
+def test_empty_constraints_is_valid():
+    """Empty constraints[] should pass."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "constraints": [],
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "A",
+                "description": "A", "priority": "high", "status": "failing",
+                "verification_steps": ["Step 1"], "dependencies": []
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code == 0, f"Expected exit 0 for empty constraints: {stdout}"
+
+
+def test_no_constraints_key_is_valid():
+    """Omitting constraints entirely should pass (backward compat)."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "A",
+                "description": "A", "priority": "high", "status": "failing",
+                "verification_steps": ["Step 1"], "dependencies": []
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code == 0, f"Expected exit 0 when constraints is omitted: {stdout}"
+
+
+# --- assumptions[] validation tests ---
+
+def test_valid_assumptions():
+    """assumptions[] as array of strings should pass."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "assumptions": [
+            "JWT validation handled by API Gateway; business layer must NOT re-validate",
+            "Input data is pre-sanitised before reaching this service"
+        ],
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "A",
+                "description": "A", "priority": "high", "status": "failing",
+                "verification_steps": ["Step 1"], "dependencies": []
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code == 0, f"Expected exit 0 for valid assumptions: {stdout}"
+    assert "VALID" in stdout
+
+
+def test_assumptions_not_array_fails():
+    """assumptions that is not an array should fail."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "assumptions": {"key": "not a list"},
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "A",
+                "description": "A", "priority": "high", "status": "failing",
+                "verification_steps": ["Step 1"], "dependencies": []
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code != 0, f"Expected non-zero exit for non-array assumptions: {stdout}"
+
+
+def test_assumptions_non_string_item_fails():
+    """assumptions[] with a non-string item should fail."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "assumptions": ["Valid assumption", True],
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "A",
+                "description": "A", "priority": "high", "status": "failing",
+                "verification_steps": ["Step 1"], "dependencies": []
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code != 0, f"Expected non-zero exit for non-string assumption item: {stdout}"
+
+
+def test_empty_assumptions_is_valid():
+    """Empty assumptions[] should pass."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "assumptions": [],
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "A",
+                "description": "A", "priority": "high", "status": "failing",
+                "verification_steps": ["Step 1"], "dependencies": []
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code == 0, f"Expected exit 0 for empty assumptions: {stdout}"
+
+
+def test_no_assumptions_key_is_valid():
+    """Omitting assumptions entirely should pass (backward compat)."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "A",
+                "description": "A", "priority": "high", "status": "failing",
+                "verification_steps": ["Step 1"], "dependencies": []
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code == 0, f"Expected exit 0 when assumptions is omitted: {stdout}"
+
+
+def test_constraints_and_assumptions_shown_in_summary():
+    """Non-empty constraints and assumptions should appear in summary output."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "constraints": ["No external API calls"],
+        "assumptions": ["JWT validated by Gateway"],
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "A",
+                "description": "A", "priority": "high", "status": "failing",
+                "verification_steps": ["Step 1"], "dependencies": []
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code == 0, f"Expected exit 0: {stdout}"
+    assert "Constraints: 1" in stdout, f"Expected 'Constraints: 1' in summary: {stdout}"
+    assert "Assumptions: 1" in stdout, f"Expected 'Assumptions: 1' in summary: {stdout}"
+
+
 # --- UI field validation tests ---
 
 def test_ui_feature_with_devtools_step_valid():
@@ -749,6 +960,17 @@ if __name__ == "__main__":
         test_required_configs_not_array,
         test_empty_required_configs_is_valid,
         test_no_required_configs_key_is_valid,
+        test_valid_constraints,
+        test_constraints_not_array_fails,
+        test_constraints_non_string_item_fails,
+        test_empty_constraints_is_valid,
+        test_no_constraints_key_is_valid,
+        test_valid_assumptions,
+        test_assumptions_not_array_fails,
+        test_assumptions_non_string_item_fails,
+        test_empty_assumptions_is_valid,
+        test_no_assumptions_key_is_valid,
+        test_constraints_and_assumptions_shown_in_summary,
         test_ui_feature_with_devtools_step_valid,
         test_ui_feature_without_devtools_step_fails,
         test_non_ui_feature_no_devtools_step_ok,
