@@ -1,15 +1,17 @@
 {
-  "hooks": [
-    {
-      "matcher": "SessionStart",
-      "hooks": [
-        {
-          "type": "command",
-          "command": "bash long-task-agent/hooks/session-start.sh",
-          "timeout": 10000,
-          "async": false
-        }
-      ]
-    }
-  ]
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd' session-start",
+            "timeout": 10000,
+            "async": false
+          }
+        ]
+      }
+    ]
+  }
 }

@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **Claude Code skill** called `long-task-agent` that enables multi-session execution of complex software projects exceeding a single context window. It implements a three-phase architecture (Brainstorming + Initializer + Worker sessions) with persistent state bridging via on-disk artifacts.
+This is a **Claude Code skill plugin** called `long-task-agent` that enables multi-session execution of complex software projects exceeding a single context window. It implements a three-phase architecture (Brainstorming + Initializer + Worker sessions) with persistent state bridging via on-disk artifacts.
+
+The skill system follows the **superpowers architectural pattern**: 7 independent skills loaded on-demand via the `Skill` tool, with a bootstrap router (`using-long-task`) injected at session start via hook.
 
 ## Key Commands
 
@@ -53,77 +55,94 @@ python long-task-agent/tests/test_check_devtools.py
 ```
 
 ### Shortcut commands
-- `/long-task:init` — Initialize a new project
+- `/long-task:design` — Start brainstorming and design phase
+- `/long-task:init` — Initialize a project after design approval
 - `/long-task:work` — Start a Worker cycle
 - `/long-task:status` — Check project progress
 
 ## Architecture
 
+### 7-Skill System
+
+The skill system uses on-demand loading via the `Skill` tool. Only the bootstrap router is loaded at session start; other skills are loaded as needed.
+
+#### Phase Skills (loaded one at a time based on project state)
+
+| Skill | Phase | Trigger |
+|-------|-------|---------|
+| `using-long-task` | Bootstrap | Injected via SessionStart hook into every session |
+| `long-task-design` | Phase 0 | No design doc and no feature-list.json |
+| `long-task-init` | Phase 1 | Design doc exists, no feature-list.json |
+| `long-task-work` | Phase 2 | feature-list.json exists |
+
+#### Discipline Skills (loaded by long-task-work as sub-skills)
+
+| Skill | Purpose |
+|-------|---------|
+| `long-task-tdd` | TDD Red-Green-Refactor with Test Plan Review hard gate |
+| `long-task-quality` | Coverage Gate + Mutation Gate + Verification enforcement |
+| `long-task-review` | Two-stage Code Review (spec compliance → code quality) |
+
+#### Skill Call Graph
+
+```
+using-long-task (router)
+   ├─→ long-task-design ──→ long-task-init ──→ long-task-work
+   │                                              │
+   └─→ long-task-work (if feature-list.json exists)
+          ├─→ long-task-tdd (Steps 6-8)
+          ├─→ long-task-quality (Step 9)
+          └─→ long-task-review (Step 10)
+```
+
 ### Three-Phase Workflow
 
-0. **Brainstorming & Design** (before initialization):
+0. **Brainstorming & Design** (`long-task-design`):
    - Explore requirements, clarify ambiguities with user
    - Propose 2-3 approaches with trade-offs
    - Get section-by-section design approval
    - Save design doc to `docs/plans/YYYY-MM-DD-<topic>-design.md`
-   - Supports custom design template: specify a path or place template at `docs/templates/design-template.md`
    - **Hard gate**: no coding until design approved
 
-1. **Initializer Session** (runs once):
+1. **Initializer Session** (`long-task-init`):
    - Reads approved design document
-   - Runs `init_project.py` to scaffold deterministic artifacts (`feature-list.json`, `CLAUDE.md` (appended), `task-progress.md`, `RELEASE_NOTES.md`, `examples/`, `docs/plans/`)
-   - LLM generates project-tailored `long-task-guide.md` (validated by `validate_guide.py`)
-   - LLM generates real, runnable `init.sh`/`init.ps1` based on tech stack
+   - Runs `init_project.py` to scaffold deterministic artifacts
+   - LLM generates project-tailored `long-task-guide.md`
    - Decomposes requirements into 10-200+ verifiable features in `feature-list.json`
    - Creates project skeleton + initial git commit
 
-2. **Worker Session** (each context cycle):
-   - Orient: read `task-progress.md`, `feature-list.json` (note `constraints[]` and `assumptions[]`), `git log`; read `docs/project-context.md` for UI features or domain term ambiguity
-   - Bootstrap: run init script, smoke test; optionally create git worktree for isolation
-   - **Config Gate**: check `required_configs` for target feature; block until resolved
-   - **DevTools Gate**: if target feature has `ui: true`, check Chrome DevTools MCP availability; block until resolved
-   - **Plan**: write step-by-step implementation plan before coding
-   - TDD Red: write failing tests (unit tests + Chrome DevTools MCP for UI)
-   - TDD Green: implement minimal code to pass (self-execute or subagent-driven)
-   - **Coverage Gate**: run coverage tool, verify line >= 90%, branch >= 80%
-   - TDD Refactor: clean up while keeping tests green
-   - **Mutation Gate**: run incremental mutation testing, verify score >= 80%
-   - **Verify & Mark**: fresh evidence required — run tests, coverage, mutation; read output, then mark "passing"
-   - **Code Review**: two-stage review (spec compliance → code quality)
-   - Add Examples: create runnable examples in `examples/` for user-facing features
-   - Persist: git commit, update `RELEASE_NOTES.md`, `task-progress.md`
-   - **Finish Branch**: merge / push+PR / keep / discard (when using worktrees)
-   - On errors: follow systematic debugging (never guess-and-fix)
+2. **Worker Session** (`long-task-work` orchestrator):
+   - Orient → Bootstrap → Config Gate → DevTools Gate → Plan
+   - **TDD** (`long-task-tdd`): Red → Test Plan Review → Green → Refactor
+   - **Quality** (`long-task-quality`): Coverage Gate → Mutation Gate → Verify & Mark
+   - **Review** (`long-task-review`): Spec Compliance → Code Quality
+   - Add Examples → Persist → Continue
 
 ### Critical Rules
 
-- **Config gate before planning**: Never plan or code when required configs for the target feature are missing
+- **Config gate before planning**: Never plan or code when required configs are missing
 - **Design before implementation**: Run brainstorming; no coding until design approved
-- **Strict TDD**: Always Red→Green→Coverage→Refactor→Mutation; never write implementation before tests
+- **Strict TDD**: Always Red→Test Plan Review→Green→Coverage→Refactor→Mutation
 - **Coverage gate after TDD Green**: Run coverage tool, verify line >= 90%, branch >= 80%
 - **Mutation gate after TDD Refactor**: Run incremental mutation testing, verify score >= 80%
-- **Multi-language support**: Coverage/mutation tools per language (Python, Java, TypeScript, C, C++) — see `references/coverage-and-mutation.md`
-- **Verification enforcement**: Never mark "passing" without fresh evidence (run tests, coverage, mutation; read output, confirm)
-- **Code review after every feature**: Two-stage (spec compliance → code quality) before Persist
+- **Verification enforcement**: Never mark "passing" without fresh evidence
+- **Code review after every feature**: Two-stage (spec compliance → code quality)
 - **Systematic debugging**: Never guess-and-fix; always trace root cause first
 - **One feature per cycle**: Prevents context exhaustion
-- **JSON for feature list**: Models corrupt markdown more easily
-- **Immutable verification_steps**: Never remove or edit once created
-- **UI features require Chrome DevTools MCP testing**: Mark with `"ui": true`, include `[devtools]`-prefixed verification steps, run DevTools Gate before planning
-- **Update RELEASE_NOTES.md after every git commit**: Keep a Changelog format
+- **UI features require Chrome DevTools MCP testing**: Mark with `"ui": true`
 
 ### Generated Persistent Artifacts
 
 | File | Purpose |
 |------|---------|
-| `feature-list.json` | Structured task inventory with status (`failing`/`passing`); includes `constraints[]` and `assumptions[]` |
-| `CLAUDE.md` | Cross-session navigation index (appended by `init_project.py`, idempotent) |
+| `feature-list.json` | Structured task inventory with status; includes `constraints[]` and `assumptions[]` |
+| `CLAUDE.md` | Cross-session navigation index (appended by `init_project.py`) |
 | `task-progress.md` | Session-by-session progress log |
 | `RELEASE_NOTES.md` | Living release notes (Keep a Changelog format) |
 | `examples/` | Runnable examples demonstrating completed features |
-| `init.sh` / `init.ps1` | Environment bootstrap (LLM-generated, project-specific) |
-| `long-task-guide.md` | Worker session workflow guide (LLM-generated, validated by `validate_guide.py`) |
-| `docs/project-context.md` | User personas and domain glossary (LLM-generated from design doc; read by Workers for UI features or domain term ambiguity) |
+| `init.sh` / `init.ps1` | Environment bootstrap (LLM-generated) |
+| `long-task-guide.md` | Worker session guide (LLM-generated, validated) |
+| `docs/project-context.md` | User personas and domain glossary |
 
 ### Feature List Schema
 
@@ -143,14 +162,8 @@ python long-task-agent/tests/test_check_devtools.py
     "branch_coverage_min": 80,
     "mutation_score_min": 80
   },
-  "constraints": [
-    "Hard limit that shapes architecture — one string per item",
-    "e.g., Must run offline: no external API calls permitted"
-  ],
-  "assumptions": [
-    "Implicit belief about environment or callers — one string per item",
-    "e.g., JWT validation handled by API Gateway; business layer must NOT re-validate"
-  ],
+  "constraints": ["Hard limit — one string per item"],
+  "assumptions": ["Implicit belief — one string per item"],
   "required_configs": [
     {
       "name": "Config display name",
@@ -182,82 +195,78 @@ Each feature in `features` array:
 }
 ```
 
-UI feature fields (optional):
-- `"ui"`: boolean — when `true`, the feature requires Chrome DevTools MCP functional testing
-- `"ui_entry"`: string — entry URL path for the UI feature (used by Worker for `navigate_page`)
-- UI features **must** have at least one `verification_steps` entry prefixed with `[devtools]` using EXPECT/REJECT format
-  - Example: `"[devtools] /login | EXPECT: email input, password input, submit button | REJECT: placeholder 'TODO', overlapping elements, console errors"`
-
 ## File Structure
 
 ```
 long-task-agent/
-├── SKILL.md                        # Skill definition (entry point)
+├── skills/                            # 7 skills (on-demand loaded via Skill tool)
+│   ├── using-long-task/SKILL.md       # Bootstrap router (injected via hook)
+│   ├── long-task-design/SKILL.md      # Phase 0: Brainstorming & Design
+│   ├── long-task-init/SKILL.md        # Phase 1: Initialization
+│   ├── long-task-work/SKILL.md        # Phase 2: Worker orchestrator
+│   ├── long-task-tdd/                 # TDD discipline
+│   │   ├── SKILL.md
+│   │   ├── testing-anti-patterns.md   # 14 anti-patterns catalog
+│   │   └── prompts/
+│   │       ├── implementer-prompt.md
+│   │       └── test-plan-reviewer-prompt.md
+│   ├── long-task-quality/             # Quality gates
+│   │   ├── SKILL.md
+│   │   └── coverage-recipes.md        # Multi-language tool setup
+│   └── long-task-review/              # Code review
+│       ├── SKILL.md
+│       └── prompts/
+│           ├── spec-reviewer-prompt.md
+│           └── code-quality-reviewer-prompt.md
 ├── agents/
-│   ├── code-reviewer.md            # Code reviewer agent definition
-│   └── prompts/                    # Subagent prompt templates
-│       ├── implementer-prompt.md
-│       ├── spec-reviewer-prompt.md
-│       ├── code-quality-reviewer-prompt.md
-│       └── test-plan-reviewer-prompt.md
-├── commands/                       # User shortcut commands
-│   ├── init.md                     # /long-task:init
-│   ├── work.md                     # /long-task:work
-│   └── status.md                   # /long-task:status
+│   └── code-reviewer.md              # Code reviewer agent definition
+├── commands/                          # User shortcut commands
+│   ├── design.md                      # /long-task:design
+│   ├── init.md                        # /long-task:init
+│   ├── work.md                        # /long-task:work
+│   └── status.md                      # /long-task:status
 ├── hooks/
-│   ├── hooks.json                  # Session start hook config
-│   └── session-start.sh            # Auto-inject context on session start
+│   ├── hooks.json                     # SessionStart hook config
+│   ├── session-start                  # Inject using-long-task + phase detection
+│   └── run-hook.cmd                   # Cross-platform polyglot wrapper
 ├── scripts/
-│   ├── init_project.py             # Project scaffolding (deterministic artifacts only)
-│   ├── validate_features.py        # Feature list validation (incl. UI field checks)
-│   ├── validate_guide.py           # LLM-generated guide structural validation
-│   ├── check_configs.py            # Required config checking
-│   └── check_devtools.py           # Chrome DevTools MCP availability checking
+│   ├── init_project.py                # Project scaffolding
+│   ├── validate_features.py           # Feature list validation
+│   ├── validate_guide.py              # Guide structural validation
+│   ├── check_configs.py               # Required config checking
+│   └── check_devtools.py              # Chrome DevTools MCP checking
 ├── tests/
-│   ├── test_validate_features.py   # Validator unit tests
-│   ├── test_init_project.py        # Scaffolding unit tests
-│   ├── test_check_configs.py       # Config checker unit tests
-│   ├── test_validate_guide.py      # Guide validator unit tests
-│   └── test_check_devtools.py      # DevTools checker unit tests
-└── references/
-    ├── architecture.md             # Detailed architecture patterns
-    ├── brainstorming.md            # Brainstorming & design phase process
-    ├── plan-writing.md             # Step-by-step implementation planning
-    ├── code-review.md              # Two-stage code review process
-    ├── verification-enforcement.md # Verification iron law & evidence requirements
-    ├── systematic-debugging.md     # Four-phase debugging process
-    ├── subagent-development.md     # Subagent-driven development mode
-    ├── worktree-isolation.md       # Git worktree isolation & branch finishing
-    ├── testing-anti-patterns.md    # Common testing mistakes catalog (incl. #14 low-value assertions)
-    ├── test-scenario-rules.md     # Test scenario generation rules (category coverage, ratios)
-    ├── test-plan-review.md        # Test Plan Review phase (scoring rubric, dispatch)
-    ├── ui-error-detection.md      # Three-layer UI error detection specification
-    ├── coverage-and-mutation.md   # Coverage tracking & mutation testing (multi-language)
-    └── roadmap.md                  # Future enhancements roadmap
+│   ├── test_validate_features.py
+│   ├── test_init_project.py
+│   ├── test_check_configs.py
+│   ├── test_validate_guide.py
+│   └── test_check_devtools.py
+└── references/                        # On-demand reference docs (Read when needed)
+    ├── architecture.md                # Detailed architecture patterns
+    ├── plan-writing.md                # Implementation plan structure
+    ├── systematic-debugging.md        # Four-phase debugging process
+    ├── subagent-development.md        # Subagent-driven development mode
+    ├── worktree-isolation.md          # Git worktree isolation & branch finishing
+    ├── ui-error-detection.md          # Three-layer UI error detection
+    └── roadmap.md                     # Future enhancements
 ```
 
 ## See Also
 
 - [ReadMe.md](ReadMe.md) - Overview and design rationale
-- [long-task-agent/references/architecture.md](long-task-agent/references/architecture.md) - Detailed TDD workflow, Chrome DevTools testing patterns, anti-patterns
-- [long-task-agent/references/brainstorming.md](long-task-agent/references/brainstorming.md) - Brainstorming & design phase
+- [long-task-agent/references/architecture.md](long-task-agent/references/architecture.md) - Detailed TDD workflow, Chrome DevTools testing patterns
 - [long-task-agent/references/plan-writing.md](long-task-agent/references/plan-writing.md) - Implementation planning
-- [long-task-agent/references/code-review.md](long-task-agent/references/code-review.md) - Code review process
-- [long-task-agent/references/verification-enforcement.md](long-task-agent/references/verification-enforcement.md) - Verification enforcement
 - [long-task-agent/references/systematic-debugging.md](long-task-agent/references/systematic-debugging.md) - Systematic debugging
 - [long-task-agent/references/subagent-development.md](long-task-agent/references/subagent-development.md) - Subagent-driven development
 - [long-task-agent/references/worktree-isolation.md](long-task-agent/references/worktree-isolation.md) - Worktree isolation & branch finishing
-- [long-task-agent/references/coverage-and-mutation.md](long-task-agent/references/coverage-and-mutation.md) - Coverage tracking & mutation testing (multi-language)
-- [long-task-agent/references/test-scenario-rules.md](long-task-agent/references/test-scenario-rules.md) - Test scenario generation rules
-- [long-task-agent/references/test-plan-review.md](long-task-agent/references/test-plan-review.md) - Test Plan Review phase
 - [long-task-agent/references/ui-error-detection.md](long-task-agent/references/ui-error-detection.md) - UI error detection specification
 
 
 <!-- long-task-agent -->
 ## Long-Task Agent
 
-This project uses a multi-session agent workflow.
-Read `long-task-guide.md` at the start of EVERY session to orient yourself and pick up the next task.
+This project uses a multi-session agent workflow with 7 skills loaded on-demand.
+The `using-long-task` skill is injected at session start and routes to the correct phase.
 
 Key files: `feature-list.json` (task inventory), `task-progress.md` (session log), `RELEASE_NOTES.md` (changelog).
 <!-- /long-task-agent -->

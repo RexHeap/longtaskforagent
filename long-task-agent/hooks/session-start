@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# SessionStart hook for long-task-agent plugin
+# Injects the using-long-task bootstrap skill into every session.
+
+set -euo pipefail
+
+# Determine plugin root directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+# Read using-long-task bootstrap skill
+using_long_task_content=$(cat "${PLUGIN_ROOT}/skills/using-long-task/SKILL.md" 2>&1 \
+  || echo "Error reading using-long-task skill")
+
+# Detect project phase and build status hint
+status_hint=""
+if [ -f "feature-list.json" ]; then
+    # Phase 2: Worker — count feature progress
+    total=$(python3 -c "import json; d=json.load(open('feature-list.json')); print(len(d.get('features',[])))" 2>/dev/null || echo "?")
+    passing=$(python3 -c "import json; d=json.load(open('feature-list.json')); print(sum(1 for f in d.get('features',[]) if f.get('status')=='passing'))" 2>/dev/null || echo "?")
+    status_hint="\\n\\nProject status: ${passing}/${total} features passing. Phase: Worker."
+elif compgen -G "docs/plans/*-design.md" > /dev/null 2>&1; then
+    status_hint="\\n\\nDesign doc found. Phase: Initializer."
+else
+    status_hint="\\n\\nNo design doc or feature-list.json found. Phase: Brainstorming."
+fi
+
+# Escape string for JSON embedding using bash parameter substitution.
+escape_for_json() {
+    local s="$1"
+    s="${s//\\/\\\\}"
+    s="${s//\"/\\\"}"
+    s="${s//$'\n'/\\n}"
+    s="${s//$'\r'/\\r}"
+    s="${s//$'\t'/\\t}"
+    printf '%s' "$s"
+}
+
+content_escaped=$(escape_for_json "$using_long_task_content")
+status_escaped=$(escape_for_json "$status_hint")
+session_context="<EXTREMELY_IMPORTANT>\nYou are in a long-task project.\n\n**Below is your 'long-task:using-long-task' skill - your project router. For all other skills, use the Skill tool:**\n\n${content_escaped}\n${status_escaped}\n</EXTREMELY_IMPORTANT>"
+
+# Output context injection as JSON.
+# Keep both shapes for compatibility:
+# - Cursor hooks expect additional_context.
+# - Claude hooks expect hookSpecificOutput.additionalContext.
+cat <<EOF
+{
+  "additional_context": "${session_context}",
+  "hookSpecificOutput": {
+    "hookEventName": "SessionStart",
+    "additionalContext": "${session_context}"
+  }
+}
+EOF
+
+exit 0
