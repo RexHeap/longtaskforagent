@@ -17,21 +17,23 @@ NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE
 
 If you haven't run the verification command in this message, you cannot claim it passes.
 
+## Get Tool Commands
+
+Before running any gate, get the exact commands for this project's tech stack:
+
+```bash
+python scripts/get_tool_commands.py feature-list.json
+```
+
+This outputs the concrete test, coverage, and mutation commands — use them directly below.
+
 ## Gate 1: Coverage
 
 After TDD Green (all tests pass), run the coverage tool.
 
-1. **Run** the coverage tool from `tech_stack.coverage_tool`:
-   ```bash
-   # Python example:
-   pytest --cov=src --cov-branch --cov-report=term-missing
-   # Java example:
-   mvn verify  # JaCoCo
-   # TypeScript example:
-   npx vitest run --coverage
-   ```
+1. **Run** the `[coverage]` command from `get_tool_commands.py` output
 2. **Read** the FULL output (not just summary line)
-3. **Verify**: line coverage >= `quality_gates.line_coverage_min`% (default 90%), branch coverage >= `quality_gates.branch_coverage_min`% (default 80%)
+3. **Verify**: line coverage >= `[thresholds] line_coverage`, branch coverage >= `[thresholds] branch_coverage`
 4. **If FAIL**: identify uncovered lines/branches → add tests → re-run TDD cycle for those paths
 5. **If PASS**: proceed to Mutation Gate
 
@@ -48,17 +50,9 @@ After TDD Green (all tests pass), run the coverage tool.
 
 After TDD Refactor, run mutation testing on changed files.
 
-1. **Run** the mutation tool from `tech_stack.mutation_tool` — **incremental** (changed files only):
-   ```bash
-   # Python example:
-   mutmut run --paths-to-mutate=src/changed_module.py
-   # Java example:
-   mvn org.pitest:pitest-maven:mutationCoverage -DtargetClasses=com.example.Changed*
-   # TypeScript example:
-   npx stryker run --mutate 'src/changed/**/*.ts'
-   ```
+1. **Run** the `[mutation-incremental]` command from `get_tool_commands.py` output — replace `{changed_files}` / `{changed_classes}` with actual paths
 2. **Read** the FULL output
-3. **Verify**: mutation score >= `quality_gates.mutation_score_min`% (default 80%)
+3. **Verify**: mutation score >= `[thresholds] mutation_score`
 4. **If surviving mutants**, analyze each:
    - **Equivalent mutant** (code change has no observable effect) → document and skip
    - **Real gap** (test doesn't catch the mutation) → add/strengthen test, re-run
@@ -85,11 +79,11 @@ After TDD Refactor, run mutation testing on changed files.
 The final gate before marking a feature as "passing".
 
 ```
-1. IDENTIFY → What commands prove this feature works?
-   - Test command (full suite)
-   - Coverage command
-   - Mutation command
-   - Feature-specific verification_steps
+1. IDENTIFY → Get the commands via `python scripts/get_tool_commands.py feature-list.json`:
+   - [test] command (full suite)
+   - [coverage] command
+   - [mutation-full] command
+   - Feature-specific verification_steps from feature-list.json
 
 2. RUN → Execute each command (fresh, in this message — not cached from earlier)
 

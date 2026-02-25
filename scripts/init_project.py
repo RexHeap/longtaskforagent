@@ -31,6 +31,7 @@ Usage:
 import argparse
 import json
 import os
+import shutil
 import sys
 from datetime import datetime
 
@@ -254,9 +255,26 @@ def main():
         f.write(create_release_notes(args.project_name))
     print(f"Created: {rn_path}")
 
-    # scripts dir
+    # scripts dir + copy helper scripts
     scripts_dir = os.path.join(out_dir, "scripts")
     os.makedirs(scripts_dir, exist_ok=True)
+
+    plugin_scripts_dir = os.path.dirname(os.path.abspath(__file__))
+    helper_scripts = [
+        "validate_features.py",
+        "check_configs.py",
+        "check_devtools.py",
+        "validate_guide.py",
+        "get_tool_commands.py",
+    ]
+    for script_name in helper_scripts:
+        src = os.path.join(plugin_scripts_dir, script_name)
+        dst = os.path.join(scripts_dir, script_name)
+        if os.path.exists(src) and os.path.abspath(src) != os.path.abspath(dst):
+            shutil.copy2(src, dst)
+            print(f"Copied: {script_name} -> {scripts_dir}")
+        elif not os.path.exists(src):
+            print(f"Warning: {script_name} not found in {plugin_scripts_dir}")
 
     # docs/plans dir
     plans_dir = os.path.join(out_dir, "docs", "plans")
@@ -271,7 +289,7 @@ def main():
     print(f"Created: {examples_readme}")
 
     print(f"\nProject '{args.project_name}' initialized at {out_dir}")
-    print("Created: feature-list.json, CLAUDE.md, task-progress.md, RELEASE_NOTES.md, examples/, scripts/, docs/plans/")
+    print("Created: feature-list.json, CLAUDE.md, task-progress.md, RELEASE_NOTES.md, examples/, scripts/ (with helper scripts), docs/plans/")
     print("TODO (LLM generates during Initializer phase):")
     print("  - long-task-guide.md         (tailored Worker guide from SKILL.md + references + design doc)")
     print("  - init.sh / init.ps1         (environment bootstrap from design doc tech stack)")
