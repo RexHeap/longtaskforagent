@@ -215,14 +215,26 @@ Each feature in `features` array:
 ```
 long-task-agent/
 ├── skills/                            # 8 skills (on-demand loaded via Skill tool)
-│   ├── using-long-task/SKILL.md       # Bootstrap router (injected via hook)
+│   ├── using-long-task/               # Bootstrap router (injected via hook)
+│   │   ├── SKILL.md
+│   │   └── references/
+│   │       ├── architecture.md        # Detailed architecture patterns
+│   │       └── roadmap.md             # Future enhancements
 │   ├── long-task-requirements/SKILL.md # Phase 0a: Requirements & SRS (ISO 29148)
 │   ├── long-task-design/SKILL.md      # Phase 0b: Design (takes SRS as input)
 │   ├── long-task-init/SKILL.md        # Phase 1: Initialization (reads SRS + design)
-│   ├── long-task-work/SKILL.md        # Phase 2: Worker orchestrator
+│   ├── long-task-work/               # Phase 2: Worker orchestrator
+│   │   ├── SKILL.md
+│   │   └── references/
+│   │       ├── plan-writing.md        # Implementation plan structure
+│   │       ├── systematic-debugging.md # Four-phase debugging process
+│   │       ├── subagent-development.md # Subagent-driven development mode
+│   │       └── worktree-isolation.md  # Git worktree isolation & branch finishing
 │   ├── long-task-tdd/                 # TDD discipline
 │   │   ├── SKILL.md
 │   │   ├── testing-anti-patterns.md   # 14 anti-patterns catalog
+│   │   ├── references/
+│   │   │   └── ui-error-detection.md  # Three-layer UI error detection
 │   │   └── prompts/
 │   │       ├── implementer-prompt.md
 │   │       └── test-plan-reviewer-prompt.md
@@ -264,25 +276,18 @@ long-task-agent/
 │   ├── test_check_configs.py
 │   ├── test_validate_guide.py
 │   └── test_check_devtools.py
-└── references/                        # On-demand reference docs (Read when needed)
-    ├── architecture.md                # Detailed architecture patterns
-    ├── plan-writing.md                # Implementation plan structure
-    ├── systematic-debugging.md        # Four-phase debugging process
-    ├── subagent-development.md        # Subagent-driven development mode
-    ├── worktree-isolation.md          # Git worktree isolation & branch finishing
-    ├── ui-error-detection.md          # Three-layer UI error detection
-    └── roadmap.md                     # Future enhancements
 ```
 
 ## See Also
 
 - [ReadMe.md](ReadMe.md) - Overview and design rationale
-- [long-task-agent/references/architecture.md](long-task-agent/references/architecture.md) - Detailed TDD workflow, Chrome DevTools testing patterns
-- [long-task-agent/references/plan-writing.md](long-task-agent/references/plan-writing.md) - Implementation planning
-- [long-task-agent/references/systematic-debugging.md](long-task-agent/references/systematic-debugging.md) - Systematic debugging
-- [long-task-agent/references/subagent-development.md](long-task-agent/references/subagent-development.md) - Subagent-driven development
-- [long-task-agent/references/worktree-isolation.md](long-task-agent/references/worktree-isolation.md) - Worktree isolation & branch finishing
-- [long-task-agent/references/ui-error-detection.md](long-task-agent/references/ui-error-detection.md) - UI error detection specification
+- [skills/using-long-task/references/architecture.md](skills/using-long-task/references/architecture.md) - Detailed TDD workflow, Chrome DevTools testing patterns
+- [skills/using-long-task/references/roadmap.md](skills/using-long-task/references/roadmap.md) - Future enhancements
+- [skills/long-task-work/references/plan-writing.md](skills/long-task-work/references/plan-writing.md) - Implementation planning
+- [skills/long-task-work/references/systematic-debugging.md](skills/long-task-work/references/systematic-debugging.md) - Systematic debugging
+- [skills/long-task-work/references/subagent-development.md](skills/long-task-work/references/subagent-development.md) - Subagent-driven development
+- [skills/long-task-work/references/worktree-isolation.md](skills/long-task-work/references/worktree-isolation.md) - Worktree isolation & branch finishing
+- [skills/long-task-tdd/references/ui-error-detection.md](skills/long-task-tdd/references/ui-error-detection.md) - UI error detection specification
 
 
 <!-- long-task-agent -->

@@ -263,7 +263,7 @@ Each worker cycle follows this exact sequence.
     - Use EXPECT/REJECT format in `[devtools]` verification steps
     - Include automated UI error detection script via `evaluate_script()`
     - Include console error gate via `list_console_messages(types=["error"])`
-    - See [ui-error-detection.md](ui-error-detection.md) for full specification
+    - See [ui-error-detection.md](../../long-task-tdd/references/ui-error-detection.md) for full specification
 
 ### Phase 3.5: Test Plan Review — verify test quality (HARD GATE)
 10a. Dispatch **independent subagent** (not self-review) with feature spec + test code + test run output
@@ -360,12 +360,12 @@ Requirements → SRS approved → Design → design approved → Initializer →
 | Skipping config check before feature work | Wasted planning/TDD cycle when config turns out missing | Always run Config Gate for features with external deps |
 | Skipping requirements phase | Incomplete/ambiguous requirements cause rework | Run requirements elicitation, produce approved SRS first |
 | Skipping design phase | Ad-hoc design causes inconsistency and rework | Run design phase after SRS, get approval first |
-| Guess-and-fix debugging | Random fixes waste time and may introduce new bugs | Follow systematic debugging — trace root cause. See [systematic-debugging.md](systematic-debugging.md) |
+| Guess-and-fix debugging | Random fixes waste time and may introduce new bugs | Follow systematic debugging — trace root cause. See [systematic-debugging.md](../../long-task-work/references/systematic-debugging.md) |
 | Skipping code review | Spec violations and quality issues compound across features | Two-stage review after every feature. See [code-review.md](code-review.md) |
 | Claiming "it works" without evidence | Unverified claims lead to false confidence | Show actual test output before marking passing. See [verification-enforcement.md](verification-enforcement.md) |
 | Skipping Test Plan Review | Bad tests waste entire TDD cycle; low-value assertions inflate coverage | Dispatch independent subagent reviewer after TDD Red. See [test-plan-review.md](test-plan-review.md) |
-| Accepting low-value assertions | Tests with None/isinstance/import checks provide zero bug-finding ability | Enforce <= 20% low-value assertion ratio. See [testing-anti-patterns.md](testing-anti-patterns.md) #14 |
-| Missing REJECT clause in UI tests | LLM only confirms positive expectations, misses obvious UI errors | Require EXPECT/REJECT format for all [devtools] steps. See [ui-error-detection.md](ui-error-detection.md) |
+| Accepting low-value assertions | Tests with None/isinstance/import checks provide zero bug-finding ability | Enforce <= 20% low-value assertion ratio. See [testing-anti-patterns.md](../../long-task-tdd/testing-anti-patterns.md) #14 |
+| Missing REJECT clause in UI tests | LLM only confirms positive expectations, misses obvious UI errors | Require EXPECT/REJECT format for all [devtools] steps. See [ui-error-detection.md](../../long-task-tdd/references/ui-error-detection.md) |
 | Self-reviewing test suite | Same LLM has same blind spots as test author | Always dispatch independent subagent for Test Plan Review |
 
 ## Verification Strategy
@@ -388,7 +388,7 @@ Requirements → SRS approved → Design → design approved → Initializer →
   - **Layer 1**: Automated error detection script via `evaluate_script()` — HARD FAIL if errors found
   - **Layer 2**: EXPECT/REJECT format in verification steps — forces error-seeking
   - **Layer 3**: Console error gate via `list_console_messages(types=["error"])` — HARD FAIL if errors
-  - See [ui-error-detection.md](ui-error-detection.md) for full specification
+  - See [ui-error-detection.md](../../long-task-tdd/references/ui-error-detection.md) for full specification
 - Test flow: navigate → wait → error detection → snapshot → EXPECT/REJECT → interact → error detection → snapshot → console check
 
 ### For ALL features (Coverage & Mutation mandatory):
@@ -485,7 +485,7 @@ python scripts/check_devtools.py feature-list.json --feature <id>
 - `[devtools] <page-path> | EXPECT: <positive criteria> | REJECT: <negative criteria>`
 - **EXPECT**: Elements, text, or states that MUST be present
 - **REJECT**: Conditions that MUST NOT be present (forces error-seeking behavior)
-- Both clauses are required — see [ui-error-detection.md](ui-error-detection.md) for details
+- Both clauses are required — see [ui-error-detection.md](../../long-task-tdd/references/ui-error-detection.md) for details
 - Example: `"[devtools] /login | EXPECT: email input, password input, submit button | REJECT: placeholder 'TODO', overlapping elements, console errors"`
 
 **Test sequence** for each `[devtools]` step:
@@ -504,7 +504,7 @@ python scripts/check_devtools.py feature-list.json --feature <id>
 12. Check for console errors:      list_console_messages(types=["error"])  ← HARD FAIL if count > 0
 ```
 
-See [ui-error-detection.md](ui-error-detection.md) for the automated detection script and the three-layer detection model.
+See [ui-error-detection.md](../../long-task-tdd/references/ui-error-detection.md) for the automated detection script and the three-layer detection model.
 
 ## Multi-Language Tool Quick Reference
 

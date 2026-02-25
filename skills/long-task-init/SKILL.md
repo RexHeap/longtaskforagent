@@ -46,7 +46,7 @@ You MUST create a TodoWrite task for each step and complete them in order:
      - `skills/long-task-work/SKILL.md` — Worker workflow
      - `skills/long-task-quality/SKILL.md` — verification enforcement
      - `skills/long-task-quality/coverage-recipes.md` — coverage/mutation tool setup
-     - `references/architecture.md` — TDD workflow details
+     - `skills/using-long-task/references/architecture.md` — TDD workflow details
    - Include ONLY the project's language-specific coverage/mutation commands (get from `python scripts/get_tool_commands.py feature-list.json`)
    - Include Chrome DevTools MCP testing section ONLY if the project has UI features (`"ui": true`)
    - **Must include all required sections**: Orient, Bootstrap, Config Gate, TDD Red, TDD Green, Coverage Gate, TDD Refactor, Mutation Gate, Verification Enforcement, Code Review, Examples, Persist, Critical Rules

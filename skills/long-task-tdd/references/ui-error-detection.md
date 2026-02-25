@@ -248,5 +248,5 @@ The `[expect-console-error: <pattern>]` suffix allows specific error patterns. O
 |----------|-------------|
 | [test-scenario-rules.md](test-scenario-rules.md) | Rule 5 references this document for UI-specific rules |
 | [test-plan-review.md](test-plan-review.md) | Section D of the scoring rubric checks UI error detection compliance |
-| [architecture.md](architecture.md) | Chrome DevTools MCP test pattern references this document |
-| [testing-anti-patterns.md](testing-anti-patterns.md) | "Skipping Chrome DevTools functional tests" anti-pattern references EXPECT/REJECT |
+| [architecture.md](../../using-long-task/references/architecture.md) | Chrome DevTools MCP test pattern references this document |
+| [testing-anti-patterns.md](../testing-anti-patterns.md) | "Skipping Chrome DevTools functional tests" anti-pattern references EXPECT/REJECT |

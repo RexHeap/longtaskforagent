@@ -95,4 +95,4 @@ These thoughts mean STOP — you're rationalizing:
 
 1. **Phase skill first** — determines the entire session workflow
 2. **Discipline skills second** — invoked by Worker in strict order (tdd → quality → review)
-3. **On error** — follow systematic-debugging approach in `references/systematic-debugging.md` before any fix
+3. **On error** — follow systematic-debugging approach in `skills/long-task-work/references/systematic-debugging.md` before any fix
