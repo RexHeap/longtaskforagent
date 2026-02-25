@@ -5,26 +5,37 @@ description: "Use when design doc exists but feature-list.json not yet created -
 
 # Initialize Long-Task Project
 
-Run once after design is approved. Scaffolds all persistent artifacts, decomposes requirements into verifiable features, and prepares the project for iterative Worker cycles.
+Run once after both SRS and design are approved. Scaffolds all persistent artifacts, decomposes requirements into verifiable features, and prepares the project for iterative Worker cycles.
 
 **Announce at start:** "I'm using the long-task-init skill to scaffold the project."
+
+## Input Documents
+
+This skill reads from **two** approved documents:
+
+| Document | Location | Provides |
+|----------|----------|----------|
+| **SRS** | `docs/plans/*-srs.md` | Functional requirements (FR-xxx), NFRs (NFR-xxx), constraints (CON-xxx), assumptions (ASM-xxx), interface requirements (IFR-xxx), glossary, user personas, acceptance criteria |
+| **Design** | `docs/plans/*-design.md` | Tech stack, architecture, data model, API design, testing strategy |
 
 ## Checklist
 
 You MUST create a TodoWrite task for each step and complete them in order:
 
-1. **Read the approved design document** from `docs/plans/`
+1. **Read the approved SRS and design documents** from `docs/plans/`
+   - SRS: `docs/plans/*-srs.md` — for requirements, constraints, assumptions, NFRs, glossary, personas
+   - Design: `docs/plans/*-design.md` — for tech stack, architecture decisions
 2. **Run `scripts/init_project.py`** to scaffold deterministic artifacts:
    ```bash
    python scripts/init_project.py <project-name> --path . --lang <language>
    ```
-   - `<project-name>` — from the design doc title
+   - `<project-name>` — from the SRS title
    - `<language>` — one of `python|java|typescript|c|cpp` from the design doc tech stack
    - Use `--line-cov`, `--branch-cov`, `--mutation-score` to override thresholds (defaults: 90/80/80)
    - Creates: `feature-list.json`, `CLAUDE.md` (appended), `task-progress.md`, `RELEASE_NOTES.md`, `examples/`, `docs/plans/`
    - Auto-copies helper scripts (`validate_features.py`, `check_configs.py`, `check_devtools.py`, `validate_guide.py`, `get_tool_commands.py`) into project `scripts/`
 3. **Verify `tech_stack` and `quality_gates`** in `feature-list.json`:
-   - Confirm `language`, `test_framework`, `coverage_tool`, `mutation_tool` match the project
+   - Confirm `language`, `test_framework`, `coverage_tool`, `mutation_tool` match the design doc
    - Adjust `quality_gates` thresholds if needed (defaults: line 90%, branch 80%, mutation 80%)
    - Verify tool commands resolve correctly:
      ```bash
@@ -47,17 +58,21 @@ You MUST create a TodoWrite task for each step and complete them in order:
    - Actual dependency installation commands (not commented stubs)
    - Service startup commands if needed
    - Must be immediately executable after `git clone`
-6. **Populate SRS fields in `feature-list.json`** from the approved design doc:
-   - `constraints[]` — copy "System Constraints" items; each a concise string
-   - `assumptions[]` — copy "Assumptions & Dependencies" items; each a concise string
-   - NFR rows → create `category: "non-functional"` features with measurable `verification_steps`; coverage/mutation gates do not apply to NFR features
-7. **Generate `docs/project-context.md`** — Extract "Target Users" and "Glossary" tables from the design doc; omit sections that are "None identified"
-8. **Decompose requirements into features** — Populate `feature-list.json` `features[]`:
-   - Each feature: `id`, `category`, `title`, `description`, `priority`, `status` (always `"failing"`), `verification_steps`, `dependencies`
+6. **Populate SRS fields in `feature-list.json`** — from the **SRS document**:
+   - `constraints[]` — copy CON-xxx items from SRS "Constraints" section; each a concise string
+   - `assumptions[]` — copy ASM-xxx items from SRS "Assumptions & Dependencies" section; each a concise string
+   - NFR-xxx rows → create `category: "non-functional"` features with measurable `verification_steps`; coverage/mutation gates do not apply to NFR features
+7. **Generate `docs/project-context.md`** — from the **SRS document**:
+   - Extract "Stakeholders & User Personas" table
+   - Extract "Glossary & Definitions" table
+   - Omit sections that are "None identified" or "[Not applicable]"
+8. **Decompose requirements into features** — from the **SRS document**, populate `feature-list.json` `features[]`:
+   - Each FR-xxx → one or more features with `id`, `category`, `title`, `description`, `priority`, `status` (always `"failing"`), `verification_steps`, `dependencies`
+   - `verification_steps` should trace to SRS acceptance criteria (Given/When/Then)
    - For UI features: set `"ui": true`, optionally `"ui_entry": "/path"`; include `[devtools]`-prefixed verification steps
    - Aim for 10-200+ features; each independently verifiable and completable in one session
    - Order by priority and dependency chain
-9. **Populate `required_configs`** — Identify external configuration requirements:
+9. **Populate `required_configs`** — from the **SRS document** (IFR-xxx interface requirements) and design doc:
    - API keys, service URLs → type `env`
    - Config files, certificates → type `file`
    - Link each to features via `required_by`; provide `check_hint` with setup instructions
@@ -65,10 +80,10 @@ You MUST create a TodoWrite task for each step and complete them in order:
     ```bash
     python scripts/validate_features.py feature-list.json
     ```
-11. **Scaffold project skeleton** (dirs, configs, dependency manifests)
+11. **Scaffold project skeleton** (dirs, configs, dependency manifests) — based on **design doc** architecture
 12. **Git init + initial commit**
 13. **Run init script**, verify environment works
-14. **Update `task-progress.md`** with Session 0 entry (include design doc reference)
+14. **Update `task-progress.md`** with Session 0 entry (include SRS + design doc references)
 15. **Begin first Worker cycle** — **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-work`
 
 ## Feature List Schema
@@ -138,5 +153,6 @@ Each feature:
 ## Integration
 
 **Called by:** long-task-design (Step 6) or using-long-task (when design doc exists, no feature-list.json)
+**Reads:** `docs/plans/*-srs.md` (requirements) + `docs/plans/*-design.md` (architecture)
 **Chains to:** long-task-work (after initialization complete)
 **Produces:** feature-list.json + all scaffolded artifacts listed above

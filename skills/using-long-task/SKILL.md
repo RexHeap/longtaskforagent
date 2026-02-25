@@ -23,25 +23,36 @@ Check project state and invoke the corresponding skill:
 digraph phase_detection {
     "Session Start" [shape=doublecircle];
     "feature-list.json exists?" [shape=diamond];
-    "Design doc in docs/plans/?" [shape=diamond];
+    "Design doc (*-design.md) in docs/plans/?" [shape=diamond];
+    "SRS doc (*-srs.md) in docs/plans/?" [shape=diamond];
+    "Invoke long-task:long-task-requirements" [shape=box style=filled fillcolor=lightyellow];
     "Invoke long-task:long-task-design" [shape=box style=filled fillcolor=lightblue];
     "Invoke long-task:long-task-init" [shape=box style=filled fillcolor=lightyellow];
     "Invoke long-task:long-task-work" [shape=box style=filled fillcolor=lightgreen];
 
     "Session Start" -> "feature-list.json exists?";
     "feature-list.json exists?" -> "Invoke long-task:long-task-work" [label="yes"];
-    "feature-list.json exists?" -> "Design doc in docs/plans/?" [label="no"];
-    "Design doc in docs/plans/?" -> "Invoke long-task:long-task-init" [label="yes"];
-    "Design doc in docs/plans/?" -> "Invoke long-task:long-task-design" [label="no"];
+    "feature-list.json exists?" -> "Design doc (*-design.md) in docs/plans/?" [label="no"];
+    "Design doc (*-design.md) in docs/plans/?" -> "Invoke long-task:long-task-init" [label="yes"];
+    "Design doc (*-design.md) in docs/plans/?" -> "SRS doc (*-srs.md) in docs/plans/?" [label="no"];
+    "SRS doc (*-srs.md) in docs/plans/?" -> "Invoke long-task:long-task-design" [label="yes"];
+    "SRS doc (*-srs.md) in docs/plans/?" -> "Invoke long-task:long-task-requirements" [label="no"];
 }
 ```
+
+**Detection rules:**
+1. Check `feature-list.json` in project root → if exists → `long-task-work`
+2. Check `docs/plans/*-design.md` → if any match → `long-task-init`
+3. Check `docs/plans/*-srs.md` → if any match → `long-task-design`
+4. Otherwise → `long-task-requirements`
 
 ## Skill Catalog
 
 ### Phase Skills (invoke ONE based on detection above)
 | Skill | Phase | When |
 |-------|-------|------|
-| `long-task:long-task-design` | Phase 0 | No design doc and no feature-list.json |
+| `long-task:long-task-requirements` | Phase 0a | No SRS, no design doc, no feature-list.json |
+| `long-task:long-task-design` | Phase 0b | SRS exists, no design doc, no feature-list.json |
 | `long-task:long-task-init` | Phase 1 | Design doc exists, no feature-list.json |
 | `long-task:long-task-work` | Phase 2 | feature-list.json exists |
 
@@ -56,6 +67,8 @@ digraph phase_detection {
 
 | File | Role |
 |------|------|
+| `docs/plans/*-srs.md` | Approved SRS — the WHAT |
+| `docs/plans/*-design.md` | Approved design — the HOW |
 | `feature-list.json` | Task inventory — the central shared state |
 | `task-progress.md` | Session-by-session log |
 | `long-task-guide.md` | Project-specific Worker guide |
@@ -75,6 +88,8 @@ These thoughts mean STOP — you're rationalizing:
 | "I remember the workflow" | Skills evolve. Load current version via Skill tool. |
 | "I need more context first" | Skill check comes BEFORE exploration. |
 | "I'll just do this one thing first" | Check BEFORE doing anything. |
+| "Requirements are obvious, skip to design" | long-task-requirements captures what you'd miss. |
+| "The SRS already implies the design" | SRS = WHAT, design = HOW. Both are needed. |
 
 ## Skill Priority
 

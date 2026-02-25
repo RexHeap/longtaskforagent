@@ -1,6 +1,6 @@
 ---
 name: long-task:design
-description: Start brainstorming and design phase for a new long-task project. Use before any implementation.
+description: Start design phase for a long-task project. Requires an approved SRS. Use after requirements and before initialization.
 disable-model-invocation: true
 ---
 
