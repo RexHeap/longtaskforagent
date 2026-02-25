@@ -42,29 +42,37 @@ You MUST create a TodoWrite task for each of these items and complete them in or
 
 ## Step 2: Structured Elicitation
 
-Ask clarifying questions **one at a time** using `AskUserQuestion`. Follow the CAPTURE → CHALLENGE → CLARIFY cycle for each requirement area.
+Use `AskUserQuestion` to elicit requirements in **multi-question rounds** — each round covers one topic area with up to 4 related questions. Follow the CAPTURE → CHALLENGE → CLARIFY cycle for each area.
 
 **How to ask:**
-- **Multiple choice preferred** — provide 2-4 options to reduce cognitive load
+- **Batch by topic** — group 2-4 related questions into a single `AskUserQuestion` call per round
+- **Multiple choice preferred** — provide 2-4 options per question to reduce cognitive load
 - **Assume and confirm** — state your assumption, let the user correct
 - **Scenario-based for edge cases** — "What should happen when [X] fails?"
 - **Quantify immediately** — replace vague words with numbers in the question itself
+- **Follow up within round** — if an answer in round N reveals ambiguity, address it in round N+1 before moving to the next topic
 
-**Elicitation sequence** (adapt order to project context):
+**Elicitation rounds** (adapt order and grouping to project context):
 
-### 2a. Purpose & Scope
+### Round 1: Purpose & Scope
+Ask in a single `AskUserQuestion` call (up to 4 questions):
 - What is the core problem this system solves?
 - Who are the primary users? (personas, technical levels)
 - What is explicitly **out of scope** for this version?
+- What is the target release scope? (MVP vs full)
 
-### 2b. Functional Requirements
-For each capability area:
+### Round 2–N: Functional Requirements
+For each capability area, ask per round (up to 4 questions):
 - What does the user do? (trigger/action)
 - What does the system do in response? (observable behavior)
 - What are the error / edge / boundary cases?
-- Provide a concrete Given/When/Then example and ask user to confirm or correct
+- Confirm a concrete Given/When/Then example
 
-### 2c. Non-Functional Requirements (quantify each)
+Group related capabilities into the same round when they share a workflow. Split large capability areas across multiple rounds.
+
+### Round N+1: Non-Functional Requirements
+Batch NFR probes into 1-2 rounds by relevance:
+
 | Category (ISO 25010) | Probe |
 |---|---|
 | **Performance** | Response time target? Throughput? Concurrent users? |
@@ -75,24 +83,23 @@ For each capability area:
 | **Portability** | Platform restrictions? Browser support? |
 | **Scalability** | Current load? Target load? Growth timeline? |
 
-**Rule**: Every NFR must have a **measurable criterion**. "Fast" → "p95 response time < 200ms under 1000 concurrent users".
+Skip categories clearly irrelevant to the project. **Rule**: Every NFR must have a **measurable criterion**. "Fast" → "p95 response time < 200ms under 1000 concurrent users".
 
-### 2d. Constraints & Assumptions
+### Round N+2: Constraints, Assumptions & Interfaces
+Combine into one round (up to 4 questions):
 - Hard limits (hosting, budget, licenses, regulatory, existing systems)
 - What is assumed to be true? What breaks if the assumption is wrong?
-
-### 2e. Interface Requirements
-- External systems to integrate with?
-- Data formats, protocols, API contracts?
+- External systems to integrate with? Protocols and data formats?
 - Existing APIs to preserve backward compatibility?
 
-### 2f. Glossary
+### Round N+3: Glossary & Terminology
+Ask in one round if needed:
 - Domain terms with potential ambiguity?
 - Synonyms to unify? Homonyms to distinguish?
 
 **When to stop:** Move to Step 3 when you can describe every functional capability, its acceptance criteria, all NFRs with measurable thresholds, all constraints, and all assumptions — without guessing.
 
-**Rule**: Do NOT batch questions. Ask one, wait for answer, then ask the next.
+**Rule**: Batch related questions per round (2-4 per `AskUserQuestion` call). Only split into single questions when a topic requires deep sequential probing (e.g., complex workflow with branching logic).
 
 ## Step 3: Classify Requirements
 
