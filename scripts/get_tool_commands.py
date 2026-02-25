@@ -25,6 +25,7 @@ import sys
 TEST_COMMANDS = {
     "pytest":  "pytest",
     "junit":   "mvn test",
+    "jest":    "npx jest",
     "vitest":  "npx vitest run",
     "ctest":   "ctest --test-dir build",
     "gtest":   "ctest --test-dir build",
@@ -34,6 +35,7 @@ COVERAGE_COMMANDS = {
     "pytest-cov": "pytest --cov=src --cov-branch --cov-report=term-missing",
     "jacoco":     "mvn test jacoco:report",
     "c8":         "npx vitest run --coverage",
+    "c8-jest":    "npx c8 --branches 80 --lines 90 --reporter=text npx jest",
     "gcov":       "make CFLAGS=\"--coverage\" test && gcov -b src/*.c && lcov --capture -d . -o coverage.info && lcov --summary coverage.info",
 }
 

@@ -8,6 +8,7 @@ Multi-language setup instructions for coverage tracking and mutation testing too
 |----------|--------------|----------------|---------------|---------------------|
 | Python | pytest-cov (coverage.py) | Yes | mutmut | Yes (`--paths-to-mutate`) |
 | Java | JaCoCo | Yes | PIT (pitest) | Yes (`-DtargetClasses`) |
+| JavaScript | c8 / nyc (Istanbul) | Yes | Stryker | Yes (`--mutate` glob) |
 | TypeScript | c8 / nyc (Istanbul) | Yes | Stryker | Yes (`--mutate` glob) |
 | C | gcov + lcov | Yes (`--branch-probabilities`) | Mull | Partial (filter by file) |
 | C++ | gcov + lcov / llvm-cov | Yes | Mull | Partial (filter by file) |
@@ -187,6 +188,74 @@ gradle pitest -PtargetClasses=com.example.ChangedClass
 
 # Mutation (full)
 mvn pitest:mutationCoverage
+```
+
+---
+
+## JavaScript
+
+**Coverage** — c8 (native V8 coverage, recommended) or nyc (Istanbul):
+
+```json
+// package.json
+{
+  "scripts": {
+    "test": "jest",
+    "test:cov": "c8 --branches 80 --lines 90 --reporter=text npx jest",
+    "test:cov:nyc": "nyc --branches 80 --lines 90 --reporter=text npx jest"
+  }
+}
+```
+
+```json
+// jest.config.json (if using Jest built-in coverage instead of c8)
+{
+  "collectCoverage": true,
+  "coverageDirectory": "coverage",
+  "coverageReporters": ["text", "html", "lcov"],
+  "coverageThreshold": {
+    "global": {
+      "branches": 80,
+      "lines": 90,
+      "functions": 80,
+      "statements": 90
+    }
+  },
+  "collectCoverageFrom": ["src/**/*.js", "!src/**/*.test.js"]
+}
+```
+
+**Mutation** — Stryker:
+
+```json
+// stryker.conf.json
+{
+  "$schema": "https://raw.githubusercontent.com/stryker-mutator/stryker/master/packages/core/schema/stryker-core.schema.json",
+  "mutate": ["src/**/*.js", "!src/**/*.test.js", "!src/**/*.spec.js"],
+  "testRunner": "jest",
+  "reporters": ["clear-text", "html"],
+  "thresholds": {
+    "high": 90,
+    "low": 80,
+    "break": 80
+  },
+  "coverageAnalysis": "perTest"
+}
+```
+
+**Commands**:
+```bash
+# Coverage (c8)
+npx c8 --branches 80 --lines 90 --reporter=text npx jest
+
+# Coverage (Jest built-in)
+npx jest --coverage
+
+# Mutation (incremental — changed files only)
+npx stryker run --mutate='src/changed-module.js'
+
+# Mutation (full)
+npx stryker run
 ```
 
 ---
@@ -375,6 +444,7 @@ When using `init_project.py --lang <language>`:
 |----------|---------------|---------------|---------------|
 | `python` | pytest | pytest-cov | mutmut |
 | `java` | junit | jacoco | pitest |
+| `javascript` | jest | c8-jest | stryker |
 | `typescript` | vitest | c8 | stryker |
 | `c` | ctest | gcov | mull |
 | `cpp` / `c++` | gtest | gcov | mull |

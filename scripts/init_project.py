@@ -116,6 +116,11 @@ LANG_PRESETS = {
         "coverage_tool": "jacoco",
         "mutation_tool": "pitest",
     },
+    "javascript": {
+        "test_framework": "jest",
+        "coverage_tool": "c8-jest",
+        "mutation_tool": "stryker",
+    },
     "typescript": {
         "test_framework": "vitest",
         "coverage_tool": "c8",
@@ -197,7 +202,7 @@ def main():
 
     # Tech stack options
     parser.add_argument("--lang", default=None,
-                        help="Project language (python/java/typescript/c/cpp). Auto-fills tool defaults.")
+                        help="Project language (python/java/javascript/typescript/c/cpp). Auto-fills tool defaults.")
     parser.add_argument("--test-framework", default=None,
                         help="Test framework (e.g., pytest, junit, vitest, gtest)")
     parser.add_argument("--coverage-tool", default=None,

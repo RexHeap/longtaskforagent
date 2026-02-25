@@ -260,6 +260,23 @@ def test_custom_thresholds():
         shutil.rmtree(tmp)
 
 
+def test_lang_preset_javascript():
+    """--lang javascript should auto-fill jest, c8-jest, stryker."""
+    tmp = tempfile.mkdtemp()
+    try:
+        run_init("test-project", tmp, ["--lang", "javascript"])
+        fl_path = os.path.join(tmp, "feature-list.json")
+        with open(fl_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        ts = data["tech_stack"]
+        assert ts["language"] == "javascript"
+        assert ts["test_framework"] == "jest"
+        assert ts["coverage_tool"] == "c8-jest"
+        assert ts["mutation_tool"] == "stryker"
+    finally:
+        shutil.rmtree(tmp)
+
+
 def test_tool_override_with_preset():
     """Explicit --coverage-tool should override the language preset."""
     tmp = tempfile.mkdtemp()
@@ -365,6 +382,7 @@ if __name__ == "__main__":
         test_feature_list_has_quality_gates,
         test_feature_list_has_required_configs,
         test_lang_preset_fills_tools,
+        test_lang_preset_javascript,
         test_custom_thresholds,
         test_tool_override_with_preset,
         test_creates_claude_md,

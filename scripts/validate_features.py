@@ -26,7 +26,7 @@ import sys
 REQUIRED_FIELDS = {"id", "category", "title", "description", "priority", "status", "verification_steps"}
 VALID_STATUSES = {"failing", "passing"}
 VALID_PRIORITIES = {"high", "medium", "low"}
-VALID_LANGUAGES = {"python", "java", "typescript", "c", "cpp", "c++"}
+VALID_LANGUAGES = {"python", "java", "javascript", "typescript", "c", "cpp", "c++"}
 QUALITY_GATE_KEYS = {"line_coverage_min", "branch_coverage_min", "mutation_score_min"}
 VALID_CONFIG_TYPES = {"env", "file"}
 DEVTOOLS_STEP_PREFIX = "[devtools]"

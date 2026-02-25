@@ -69,6 +69,16 @@ def test_java_commands():
     assert "pitest" in cmds["mutation_full"] or "mutationCoverage" in cmds["mutation_full"]
 
 
+def test_javascript_commands():
+    """JavaScript tech stack should resolve to jest/c8-jest/stryker commands."""
+    cmds = get_commands(make_feature_list("javascript", "jest", "c8-jest", "stryker"))
+    assert cmds["test"] == "npx jest"
+    assert "c8" in cmds["coverage"]
+    assert "jest" in cmds["coverage"]
+    assert "stryker" in cmds["mutation_incremental"]
+    assert "stryker" in cmds["mutation_full"]
+
+
 def test_typescript_commands():
     """TypeScript tech stack should resolve to vitest/stryker commands."""
     cmds = get_commands(make_feature_list("typescript", "vitest", "c8", "stryker"))
@@ -194,6 +204,7 @@ if __name__ == "__main__":
     tests = [
         test_python_commands,
         test_java_commands,
+        test_javascript_commands,
         test_typescript_commands,
         test_c_commands,
         test_cpp_commands,
