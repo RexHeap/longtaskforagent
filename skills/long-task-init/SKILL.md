@@ -15,21 +15,34 @@ You MUST create a TodoWrite task for each step and complete them in order:
 
 1. **Read the approved design document** from `docs/plans/`
 2. **Run `scripts/init_project.py`** to scaffold deterministic artifacts:
+   ```bash
+   python scripts/init_project.py <project-name> --path . --lang <language>
    ```
-   python <skill-dir>/scripts/init_project.py <project-name> --path <project-dir> --lang <language>
+   - `<project-name>` — from the design doc title
+   - `<language>` — one of `python|java|typescript|c|cpp` from the design doc tech stack
+   - Use `--line-cov`, `--branch-cov`, `--mutation-score` to override thresholds (defaults: 90/80/80)
+   - Creates: `feature-list.json`, `CLAUDE.md` (appended), `task-progress.md`, `RELEASE_NOTES.md`, `examples/`, `scripts/`, `docs/plans/`
+3. **Copy helper scripts** into `scripts/`:
+   ```bash
+   cp scripts/validate_features.py scripts/check_configs.py scripts/check_devtools.py scripts/validate_guide.py ./scripts/
    ```
-   Use `--lang` to auto-fill tool presets; use `--line-cov`, `--branch-cov`, `--mutation-score` to override thresholds.
-   Creates: `feature-list.json`, `CLAUDE.md` (appended), `task-progress.md`, `RELEASE_NOTES.md`, `examples/`, `scripts/`, `docs/plans/`
-3. **Copy helper scripts** (`validate_features.py`, `check_configs.py`, `check_devtools.py`, `validate_guide.py`) into `<project-dir>/scripts/`
+   Source: `scripts/` in the plugin root. Target: `scripts/` in the project root.
 4. **Verify `tech_stack` and `quality_gates`** in `feature-list.json`:
    - Confirm `language`, `test_framework`, `coverage_tool`, `mutation_tool` match the project
    - Adjust `quality_gates` thresholds if needed (defaults: line 90%, branch 80%, mutation 80%)
 5. **Generate `long-task-guide.md`** — Create a project-tailored Worker session guide:
-   - Read the long-task-work skill workflow + architecture reference + verification + coverage docs
+   - Read these files for reference:
+     - `skills/long-task-work/SKILL.md` — Worker workflow
+     - `skills/long-task-quality/SKILL.md` — verification enforcement
+     - `skills/long-task-quality/coverage-recipes.md` — coverage/mutation tool setup
+     - `references/architecture.md` — TDD workflow details
    - Include ONLY the project's language-specific coverage/mutation commands (from `tech_stack`)
    - Include Chrome DevTools MCP testing section ONLY if the project has UI features (`"ui": true`)
    - **Must include all required sections**: Orient, Bootstrap, Config Gate, TDD Red, TDD Green, Coverage Gate, TDD Refactor, Mutation Gate, Verification Enforcement, Code Review, Examples, Persist, Critical Rules
-   - Validate: `python scripts/validate_guide.py long-task-guide.md --feature-list feature-list.json`
+   - Validate:
+     ```bash
+     python scripts/validate_guide.py long-task-guide.md --feature-list feature-list.json
+     ```
 6. **Generate `init.sh` / `init.ps1`** — Create real, runnable bootstrap scripts:
    - Actual dependency installation commands (not commented stubs)
    - Service startup commands if needed
@@ -48,7 +61,10 @@ You MUST create a TodoWrite task for each step and complete them in order:
     - API keys, service URLs → type `env`
     - Config files, certificates → type `file`
     - Link each to features via `required_by`; provide `check_hint` with setup instructions
-11. **Validate**: `python scripts/validate_features.py feature-list.json`
+11. **Validate**:
+    ```bash
+    python scripts/validate_features.py feature-list.json
+    ```
 12. **Scaffold project skeleton** (dirs, configs, dependency manifests)
 13. **Git init + initial commit**
 14. **Run init script**, verify environment works

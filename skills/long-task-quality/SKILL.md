@@ -131,7 +131,7 @@ If you catch yourself using any of these, STOP and re-verify:
 
 ## Tool Setup
 
-If coverage or mutation tools are not yet configured for this project's tech stack, read `./coverage-recipes.md` for full setup instructions per language (Python, Java, TypeScript, C, C++).
+If coverage or mutation tools are not yet configured for this project's tech stack, read `skills/long-task-quality/coverage-recipes.md` for full setup instructions per language (Python, Java, TypeScript, C, C++).
 
 ## Verification Timing Summary
 

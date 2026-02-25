@@ -118,7 +118,7 @@ Task(
   subagent_type="general-purpose",
   prompt="""
   You are a test plan reviewer. Read the prompt template at:
-  <skill-dir>/skills/long-task-tdd/prompts/test-plan-reviewer-prompt.md
+  skills/long-task-tdd/prompts/test-plan-reviewer-prompt.md
 
   Feature spec:
   {feature_json}
@@ -153,7 +153,7 @@ No implementation code may be written until the test suite passes review.
 
 Write ONLY enough code to make tests pass.
 
-For subagent mode, dispatch with `./prompts/implementer-prompt.md` template:
+For subagent mode, dispatch with `skills/long-task-tdd/prompts/implementer-prompt.md` template:
 - Provide FULL task text (don't make subagent read files)
 - Include tech_stack, test command, coverage command, mutation command
 - Exit criteria: all tests pass, no regressions
@@ -178,12 +178,12 @@ Clean up while keeping tests green:
 4. **Gaming coverage** — Assert-free tests exercise code without verifying correctness. Coverage ≠ quality.
 5. **Low-value assertions** — `assertNotNull` / `isinstance` / `len>0` without checking actual values. Max 20% of total.
 
-Full catalog of 14 anti-patterns: Read `./testing-anti-patterns.md`.
+Full catalog of 14 anti-patterns: Read `skills/long-task-tdd/testing-anti-patterns.md`.
 
 ## Integration
 
 **Called by:** long-task-work (Steps 6-8)
-**Dispatches:** test-plan-reviewer subagent (`./prompts/test-plan-reviewer-prompt.md`), implementer subagent (`./prompts/implementer-prompt.md`)
+**Dispatches:** test-plan-reviewer subagent (`skills/long-task-tdd/prompts/test-plan-reviewer-prompt.md`), implementer subagent (`skills/long-task-tdd/prompts/implementer-prompt.md`)
 **Requires:** Plan file exists (from Work Step 5)
 **Produces:** Passing tests + implementation code
 **Chains to:** long-task-quality (via Work Step 9)

@@ -19,14 +19,14 @@ Review runs after every feature, before Persist. No exceptions. Spec compliance 
 
 **Question**: Does the implementation do what the feature spec says?
 
-Dispatch subagent with `./prompts/spec-reviewer-prompt.md`:
+Dispatch subagent with `skills/long-task-review/prompts/spec-reviewer-prompt.md`:
 
 ```
 Task(
   subagent_type="general-purpose",
   prompt="""
   You are a spec compliance reviewer.
-  Read the prompt at: <skill-dir>/skills/long-task-review/prompts/spec-reviewer-prompt.md
+  Read the prompt at: skills/long-task-review/prompts/spec-reviewer-prompt.md
 
   Feature spec:
   {feature_json}
@@ -58,14 +58,14 @@ Task(
 
 **Question**: Is the implementation well-crafted?
 
-Dispatch subagent with `./prompts/code-quality-reviewer-prompt.md`:
+Dispatch subagent with `skills/long-task-review/prompts/code-quality-reviewer-prompt.md`:
 
 ```
 Task(
   subagent_type="general-purpose",
   prompt="""
   You are a code quality reviewer.
-  Read the prompt at: <skill-dir>/skills/long-task-review/prompts/code-quality-reviewer-prompt.md
+  Read the prompt at: skills/long-task-review/prompts/code-quality-reviewer-prompt.md
 
   Feature spec:
   {feature_json}
@@ -163,7 +163,7 @@ After 3 failed rounds, escalate via `AskUserQuestion` with:
 ## Integration
 
 **Called by:** long-task-work (Step 10)
-**Dispatches:** spec-reviewer subagent, code-quality-reviewer subagent
+**Dispatches:** spec-reviewer subagent (`skills/long-task-review/prompts/spec-reviewer-prompt.md`), code-quality-reviewer subagent (`skills/long-task-review/prompts/code-quality-reviewer-prompt.md`)
 **Requires:** Quality gates passed (long-task-quality)
 **Produces:** Review verdict (PASS/FAIL with findings)
 **Returns to:** long-task-work for Add Examples + Persist steps

@@ -28,12 +28,16 @@ You MUST create a TodoWrite task for each step and complete them in order:
 - Smoke-test previously passing features (quick verify)
 
 ### 3. Config Gate
-Run `scripts/check_configs.py feature-list.json --feature <id>`.
-If any required configs are missing → prompt user via `AskUserQuestion` and **block until resolved**.
+```bash
+python scripts/check_configs.py feature-list.json --feature <id>
+```
+`<id>` = the feature ID selected in Step 1. If any required configs are missing → prompt user via `AskUserQuestion` and **block until resolved**.
 
 ### 4. DevTools Gate (only if `"ui": true`)
-Run `scripts/check_devtools.py feature-list.json --feature <id>`.
-If Chrome DevTools MCP not available → prompt user and **block until resolved**.
+```bash
+python scripts/check_devtools.py feature-list.json --feature <id>
+```
+`<id>` = same feature ID. If Chrome DevTools MCP not available → prompt user and **block until resolved**.
 
 ### 5. Plan
 Write a step-by-step implementation plan for the selected feature.
@@ -75,7 +79,10 @@ Create runnable examples in `examples/` demonstrating the completed feature.
 - Update `RELEASE_NOTES.md` (Keep a Changelog format)
 - Update `task-progress.md` with session entry
 - Mark feature `"status": "passing"` in `feature-list.json`
-- Validate: `python scripts/validate_features.py feature-list.json`
+- Validate:
+  ```bash
+  python scripts/validate_features.py feature-list.json
+  ```
 - Git commit again (progress files)
 
 ### 13. Continue
@@ -129,4 +136,4 @@ Follow the systematic debugging process — **never guess-and-fix**:
 2. `long-task:long-task-quality` (Step 9) — Coverage + Mutation + Verification
 3. `long-task:long-task-review` (Step 10) — Two-stage Code Review
 **Reads/Writes:** feature-list.json, task-progress.md, RELEASE_NOTES.md
-**References on-demand:** `references/plan-writing.md`, `references/systematic-debugging.md`
+**Read on-demand (via Read tool, NOT Skill tool):** `references/plan-writing.md`, `references/systematic-debugging.md`
