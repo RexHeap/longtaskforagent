@@ -46,8 +46,7 @@ You MUST create a TodoWrite task for each of these items and complete them in or
 2. Identify technical constraints not in the SRS (e.g., monorepo structure, CI/CD pipeline, existing libraries)
 3. Check for a design document template:
    - If the user specified a template path → read and validate it
-   - Else if `docs/templates/design-template.md` exists → read it and confirm with the user
-   - Else → use the default template (Step 5)
+   - Else → read `docs/templates/design-template.md` (the default template shipped with this skill)
    - **Validation**: template must be a `.md` file containing at least one `## ` heading
 
 ## Step 3: Propose Approaches
@@ -95,56 +94,14 @@ Present each section. Wait for user feedback. Incorporate changes before moving 
 
 Save the approved design to `docs/plans/YYYY-MM-DD-<topic>-design.md`.
 
-### Using a custom template
+### Template usage
 
-If a design template was found in Step 2:
+Read the template found in Step 2 (user-specified or default `docs/templates/design-template.md`):
 1. Preserve the template's heading structure
 2. Replace guidance text under each heading with approved design content
 3. Add metadata at top if not already present (`Date`, `Status`, `SRS Reference`, `Template` path)
 4. For uncovered template sections: mark "[Not applicable]"
 5. For approved content without matching template section: append as "Additional Notes"
-
-### Using the default template
-
-```markdown
-# <Project Name> — Design Document
-
-**Date**: YYYY-MM-DD
-**Status**: Approved
-**SRS Reference**: docs/plans/YYYY-MM-DD-<topic>-srs.md
-
-## 1. Design Drivers
-[Key SRS inputs: NFR thresholds, constraints, interface requirements that shaped this design]
-
-## 2. Approach Selection
-[Selected approach with justification. Brief mention of alternatives considered.]
-
-## 3. Architecture
-[System components, data flow, tech stack decisions]
-[Justify against SRS constraints and NFRs]
-
-## 4. Data Model
-[Schemas, relationships, storage strategy]
-
-## 5. API / Interface Design
-[Endpoints, contracts, protocols]
-[Trace to SRS IFR-xxx requirements]
-
-## 6. UI/UX Approach
-[If applicable. Layout strategy, interaction patterns.]
-[Omit if no UI features in SRS]
-
-## 7. Testing Strategy
-[Test types, coverage approach, tooling]
-[How SRS acceptance criteria map to test suites]
-
-## 8. Deployment / Infrastructure
-[If applicable. Hosting, CI/CD, environments.]
-[Omit for library/CLI projects]
-
-## 9. Open Questions / Risks
-[Any remaining items to resolve during implementation]
-```
 
 ## Step 6: Transition to Initializer
 

@@ -156,6 +156,8 @@ using-long-task (router)
 | `init.sh` / `init.ps1` | Init | Environment bootstrap (LLM-generated) |
 | `long-task-guide.md` | Init | Worker session guide (LLM-generated, validated) |
 | `docs/project-context.md` | Init | User personas and domain glossary (from SRS) |
+| `docs/templates/srs-template.md` | — | Default SRS template (user-customizable) |
+| `docs/templates/design-template.md` | — | Default design document template (user-customizable) |
 
 ### Feature List Schema
 
@@ -234,6 +236,10 @@ long-task-agent/
 │           └── code-quality-reviewer-prompt.md
 ├── agents/
 │   └── code-reviewer.md              # Code reviewer agent definition
+├── docs/
+│   └── templates/                     # Document templates (user-customizable)
+│       ├── srs-template.md            # Default SRS template (ISO 29148)
+│       └── design-template.md         # Default design document template
 ├── commands/                          # User shortcut commands
 │   ├── requirements.md                # /long-task:requirements
 │   ├── design.md                      # /long-task:design
