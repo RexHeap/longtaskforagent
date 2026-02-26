@@ -23,6 +23,7 @@ Check project state and invoke the corresponding skill:
 digraph phase_detection {
     "Session Start" [shape=doublecircle];
     "feature-list.json exists?" [shape=diamond];
+    "All features passing?" [shape=diamond];
     "Design doc (*-design.md) in docs/plans/?" [shape=diamond];
     "UCD doc (*-ucd.md) in docs/plans/?" [shape=diamond];
     "SRS doc (*-srs.md) in docs/plans/?" [shape=diamond];
@@ -31,9 +32,12 @@ digraph phase_detection {
     "Invoke long-task:long-task-design" [shape=box style=filled fillcolor=lightblue];
     "Invoke long-task:long-task-init" [shape=box style=filled fillcolor=lightyellow];
     "Invoke long-task:long-task-work" [shape=box style=filled fillcolor=lightgreen];
+    "Invoke long-task:long-task-st" [shape=box style=filled fillcolor=lightcoral];
 
     "Session Start" -> "feature-list.json exists?";
-    "feature-list.json exists?" -> "Invoke long-task:long-task-work" [label="yes"];
+    "feature-list.json exists?" -> "All features passing?" [label="yes"];
+    "All features passing?" -> "Invoke long-task:long-task-st" [label="yes"];
+    "All features passing?" -> "Invoke long-task:long-task-work" [label="no"];
     "feature-list.json exists?" -> "Design doc (*-design.md) in docs/plans/?" [label="no"];
     "Design doc (*-design.md) in docs/plans/?" -> "Invoke long-task:long-task-init" [label="yes"];
     "Design doc (*-design.md) in docs/plans/?" -> "UCD doc (*-ucd.md) in docs/plans/?" [label="no"];
@@ -45,7 +49,9 @@ digraph phase_detection {
 ```
 
 **Detection rules:**
-1. Check `feature-list.json` in project root → if exists → `long-task-work`
+1. Check `feature-list.json` in project root → if exists:
+   - Run `python scripts/check_st_readiness.py feature-list.json` — if exit 0 (all features passing) → `long-task-st`
+   - Otherwise (some features failing) → `long-task-work`
 2. Check `docs/plans/*-design.md` → if any match → `long-task-init`
 3. Check `docs/plans/*-ucd.md` → if any match → `long-task-design` (UCD done, proceed to design)
 4. Check `docs/plans/*-srs.md` → if any match → `long-task-ucd` (SRS done, UCD next; if no UI features the UCD skill auto-skips to design)
@@ -60,7 +66,8 @@ digraph phase_detection {
 | `long-task:long-task-ucd` | Phase 0b | SRS exists, no UCD doc, no design doc, no feature-list.json |
 | `long-task:long-task-design` | Phase 0c | SRS + UCD exist (or no UI features), no design doc, no feature-list.json |
 | `long-task:long-task-init` | Phase 1 | Design doc exists, no feature-list.json |
-| `long-task:long-task-work` | Phase 2 | feature-list.json exists |
+| `long-task:long-task-work` | Phase 2 | feature-list.json exists, some features failing |
+| `long-task:long-task-st` | Phase 3 | feature-list.json exists, ALL features passing |
 
 ### Discipline Skills (invoked by long-task-work as sub-skills — do NOT invoke directly)
 | Skill | Purpose |
@@ -80,6 +87,7 @@ digraph phase_detection {
 | `task-progress.md` | Session-by-session log |
 | `long-task-guide.md` | Project-specific Worker guide |
 | `RELEASE_NOTES.md` | Living changelog |
+| `docs/plans/*-st-report.md` | System testing report — Go/No-Go verdict |
 
 ## Red Flags
 
@@ -99,6 +107,8 @@ These thoughts mean STOP — you're rationalizing:
 | "The SRS already implies the design" | SRS = WHAT, design = HOW. Both are needed. |
 | "UI styles can be decided during coding" | Ad-hoc styling causes inconsistency. Run UCD first. |
 | "This UI is too simple for a style guide" | Even simple UIs need tokens. UCD can be lightweight. |
+| "All features pass, we can ship" | Feature tests ≠ system tests. Run ST phase first. |
+| "System testing is overkill" | Integration bugs, NFR failures, and workflow gaps hide until ST. |
 
 ## Skill Priority
 

@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **Claude Code skill plugin** called `long-task-agent` that enables multi-session execution of complex software projects exceeding a single context window. It implements a four-phase architecture (Requirements → Design → Initializer → Worker sessions) with persistent state bridging via on-disk artifacts.
+This is a **Claude Code skill plugin** called `long-task-agent` that enables multi-session execution of complex software projects exceeding a single context window. It implements a five-phase architecture (Requirements → Design → Initializer → Worker → System Testing) with persistent state bridging via on-disk artifacts.
 
-The skill system follows the **superpowers architectural pattern**: 8 independent skills loaded on-demand via the `Skill` tool, with a bootstrap router (`using-long-task`) injected at session start via hook.
+The skill system follows the **superpowers architectural pattern**: 10 independent skills loaded on-demand via the `Skill` tool, with a bootstrap router (`using-long-task`) injected at session start via hook.
 
 ## Key Commands
 
@@ -46,6 +46,11 @@ python long-task-agent/scripts/check_devtools.py feature-list.json
 python long-task-agent/scripts/check_devtools.py feature-list.json --feature 3
 ```
 
+### Check system testing readiness
+```bash
+python long-task-agent/scripts/check_st_readiness.py feature-list.json
+```
+
 ### Run tests
 ```bash
 python long-task-agent/tests/test_validate_features.py
@@ -53,6 +58,7 @@ python long-task-agent/tests/test_init_project.py
 python long-task-agent/tests/test_check_configs.py
 python long-task-agent/tests/test_validate_guide.py
 python long-task-agent/tests/test_check_devtools.py
+python long-task-agent/tests/test_check_st_readiness.py
 ```
 
 ### Shortcut commands
@@ -61,11 +67,12 @@ python long-task-agent/tests/test_check_devtools.py
 - `/long-task:design` — Start design phase (requires approved SRS + UCD if UI project)
 - `/long-task:init` — Initialize a project after design approval
 - `/long-task:work` — Start a Worker cycle
+- `/long-task:st` — Run system testing (requires all features passing)
 - `/long-task:status` — Check project progress
 
 ## Architecture
 
-### 9-Skill System
+### 10-Skill System
 
 The skill system uses on-demand loading via the `Skill` tool. Only the bootstrap router is loaded at session start; other skills are loaded as needed.
 
@@ -78,7 +85,8 @@ The skill system uses on-demand loading via the `Skill` tool. Only the bootstrap
 | `long-task-ucd` | Phase 0b | SRS exists, no UCD doc, no design doc, no feature-list.json |
 | `long-task-design` | Phase 0c | SRS + UCD exist (or no UI features), no design doc, no feature-list.json |
 | `long-task-init` | Phase 1 | Design doc exists, no feature-list.json |
-| `long-task-work` | Phase 2 | feature-list.json exists |
+| `long-task-work` | Phase 2 | feature-list.json exists, some features failing |
+| `long-task-st` | Phase 3 | feature-list.json exists, ALL features passing |
 
 #### Discipline Skills (loaded by long-task-work as sub-skills)
 
@@ -94,13 +102,16 @@ The skill system uses on-demand loading via the `Skill` tool. Only the bootstrap
 using-long-task (router)
    ├─→ long-task-requirements ──→ long-task-ucd ──→ long-task-design ──→ long-task-init ──→ long-task-work
    │                              (auto-skip if no UI)                                        │
-   └─→ long-task-work (if feature-list.json exists)
-          ├─→ long-task-tdd (Steps 6-8)
-          ├─→ long-task-quality (Step 9)
-          └─→ long-task-review (Step 10, includes UCD compliance for ui:true features)
+   ├─→ long-task-work (if features remain failing)
+   │      ├─→ long-task-tdd (Steps 6-8)
+   │      ├─→ long-task-quality (Step 9)
+   │      └─→ long-task-review (Step 10, includes UCD compliance for ui:true features)
+   │
+   └─→ long-task-st (if ALL features passing)
+          └─→ long-task-work (if defects found → fix → return to ST)
 ```
 
-### Five-Phase Workflow
+### Six-Phase Workflow
 
 0a. **Requirements** (`long-task-requirements`):
    - Structured elicitation aligned with ISO/IEC/IEEE 29148
@@ -140,7 +151,13 @@ using-long-task (router)
    - **TDD** (`long-task-tdd`): Red → Test Plan Review → Green → Refactor
    - **Quality** (`long-task-quality`): Coverage Gate → Mutation Gate → Verify & Mark
    - **Review** (`long-task-review`): Spec Compliance → Code Quality
-   - Add Examples → Persist → Continue
+   - Add Examples → Persist → Continue (chains to ST when all features pass)
+
+3. **System Testing** (`long-task-st`):
+   - ST Readiness Gate → ST Plan (RTM) → Regression → Integration → E2E → NFR Verification
+   - Compatibility → Exploratory → Defect Triage → ST Report → Verdict (Go/No-Go)
+   - If Critical/Major defects found → loops back to Worker for fixes
+   - Aligned with IEEE 829 and ISTQB best practices
 
 ### Critical Rules
 
@@ -157,6 +174,7 @@ using-long-task (router)
 - **Systematic debugging**: Never guess-and-fix; always trace root cause first
 - **One feature per cycle**: Prevents context exhaustion
 - **UI features require Chrome DevTools MCP testing**: Mark with `"ui": true`
+- **System testing before release**: When all features pass, run ST phase (regression, integration, E2E, NFR, exploratory); no release without Go verdict
 
 ### Generated Persistent Artifacts
 
@@ -174,6 +192,8 @@ using-long-task (router)
 | `long-task-guide.md` | Init | Worker session guide (LLM-generated, validated) |
 | `docs/project-context.md` | Init | User personas and domain glossary (from SRS) |
 | `.env.example` | Init | Template for required env configs (safe to commit; `.env` has secrets) |
+| `docs/plans/*-st-plan.md` | ST | System testing plan with Requirements Traceability Matrix |
+| `docs/plans/*-st-report.md` | ST | System testing report with Go/No-Go verdict |
 | `docs/templates/srs-template.md` | — | Default SRS template (user-customizable) |
 | `docs/templates/design-template.md` | — | Default design document template (user-customizable) |
 
@@ -232,7 +252,7 @@ Each feature in `features` array:
 
 ```
 long-task-agent/
-├── skills/                            # 9 skills (on-demand loaded via Skill tool)
+├── skills/                            # 10 skills (on-demand loaded via Skill tool)
 │   ├── using-long-task/               # Bootstrap router (injected via hook)
 │   │   ├── SKILL.md
 │   │   └── references/
@@ -252,6 +272,12 @@ long-task-agent/
 │   │       ├── systematic-debugging.md # Four-phase debugging process
 │   │       ├── subagent-development.md # Subagent-driven development mode
 │   │       └── worktree-isolation.md  # Git worktree isolation & branch finishing
+│   ├── long-task-st/                  # Phase 3: System Testing (IEEE 829)
+│   │   ├── SKILL.md
+│   │   ├── references/
+│   │   │   └── st-recipes.md          # Per-language ST tool recipes
+│   │   └── prompts/
+│   │       └── st-reviewer-prompt.md  # ST report review subagent
 │   ├── long-task-tdd/                 # TDD discipline
 │   │   ├── SKILL.md
 │   │   ├── testing-anti-patterns.md   # 14 anti-patterns catalog
@@ -280,6 +306,7 @@ long-task-agent/
 │   ├── design.md                      # /long-task:design
 │   ├── init.md                        # /long-task:init
 │   ├── work.md                        # /long-task:work
+│   ├── st.md                          # /long-task:st
 │   └── status.md                      # /long-task:status
 ├── hooks/
 │   ├── hooks.json                     # SessionStart hook config
@@ -291,14 +318,16 @@ long-task-agent/
 │   ├── validate_features.py           # Feature list validation
 │   ├── validate_guide.py              # Guide structural validation
 │   ├── check_configs.py               # Required config checking
-│   └── check_devtools.py              # Chrome DevTools MCP checking
+│   ├── check_devtools.py              # Chrome DevTools MCP checking
+│   └── check_st_readiness.py          # System testing readiness checking
 ├── tests/
 │   ├── test_validate_features.py
 │   ├── test_init_project.py
 │   ├── test_get_tool_commands.py
 │   ├── test_check_configs.py
 │   ├── test_validate_guide.py
-│   └── test_check_devtools.py
+│   ├── test_check_devtools.py
+│   └── test_check_st_readiness.py
 ```
 
 ## See Also
@@ -311,14 +340,15 @@ long-task-agent/
 - [skills/long-task-work/references/subagent-development.md](skills/long-task-work/references/subagent-development.md) - Subagent-driven development
 - [skills/long-task-work/references/worktree-isolation.md](skills/long-task-work/references/worktree-isolation.md) - Worktree isolation & branch finishing
 - [skills/long-task-tdd/references/ui-error-detection.md](skills/long-task-tdd/references/ui-error-detection.md) - UI error detection specification
+- [skills/long-task-st/references/st-recipes.md](skills/long-task-st/references/st-recipes.md) - System testing recipes per language
 
 
 <!-- long-task-agent -->
 ## Long-Task Agent
 
-This project uses a multi-session agent workflow with 9 skills loaded on-demand.
+This project uses a multi-session agent workflow with 10 skills loaded on-demand.
 The `using-long-task` skill is injected at session start and routes to the correct phase.
-Flow: Requirements (SRS) → UCD (UI projects) → Design → Init → Worker cycles.
+Flow: Requirements (SRS) → UCD (UI projects) → Design → Init → Worker cycles → System Testing.
 
-Key files: `docs/plans/*-srs.md` (SRS), `docs/plans/*-ucd.md` (UCD style guide), `docs/plans/*-design.md` (design), `feature-list.json` (task inventory), `task-progress.md` (session log), `RELEASE_NOTES.md` (changelog).
+Key files: `docs/plans/*-srs.md` (SRS), `docs/plans/*-ucd.md` (UCD style guide), `docs/plans/*-design.md` (design), `feature-list.json` (task inventory), `task-progress.md` (session log), `RELEASE_NOTES.md` (changelog), `docs/plans/*-st-report.md` (ST report).
 <!-- /long-task-agent -->

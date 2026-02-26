@@ -15,10 +15,16 @@ using_long_task_content=$(cat "${PLUGIN_ROOT}/skills/using-long-task/SKILL.md" 2
 # Detect project phase and build status hint
 status_hint=""
 if [ -f "feature-list.json" ]; then
-    # Phase 2: Worker — count feature progress
+    # Count feature progress
     total=$(python3 -c "import json; d=json.load(open('feature-list.json')); print(len(d.get('features',[])))" 2>/dev/null || echo "?")
     passing=$(python3 -c "import json; d=json.load(open('feature-list.json')); print(sum(1 for f in d.get('features',[]) if f.get('status')=='passing'))" 2>/dev/null || echo "?")
-    status_hint="\\n\\nProject status: ${passing}/${total} features passing. Phase: Worker."
+    if [ "$total" != "?" ] && [ "$passing" != "?" ] && [ "$total" = "$passing" ] && [ "$total" != "0" ]; then
+        # Phase 3: System Testing — all features passing
+        status_hint="\\n\\nProject status: ${passing}/${total} features passing (ALL). Phase: System Testing."
+    else
+        # Phase 2: Worker — some features still failing
+        status_hint="\\n\\nProject status: ${passing}/${total} features passing. Phase: Worker."
+    fi
 elif compgen -G "docs/plans/*-design.md" > /dev/null 2>&1; then
     status_hint="\\n\\nDesign doc found. Phase: Initializer."
 elif compgen -G "docs/plans/*-ucd.md" > /dev/null 2>&1; then

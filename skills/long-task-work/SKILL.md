@@ -122,6 +122,7 @@ Create runnable examples in `examples/` demonstrating the completed feature.
 
 ### 13. Continue
 - If failing features remain and context allows → proceed to next feature (back to Step 1)
+- If **no failing features remain** → all features are passing. **Invoke `long-task:long-task-st`** to begin system testing.
 - If context is exhausted → end session (ensure task-progress.md is updated)
 
 ## Critical Rules
