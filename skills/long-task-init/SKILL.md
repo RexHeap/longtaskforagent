@@ -66,12 +66,14 @@ You MUST create a TodoWrite task for each step and complete them in order:
    - Extract "Stakeholders & User Personas" table
    - Extract "Glossary & Definitions" table
    - Omit sections that are "None identified" or "[Not applicable]"
-8. **Decompose requirements into features** — from the **SRS document**, populate `feature-list.json` `features[]`:
+8. **Decompose requirements into features** — from the **SRS document** and **design document's Development Plan** (section 11), populate `feature-list.json` `features[]`:
    - Each FR-xxx → one or more features with `id`, `category`, `title`, `description`, `priority`, `status` (always `"failing"`), `verification_steps`, `dependencies`
    - `verification_steps` should trace to SRS acceptance criteria (Given/When/Then)
    - For UI features: set `"ui": true`, optionally `"ui_entry": "/path"`; include `[devtools]`-prefixed verification steps
    - Aim for 10-200+ features; each independently verifiable and completable in one session
-   - Order by priority and dependency chain
+   - **Priority ordering**: follow the design document's Task Decomposition table (section 11.2) — P0/P1/P2/P3 maps to high/high/medium/low
+   - **Dependency chain**: follow the design document's Dependency Chain diagram (section 11.3) to populate each feature's `dependencies[]`
+   - **Milestone mapping**: group features by the design document's milestones for logical ordering
 9. **Populate `required_configs`** — from the **SRS document** (IFR-xxx interface requirements) and design doc:
    - API keys, service URLs → type `env`
    - Config files, certificates → type `file`

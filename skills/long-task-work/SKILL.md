@@ -19,6 +19,7 @@ You MUST create a TodoWrite task for each step and complete them in order:
 - Read `task-progress.md` — what was done in previous sessions
 - Read `feature-list.json` — note `constraints[]`, `assumptions[]`, feature statuses
 - Read `long-task-guide.md` — project-specific workflow guidance
+- Read design document (`docs/plans/*-design.md`) — locate the **Key Feature Design** section (section 4.N) for the target feature to understand the approved architecture, class diagrams, sequence flows, and design decisions
 - Run `git log --oneline -10` — recent commit context
 - Pick next `"status": "failing"` feature by priority + dependency order
 - If target feature has `"ui": true` or involves domain terms, read `docs/project-context.md`
@@ -43,6 +44,12 @@ python scripts/check_devtools.py feature-list.json --feature <id>
 Write a step-by-step implementation plan for the selected feature.
 Save to `docs/plans/YYYY-MM-DD-<feature-name>.md`.
 See `references/plan-writing.md` for plan structure and task granularity.
+
+**Design document reference (mandatory):**
+- Read the corresponding Key Feature Design section (section 4.N) from `docs/plans/*-design.md`
+- The plan MUST align with the approved class diagrams, sequence flows, and architectural decisions
+- If the plan deviates from the design → explain why and get user approval before proceeding
+- Reference the design's third-party dependency versions when choosing libraries
 
 ### 6-8. TDD Cycle
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-tdd` and follow it exactly.

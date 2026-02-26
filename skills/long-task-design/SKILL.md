@@ -60,6 +60,7 @@ Present **2-3 implementation approaches** with explicit trade-offs:
 **Cons**: [bullet list]
 **Best when**: [conditions]
 **NFR impact**: [how this approach affects the SRS NFR thresholds]
+**Third-party dependencies**: [key libraries/frameworks this approach requires, with versions]
 
 ## Approach B: [Name]
 ...
@@ -74,21 +75,40 @@ Present **2-3 implementation approaches** with explicit trade-offs:
 
 For non-trivial projects, break the design into sections and get approval per section:
 
-1. **Architecture overview** — system components, data flow, tech stack decisions
+1. **Architecture** — system components, logical view, tech stack decisions
+   - Must include a **Logical View** (Mermaid `graph`) showing layers/packages/modules and dependency directions
+   - Must include a **Component Diagram** (Mermaid `graph`) showing runtime components and interactions
    - Must justify tech stack choices against SRS constraints
    - Must show how NFR thresholds will be met
-2. **Data model** — schemas, relationships, storage strategy
-3. **API / interface design** — endpoints, contracts, protocols
+2. **Key feature designs** — one chapter per key feature or feature group
+   - Each feature chapter MUST include at least:
+     - **Class diagram** (Mermaid `classDiagram`) — classes/modules, attributes, methods, relationships
+     - **One behavioral diagram**: sequence diagram (Mermaid `sequenceDiagram`) or flow diagram (Mermaid `flowchart`)
+   - For complex features, include ALL four views: class diagram, sequence diagram, flow diagram, and design notes
+   - All diagrams MUST use **Mermaid** format — no ASCII art, no image references
+3. **Data model** — schemas, relationships, storage strategy
+   - Must use Mermaid ER diagrams (`erDiagram`) where applicable
+4. **API / interface design** — endpoints, contracts, protocols
    - Must align with SRS Interface Requirements (IFR-xxx)
-4. **UI/UX approach** (if applicable) — layout strategy, interaction patterns
+5. **UI/UX approach** (if applicable) — layout strategy, interaction patterns
    - Must address SRS User Personas
-5. **Testing strategy** — test types, coverage targets, tooling
+6. **Third-party dependencies** — ALL libraries/frameworks with **exact version numbers**
+   - Must verify mutual compatibility between dependencies
+   - Must verify compatibility with the project's target runtime version
+   - Must note license type for each dependency
+   - Must include a dependency graph (Mermaid) for non-trivial dependency chains
+7. **Testing strategy** — test types, coverage targets, tooling
    - Must cover all SRS acceptance criteria
-6. **Deployment / infrastructure** (if applicable) — hosting, CI/CD, environments
+8. **Deployment / infrastructure** (if applicable) — hosting, CI/CD, environments
+9. **Development plan** — milestones, task decomposition, priority ordering
+   - Must define milestones with clear exit criteria
+   - Must decompose features into prioritized tasks (P0-P3)
+   - Must show dependency chain (Mermaid `graph`) identifying the critical path
+   - Must include risk assessment with mitigation strategies
 
 Present each section. Wait for user feedback. Incorporate changes before moving to the next.
 
-**For simple projects** (< 5 features): Combine all sections into a single approval step.
+**For simple projects** (< 5 features): Combine all sections into a single approval step, but still include the required diagrams and dependency versions.
 
 ## Step 5: Write Design Document
 
@@ -116,10 +136,10 @@ Once the design document is saved and committed:
 
 | Project Size | Features | Design Depth |
 |---|---|---|
-| Tiny | 1-5 | Single paragraph approach + 1 approval step |
-| Small | 5-20 | 2-3 approach options + combined section approval |
-| Medium | 20-50 | Full multi-section approval |
-| Large | 50-200+ | Full multi-section approval + architecture diagrams |
+| Tiny | 1-5 | Single paragraph approach + 1 approval step; logical view + 1 feature diagram + dependency table + simplified dev plan |
+| Small | 5-20 | 2-3 approach options + combined section approval; logical view + key feature diagrams + dependency table + milestone plan |
+| Medium | 20-50 | Full multi-section approval; all architecture views + per-feature diagrams + full dependency analysis + detailed dev plan |
+| Large | 50-200+ | Full multi-section approval; comprehensive diagrams for every feature group + dependency compatibility matrix + phased dev plan with risk register |
 
 ## Red Flags
 
@@ -131,6 +151,59 @@ Once the design document is saved and committed:
 | "The user seems impatient, I'll skip design" | Explain the value briefly, then run efficiently |
 | "I'll design as I go" | Upfront design is cheaper than mid-session corrections |
 | "Let me re-clarify requirements here" | Requirements belong in the SRS. If missing, note as Open Question and resolve with user before design. |
+
+## Diagram Requirements
+
+All architectural and design views MUST use **Mermaid** syntax. This ensures:
+- Diagrams are version-controlled alongside the document (no external image files)
+- Diagrams are renderable in GitHub, GitLab, and most Markdown viewers
+- Diagrams stay in sync with design changes
+
+### Required Diagram Types
+
+| Section | Diagram Type | Mermaid Syntax | Required? |
+|---|---|---|---|
+| Architecture Logical View | Layered package diagram | `graph TB` | Always |
+| Architecture Components | Component interaction | `graph LR` | Always |
+| Key Feature — Structure | Class diagram | `classDiagram` | Per feature |
+| Key Feature — Behavior | Sequence diagram | `sequenceDiagram` | Per feature (at least one behavioral) |
+| Key Feature — Logic | Flow/decision diagram | `flowchart TD` | Per feature (at least one behavioral) |
+| Data Model | ER diagram | `erDiagram` | If persistent storage |
+| Dependency Graph | Dependency tree | `graph LR` | If > 3 third-party deps |
+| Development Plan | Critical path | `graph LR` | Always |
+
+### Diagram Quality Checklist
+- [ ] Each diagram has a clear title or surrounding heading
+- [ ] Class diagrams show visibility modifiers (`+`/`-`/`#`) and key methods
+- [ ] Sequence diagrams show the main success path and at least one error path
+- [ ] Flow diagrams include decision nodes for all branching logic
+- [ ] No placeholder diagrams — every diagram reflects actual approved design content
+
+## Third-Party Dependency Rules
+
+1. **Exact versions required** — specify `1.2.3` or a constrained range `^1.2.0` / `>=1.2,<2.0`; never use `latest` or omit version
+2. **Compatibility matrix** — verify each dependency is compatible with:
+   - The target language/runtime version (e.g., Python >= 3.10, Node >= 18)
+   - Other dependencies in the stack (check for known conflicts)
+3. **License audit** — document the license for each dependency; flag any copyleft licenses (GPL, AGPL) that may conflict with project requirements
+4. **Upgrade path** — note any dependencies approaching EOL or with known migration concerns
+
+## Development Plan Rules
+
+The development plan section bridges the design document to the Init phase. It MUST include:
+
+1. **Milestones** — time-boxed phases with clear scope and exit criteria
+   - M1 is always "Foundation" (project skeleton, CI, core abstractions)
+   - Final milestone is always "Polish & Release" (NFR verification, docs, examples)
+2. **Task decomposition** — features mapped to priorities (P0-P3) with rationale
+   - P0: Foundation — required by all other features
+   - P1: Core value — the minimum viable feature set
+   - P2: Extended — important but not launch-blocking
+   - P3: Nice-to-have — defer if timeline is tight
+3. **Dependency chain** — Mermaid graph showing which features block others
+4. **Risk register** — technical and schedule risks with mitigation
+
+The Init phase uses this plan to populate `feature-list.json` with correct priority ordering and dependency chains.
 
 ## Integration
 

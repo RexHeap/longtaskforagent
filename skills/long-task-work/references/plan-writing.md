@@ -21,9 +21,17 @@ Each plan is saved to `docs/plans/YYYY-MM-DD-<feature-name>.md`:
 **Feature**: #ID — [title]
 **Priority**: high/medium/low
 **Dependencies**: [list or "none"]
+**Design Reference**: docs/plans/YYYY-MM-DD-<topic>-design.md § 4.N
 
 ## Context
 [1-2 sentences: what this feature does and why it matters]
+
+## Design Alignment
+[Reference the approved design for this feature. Summarize key design decisions that guide implementation:]
+- **Class structure**: [from design class diagram — which classes to create/modify]
+- **Interaction flow**: [from design sequence diagram — key call chains]
+- **Third-party deps**: [from design dependency table — exact library versions to use]
+- **Deviations**: [none, or explain why the plan deviates from design and note user approval]
 
 ## Tasks
 
@@ -121,6 +129,8 @@ Each plan is saved to `docs/plans/YYYY-MM-DD-<feature-name>.md`:
 6. **Test Plan Review is non-negotiable** — Task 2 is a hard gate. No implementation (Task 3) may begin until the test suite passes review. This prevents wasting an entire TDD cycle on inadequate tests.
 
 7. **Quality gates are explicit tasks** — Coverage Gate (Task 4) and Mutation Gate (Task 6) are separate tasks with clear pass/fail criteria, not afterthoughts.
+
+8. **Design alignment is mandatory** — every plan MUST reference the corresponding Key Feature Design section from the design document. The plan's class structure, interaction flow, and dependency choices must match the approved design. Any deviation requires explicit justification and user approval.
 
 ## Execution Modes
 
