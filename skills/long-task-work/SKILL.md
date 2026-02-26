@@ -23,6 +23,7 @@ You MUST create a TodoWrite task for each step and complete them in order:
 - Run `git log --oneline -10` — recent commit context
 - Pick next `"status": "failing"` feature by priority + dependency order
 - If target feature has `"ui": true` or involves domain terms, read `docs/project-context.md`
+- If target feature has `"ui": true` and UCD document exists (`docs/plans/*-ucd.md`), read the UCD style guide — reference style tokens, component prompts, and page prompts to ensure frontend implementation matches the approved visual style
 
 ### 2. Bootstrap
 - Run `init.sh` / `init.ps1` — ensure environment is ready
@@ -51,6 +52,12 @@ See `references/plan-writing.md` for plan structure and task granularity.
 - If the plan deviates from the design → explain why and get user approval before proceeding
 - Reference the design's third-party dependency versions when choosing libraries
 
+**UCD style guide reference (mandatory for `"ui": true` features):**
+- If `docs/plans/*-ucd.md` exists, read the relevant component prompts and page prompts for this feature
+- The plan MUST specify which UCD style tokens (colors, typography, spacing) apply to each UI element
+- The plan MUST reference the UCD component prompt for each UI component being implemented
+- Any visual deviation from UCD → explain why and get user approval
+
 ### 6-8. TDD Cycle
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-tdd` and follow it exactly.
 
@@ -74,6 +81,7 @@ Context to carry forward:
 - Feature object from feature-list.json
 - Design document Key Feature Design section (section 4.N from `docs/plans/*-design.md`) for the target feature
 - Plan document (`docs/plans/YYYY-MM-DD-<feature-name>.md`) from Step 5
+- UCD style guide (`docs/plans/*-ucd.md`) — if feature has `"ui": true` and UCD exists
 - Git diff since before implementation began
 - Test results summary
 

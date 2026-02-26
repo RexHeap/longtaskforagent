@@ -21,8 +21,12 @@ if [ -f "feature-list.json" ]; then
     status_hint="\\n\\nProject status: ${passing}/${total} features passing. Phase: Worker."
 elif compgen -G "docs/plans/*-design.md" > /dev/null 2>&1; then
     status_hint="\\n\\nDesign doc found. Phase: Initializer."
+elif compgen -G "docs/plans/*-ucd.md" > /dev/null 2>&1; then
+    status_hint="\\n\\nUCD style guide found. Phase: Design."
+elif compgen -G "docs/plans/*-srs.md" > /dev/null 2>&1; then
+    status_hint="\\n\\nSRS doc found. Phase: UCD Style Guide."
 else
-    status_hint="\\n\\nNo design doc or feature-list.json found. Phase: Brainstorming."
+    status_hint="\\n\\nNo SRS, design, or feature-list.json found. Phase: Requirements."
 fi
 
 # Escape string for JSON embedding using bash parameter substitution.

@@ -24,8 +24,10 @@ digraph phase_detection {
     "Session Start" [shape=doublecircle];
     "feature-list.json exists?" [shape=diamond];
     "Design doc (*-design.md) in docs/plans/?" [shape=diamond];
+    "UCD doc (*-ucd.md) in docs/plans/?" [shape=diamond];
     "SRS doc (*-srs.md) in docs/plans/?" [shape=diamond];
     "Invoke long-task:long-task-requirements" [shape=box style=filled fillcolor=lightyellow];
+    "Invoke long-task:long-task-ucd" [shape=box style=filled fillcolor=lightorange];
     "Invoke long-task:long-task-design" [shape=box style=filled fillcolor=lightblue];
     "Invoke long-task:long-task-init" [shape=box style=filled fillcolor=lightyellow];
     "Invoke long-task:long-task-work" [shape=box style=filled fillcolor=lightgreen];
@@ -34,8 +36,10 @@ digraph phase_detection {
     "feature-list.json exists?" -> "Invoke long-task:long-task-work" [label="yes"];
     "feature-list.json exists?" -> "Design doc (*-design.md) in docs/plans/?" [label="no"];
     "Design doc (*-design.md) in docs/plans/?" -> "Invoke long-task:long-task-init" [label="yes"];
-    "Design doc (*-design.md) in docs/plans/?" -> "SRS doc (*-srs.md) in docs/plans/?" [label="no"];
-    "SRS doc (*-srs.md) in docs/plans/?" -> "Invoke long-task:long-task-design" [label="yes"];
+    "Design doc (*-design.md) in docs/plans/?" -> "UCD doc (*-ucd.md) in docs/plans/?" [label="no"];
+    "UCD doc (*-ucd.md) in docs/plans/?" -> "Invoke long-task:long-task-design" [label="yes"];
+    "UCD doc (*-ucd.md) in docs/plans/?" -> "SRS doc (*-srs.md) in docs/plans/?" [label="no"];
+    "SRS doc (*-srs.md) in docs/plans/?" -> "Invoke long-task:long-task-ucd" [label="yes"];
     "SRS doc (*-srs.md) in docs/plans/?" -> "Invoke long-task:long-task-requirements" [label="no"];
 }
 ```
@@ -43,8 +47,9 @@ digraph phase_detection {
 **Detection rules:**
 1. Check `feature-list.json` in project root → if exists → `long-task-work`
 2. Check `docs/plans/*-design.md` → if any match → `long-task-init`
-3. Check `docs/plans/*-srs.md` → if any match → `long-task-design`
-4. Otherwise → `long-task-requirements`
+3. Check `docs/plans/*-ucd.md` → if any match → `long-task-design` (UCD done, proceed to design)
+4. Check `docs/plans/*-srs.md` → if any match → `long-task-ucd` (SRS done, UCD next; if no UI features the UCD skill auto-skips to design)
+5. Otherwise → `long-task-requirements`
 
 ## Skill Catalog
 
@@ -52,7 +57,8 @@ digraph phase_detection {
 | Skill | Phase | When |
 |-------|-------|------|
 | `long-task:long-task-requirements` | Phase 0a | No SRS, no design doc, no feature-list.json |
-| `long-task:long-task-design` | Phase 0b | SRS exists, no design doc, no feature-list.json |
+| `long-task:long-task-ucd` | Phase 0b | SRS exists, no UCD doc, no design doc, no feature-list.json |
+| `long-task:long-task-design` | Phase 0c | SRS + UCD exist (or no UI features), no design doc, no feature-list.json |
 | `long-task:long-task-init` | Phase 1 | Design doc exists, no feature-list.json |
 | `long-task:long-task-work` | Phase 2 | feature-list.json exists |
 
@@ -68,6 +74,7 @@ digraph phase_detection {
 | File | Role |
 |------|------|
 | `docs/plans/*-srs.md` | Approved SRS — the WHAT |
+| `docs/plans/*-ucd.md` | Approved UCD style guide — the LOOK (UI projects only) |
 | `docs/plans/*-design.md` | Approved design — the HOW |
 | `feature-list.json` | Task inventory — the central shared state |
 | `task-progress.md` | Session-by-session log |
@@ -90,6 +97,8 @@ These thoughts mean STOP — you're rationalizing:
 | "I'll just do this one thing first" | Check BEFORE doing anything. |
 | "Requirements are obvious, skip to design" | long-task-requirements captures what you'd miss. |
 | "The SRS already implies the design" | SRS = WHAT, design = HOW. Both are needed. |
+| "UI styles can be decided during coding" | Ad-hoc styling causes inconsistency. Run UCD first. |
+| "This UI is too simple for a style guide" | Even simple UIs need tokens. UCD can be lightweight. |
 
 ## Skill Priority
 

@@ -21,6 +21,7 @@ Review runs after every feature, before Persist. No exceptions. Spec compliance 
 1. Does the implementation do what the **feature spec** says? (SRS traceability)
 2. Does the implementation follow the **design document**? (architecture, class structure, interaction flows, dependency versions)
 3. Does the implementation follow the **plan document**? (task decomposition, agreed approach)
+4. For `"ui": true` features: Does the implementation follow the **UCD style guide**? (style tokens, component visual spec, page layouts)
 
 Dispatch subagent with `skills/long-task-review/prompts/spec-reviewer-prompt.md`:
 
@@ -39,6 +40,9 @@ Task(
 
   Plan document:
   {plan_content}
+
+  UCD style guide (only for ui:true features, omit if not applicable):
+  {ucd_content}
 
   Git diff:
   {diff_output}
@@ -79,7 +83,17 @@ Task(
 | P2 | Files created/modified match the plan's file list |
 | P3 | Design alignment section in plan is honored (class structure, interaction flow, deps) |
 
+### UCD Compliance Checklist (U1-U4) — only for `"ui": true` features with UCD document
+
+| # | Check |
+|---|-------|
+| U1 | Color values used in CSS/styles match UCD color palette tokens |
+| U2 | Typography (font family, size, weight, line height) matches UCD typography scale |
+| U3 | Spacing and layout (padding, margin, border radius, shadow) follow UCD spacing tokens |
+| U4 | Component structure and visual hierarchy match UCD component prompts for the implemented components |
+
 **Any NO in S1-S5 or D1-D5 → FAIL. Stage 2 is skipped. Fix gaps, re-run tests, re-review Stage 1.**
+**Any NO in U1-U4 → FAIL (for ui:true features). Visual inconsistency must be fixed before proceeding.**
 **NO in P1-P3 → Important (must fix before feature complete, but does not skip Stage 2).**
 
 ## Stage 2: Code Quality
@@ -162,9 +176,9 @@ Controller merges results:
 ## Review Loop
 
 ```
-Quality Gates Pass → Stage 1 (Spec + Design + Plan Compliance)
+Quality Gates Pass → Stage 1 (Spec + Design + Plan + UCD Compliance)
                           ↓
-                     S1-S5 all PASS and D1-D5 all PASS?
+                     S1-S5 all PASS and D1-D5 all PASS (and U1-U4 if ui:true)?
                           ↓ YES                    ↓ NO
                      Stage 2 (Code Quality)   Fix → Re-test → Re-review Stage 1
                           ↓
@@ -198,6 +212,7 @@ After 3 failed rounds, escalate via `AskUserQuestion` with:
 - Feature spec from `feature-list.json`
 - Design document section (`docs/plans/*-design.md` § 4.N for the target feature)
 - Plan document (`docs/plans/YYYY-MM-DD-<feature-name>.md`)
+- UCD style guide (`docs/plans/*-ucd.md`) — only for `"ui": true` features
 - Git diff, test results, coverage/mutation reports
 **Produces:** Review verdict (PASS/FAIL with findings)
 **Returns to:** long-task-work for Add Examples + Persist steps

@@ -26,9 +26,9 @@ You MUST create a TodoWrite task for each of these items and complete them in or
 5. **Validate SRS** — check 8 quality attributes, detect anti-patterns, verify testability
 6. **Present & approve SRS** — section-by-section for non-trivial projects
 7. **Save SRS document** — `docs/plans/YYYY-MM-DD-<topic>-srs.md` and commit
-8. **Transition to design** — **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-design`
+8. **Transition to UCD** — **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-ucd` (it auto-skips to design if no UI features in SRS)
 
-**The terminal state is invoking long-task-design.** Do NOT invoke any other skill.
+**The terminal state is invoking long-task-ucd.** Do NOT invoke any other skill.
 
 ## Step 1: Explore Context
 
@@ -199,15 +199,16 @@ Read the template found in Step 1 (user-specified or default `docs/templates/srs
 4. For uncovered template sections: mark "[Not applicable]"
 5. For approved content without matching template section: append as "Additional Notes"
 
-## Step 8: Transition to Design
+## Step 8: Transition to UCD
 
 Once the SRS document is saved and committed:
 
-1. Summarize key inputs the design phase will need:
+1. Summarize key inputs the next phase will need:
    - Functional requirement count and priority distribution
    - Key constraints that affect architecture choices
    - NFR thresholds that affect technology selection
-2. **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-design` to begin design
+   - Whether the SRS contains UI-related functional requirements (determines if UCD runs or auto-skips)
+2. **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-ucd` to generate UCD style guide (auto-skips to design if no UI features)
 
 ## Scaling the Requirements Phase
 
@@ -232,5 +233,5 @@ Once the SRS document is saved and committed:
 ## Integration
 
 **Called by:** using-long-task (when no SRS doc, no design doc, and no feature-list.json)
-**Chains to:** long-task-design (after SRS approval)
+**Chains to:** long-task-ucd (after SRS approval; auto-skips to design if no UI features)
 **Produces:** `docs/plans/YYYY-MM-DD-<topic>-srs.md`

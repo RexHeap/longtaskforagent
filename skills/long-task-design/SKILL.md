@@ -28,16 +28,18 @@ You MUST create a TodoWrite task for each of these items and complete them in or
 
 **The terminal state is invoking long-task-init.** Do NOT invoke any other implementation skill.
 
-## Step 1: Read SRS & Extract Design Inputs
+## Step 1: Read SRS & UCD & Extract Design Inputs
 
 1. Read the approved SRS document from `docs/plans/*-srs.md`
-2. Extract key design drivers:
+2. Read the approved UCD style guide from `docs/plans/*-ucd.md` (if it exists — only present for UI projects)
+3. Extract key design drivers:
    - **Functional scope** — FR count, priority distribution, dependency chains
    - **NFR thresholds** — performance targets, reliability, scalability that affect architecture
    - **Constraints** — hard limits that restrict technology/approach choices
    - **Interface requirements** — external systems, protocols, data formats to integrate with
    - **User personas** — technical levels that affect API/UI design decisions
-3. List any SRS **Open Questions** that must be resolved before design can proceed
+   - **UCD style tokens** (if UCD exists) — color palette, typography, spacing, component catalog → informs frontend architecture and UI/UX section
+4. List any SRS **Open Questions** that must be resolved before design can proceed
    - If unresolved questions affect architecture → ask user via `AskUserQuestion` before Step 2
 
 ## Step 2: Explore Technical Context
@@ -92,6 +94,9 @@ For non-trivial projects, break the design into sections and get approval per se
    - Must align with SRS Interface Requirements (IFR-xxx)
 5. **UI/UX approach** (if applicable) — layout strategy, interaction patterns
    - Must address SRS User Personas
+   - If UCD document exists: must reference UCD style tokens (colors, typography, spacing) and component catalog
+   - Frontend architecture decisions (component library, state management, routing) must be compatible with UCD style tokens
+   - Include a mapping: UCD component prompts → concrete implementation components
 6. **Third-party dependencies** — ALL libraries/frameworks with **exact version numbers**
    - Must verify mutual compatibility between dependencies
    - Must verify compatibility with the project's target runtime version
@@ -207,7 +212,7 @@ The Init phase uses this plan to populate `feature-list.json` with correct prior
 
 ## Integration
 
-**Called by:** using-long-task (when SRS exists, no design doc, no feature-list.json)
-**Requires:** Approved SRS at `docs/plans/*-srs.md`
+**Called by:** using-long-task (when SRS + UCD exist, no design doc, no feature-list.json) or long-task-ucd (Step 8)
+**Requires:** Approved SRS at `docs/plans/*-srs.md`; optionally approved UCD at `docs/plans/*-ucd.md` (for UI projects)
 **Chains to:** long-task-init (after design approval)
 **Produces:** `docs/plans/YYYY-MM-DD-<topic>-design.md`

@@ -56,14 +56,15 @@ python long-task-agent/tests/test_check_devtools.py
 
 ### Shortcut commands
 - `/long-task:requirements` — Start requirements elicitation and SRS generation
-- `/long-task:design` — Start design phase (requires approved SRS)
+- `/long-task:ucd` — Start UCD style guide generation (requires approved SRS with UI features)
+- `/long-task:design` — Start design phase (requires approved SRS + UCD if UI project)
 - `/long-task:init` — Initialize a project after design approval
 - `/long-task:work` — Start a Worker cycle
 - `/long-task:status` — Check project progress
 
 ## Architecture
 
-### 8-Skill System
+### 9-Skill System
 
 The skill system uses on-demand loading via the `Skill` tool. Only the bootstrap router is loaded at session start; other skills are loaded as needed.
 
@@ -73,7 +74,8 @@ The skill system uses on-demand loading via the `Skill` tool. Only the bootstrap
 |-------|-------|---------|
 | `using-long-task` | Bootstrap | Injected via SessionStart hook into every session |
 | `long-task-requirements` | Phase 0a | No SRS, no design doc, no feature-list.json |
-| `long-task-design` | Phase 0b | SRS exists, no design doc, no feature-list.json |
+| `long-task-ucd` | Phase 0b | SRS exists, no UCD doc, no design doc, no feature-list.json |
+| `long-task-design` | Phase 0c | SRS + UCD exist (or no UI features), no design doc, no feature-list.json |
 | `long-task-init` | Phase 1 | Design doc exists, no feature-list.json |
 | `long-task-work` | Phase 2 | feature-list.json exists |
 
@@ -89,15 +91,15 @@ The skill system uses on-demand loading via the `Skill` tool. Only the bootstrap
 
 ```
 using-long-task (router)
-   ├─→ long-task-requirements ──→ long-task-design ──→ long-task-init ──→ long-task-work
-   │                                                                         │
+   ├─→ long-task-requirements ──→ long-task-ucd ──→ long-task-design ──→ long-task-init ──→ long-task-work
+   │                              (auto-skip if no UI)                                        │
    └─→ long-task-work (if feature-list.json exists)
           ├─→ long-task-tdd (Steps 6-8)
           ├─→ long-task-quality (Step 9)
-          └─→ long-task-review (Step 10)
+          └─→ long-task-review (Step 10, includes UCD compliance for ui:true features)
 ```
 
-### Four-Phase Workflow
+### Five-Phase Workflow
 
 0a. **Requirements** (`long-task-requirements`):
    - Structured elicitation aligned with ISO/IEC/IEEE 29148
@@ -105,11 +107,22 @@ using-long-task (router)
    - Apply EARS templates, assign unique IDs, write Given/When/Then acceptance criteria
    - Anti-pattern detection (weasel words, compound requirements, design leakage)
    - Save SRS to `docs/plans/YYYY-MM-DD-<topic>-srs.md`
-   - **Hard gate**: no design until SRS approved
+   - **Hard gate**: no UCD/design until SRS approved
 
-0b. **Design** (`long-task-design`):
-   - Takes approved SRS as input (WHAT → HOW)
+0b. **UCD Style Guide** (`long-task-ucd`):
+   - Takes approved SRS as input; auto-skips to design if no UI features
+   - Define visual style direction (2-3 options), style tokens (colors, typography, spacing)
+   - Generate text-to-image prompts per component type and per page
+   - Save UCD to `docs/plans/YYYY-MM-DD-<topic>-ucd.md`
+   - **Hard gate**: no design until UCD approved (for UI projects)
+   - Referenced by design (UI/UX section), worker (frontend features), and review (UCD compliance)
+
+0c. **Design** (`long-task-design`):
+   - Takes approved SRS + UCD as input (WHAT + LOOK → HOW)
    - Propose 2-3 approaches with trade-offs, evaluate against SRS constraints/NFRs
+   - Per-feature detailed design with Mermaid diagrams (class, sequence, flow)
+   - Third-party dependency versions with compatibility verification
+   - Development plan with milestones, task decomposition, priority ordering
    - Get section-by-section design approval
    - Save design doc to `docs/plans/YYYY-MM-DD-<topic>-design.md`
    - **Hard gate**: no coding until design approved
@@ -131,13 +144,15 @@ using-long-task (router)
 ### Critical Rules
 
 - **Config gate before planning**: Never plan or code when required configs are missing
-- **Requirements before design**: Run requirements elicitation; no design until SRS approved
+- **Requirements before UCD/design**: Run requirements elicitation; no UCD/design until SRS approved
+- **UCD before design (UI projects)**: Run UCD style guide generation; no design until UCD approved (auto-skips for non-UI projects)
 - **Design before implementation**: Run design phase; no coding until design approved
 - **Strict TDD**: Always Red→Test Plan Review→Green→Coverage→Refactor→Mutation
 - **Coverage gate after TDD Green**: Run coverage tool, verify line >= 90%, branch >= 80%
 - **Mutation gate after TDD Refactor**: Run incremental mutation testing, verify score >= 80%
 - **Verification enforcement**: Never mark "passing" without fresh evidence
-- **Code review after every feature**: Two-stage (spec compliance → code quality)
+- **Code review after every feature**: Two-stage (spec + design + UCD compliance → code quality)
+- **UCD compliance for frontend features**: UI features must pass UCD style token checks (U1-U4) during review
 - **Systematic debugging**: Never guess-and-fix; always trace root cause first
 - **One feature per cycle**: Prevents context exhaustion
 - **UI features require Chrome DevTools MCP testing**: Mark with `"ui": true`
@@ -147,6 +162,7 @@ using-long-task (router)
 | File | Phase | Purpose |
 |------|-------|---------|
 | `docs/plans/*-srs.md` | Requirements | Approved SRS — the WHAT (ISO/IEC/IEEE 29148 aligned) |
+| `docs/plans/*-ucd.md` | UCD | Approved UCD style guide — the LOOK (UI projects only; text-to-image prompts, style tokens) |
 | `docs/plans/*-design.md` | Design | Approved design — the HOW |
 | `feature-list.json` | Init | Structured task inventory with status; includes `constraints[]` and `assumptions[]` |
 | `CLAUDE.md` | Init | Cross-session navigation index (appended by `init_project.py`) |
@@ -214,15 +230,16 @@ Each feature in `features` array:
 
 ```
 long-task-agent/
-├── skills/                            # 8 skills (on-demand loaded via Skill tool)
+├── skills/                            # 9 skills (on-demand loaded via Skill tool)
 │   ├── using-long-task/               # Bootstrap router (injected via hook)
 │   │   ├── SKILL.md
 │   │   └── references/
 │   │       ├── architecture.md        # Detailed architecture patterns
 │   │       └── roadmap.md             # Future enhancements
 │   ├── long-task-requirements/SKILL.md # Phase 0a: Requirements & SRS (ISO 29148)
-│   ├── long-task-design/SKILL.md      # Phase 0b: Design (takes SRS as input)
-│   ├── long-task-init/SKILL.md        # Phase 1: Initialization (reads SRS + design)
+│   ├── long-task-ucd/SKILL.md         # Phase 0b: UCD style guide (text-to-image prompts)
+│   ├── long-task-design/SKILL.md      # Phase 0c: Design (takes SRS + UCD as input)
+│   ├── long-task-init/SKILL.md        # Phase 1: Initialization (reads SRS + UCD + design)
 │   ├── long-task-work/               # Phase 2: Worker orchestrator
 │   │   ├── SKILL.md
 │   │   └── references/
@@ -254,6 +271,7 @@ long-task-agent/
 │       └── design-template.md         # Default design document template
 ├── commands/                          # User shortcut commands
 │   ├── requirements.md                # /long-task:requirements
+│   ├── ucd.md                         # /long-task:ucd
 │   ├── design.md                      # /long-task:design
 │   ├── init.md                        # /long-task:init
 │   ├── work.md                        # /long-task:work
@@ -293,9 +311,9 @@ long-task-agent/
 <!-- long-task-agent -->
 ## Long-Task Agent
 
-This project uses a multi-session agent workflow with 8 skills loaded on-demand.
+This project uses a multi-session agent workflow with 9 skills loaded on-demand.
 The `using-long-task` skill is injected at session start and routes to the correct phase.
-Flow: Requirements (SRS) → Design → Init → Worker cycles.
+Flow: Requirements (SRS) → UCD (UI projects) → Design → Init → Worker cycles.
 
-Key files: `docs/plans/*-srs.md` (SRS), `docs/plans/*-design.md` (design), `feature-list.json` (task inventory), `task-progress.md` (session log), `RELEASE_NOTES.md` (changelog).
+Key files: `docs/plans/*-srs.md` (SRS), `docs/plans/*-ucd.md` (UCD style guide), `docs/plans/*-design.md` (design), `feature-list.json` (task inventory), `task-progress.md` (session log), `RELEASE_NOTES.md` (changelog).
 <!-- /long-task-agent -->
