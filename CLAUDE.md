@@ -37,6 +37,7 @@ python long-task-agent/scripts/validate_guide.py long-task-guide.md --feature-li
 ```bash
 python long-task-agent/scripts/check_configs.py feature-list.json
 python long-task-agent/scripts/check_configs.py feature-list.json --feature 3
+python long-task-agent/scripts/check_configs.py feature-list.json --feature 3 --dotenv .env
 ```
 
 ### Check Chrome DevTools MCP availability (for UI features)
@@ -143,7 +144,7 @@ using-long-task (router)
 
 ### Critical Rules
 
-- **Config gate before planning**: Never plan or code when required configs are missing
+- **Config gate before planning**: Never plan or code when required configs are missing; load `.env` first, prompt user for missing values via text input, save to `.env`
 - **Requirements before UCD/design**: Run requirements elicitation; no UCD/design until SRS approved
 - **UCD before design (UI projects)**: Run UCD style guide generation; no design until UCD approved (auto-skips for non-UI projects)
 - **Design before implementation**: Run design phase; no coding until design approved
@@ -172,6 +173,7 @@ using-long-task (router)
 | `init.sh` / `init.ps1` | Init | Environment bootstrap (LLM-generated) |
 | `long-task-guide.md` | Init | Worker session guide (LLM-generated, validated) |
 | `docs/project-context.md` | Init | User personas and domain glossary (from SRS) |
+| `.env.example` | Init | Template for required env configs (safe to commit; `.env` has secrets) |
 | `docs/templates/srs-template.md` | — | Default SRS template (user-customizable) |
 | `docs/templates/design-template.md` | — | Default design document template (user-customizable) |
 

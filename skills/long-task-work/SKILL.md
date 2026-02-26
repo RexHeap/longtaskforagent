@@ -16,8 +16,9 @@ Execute multi-session software projects by implementing one feature per context 
 You MUST create a TodoWrite task for each step and complete them in order:
 
 ### 1. Orient
+- Load `.env` file if it exists — this populates environment variables for required configs collected in previous sessions
 - Read `task-progress.md` — what was done in previous sessions
-- Read `feature-list.json` — note `constraints[]`, `assumptions[]`, feature statuses
+- Read `feature-list.json` — note `constraints[]`, `assumptions[]`, `required_configs[]`, feature statuses
 - Read `long-task-guide.md` — project-specific workflow guidance
 - Read design document (`docs/plans/*-design.md`) — locate the **Key Feature Design** section (section 4.N) for the target feature to understand the approved architecture, class diagrams, sequence flows, and design decisions
 - Run `git log --oneline -10` — recent commit context
@@ -31,9 +32,26 @@ You MUST create a TodoWrite task for each step and complete them in order:
 
 ### 3. Config Gate
 ```bash
-python scripts/check_configs.py feature-list.json --feature <id>
+python scripts/check_configs.py feature-list.json --feature <id> --dotenv .env
 ```
-`<id>` = the feature ID selected in Step 1. If any required configs are missing → prompt user via `AskUserQuestion` and **block until resolved**.
+`<id>` = the feature ID selected in Step 1. The `--dotenv .env` flag loads previously stored config values before checking.
+
+**If configs are missing — prompt for text input and save to `.env`:**
+
+1. For each missing `env`-type config, use `AskUserQuestion` to ask the user to **type the value** — do NOT provide predefined option buttons. Frame the question with the config's `name`, `description`, and `check_hint` so the user knows what to provide.
+   - Example: "Please enter the value for `OPENAI_API_KEY` (OpenAI API key for LLM integration). Hint: Get it from https://platform.openai.com/api-keys"
+2. For each missing `file`-type config, ask the user to provide the file path or create the file manually.
+3. After receiving all values, **append env-type configs to `.env`**:
+   ```
+   # <config name> — <description>
+   KEY=value
+   ```
+4. Re-run the check to confirm:
+   ```bash
+   python scripts/check_configs.py feature-list.json --feature <id> --dotenv .env
+   ```
+5. Add `.env` to `.gitignore` if not already present (contains secrets).
+6. **Block until all configs pass.**
 
 ### 4. DevTools Gate (only if `"ui": true`)
 ```bash

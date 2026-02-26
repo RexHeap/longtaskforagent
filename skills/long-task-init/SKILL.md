@@ -88,15 +88,25 @@ You MUST create a TodoWrite task for each step and complete them in order:
    - API keys, service URLs → type `env`
    - Config files, certificates → type `file`
    - Link each to features via `required_by`; provide `check_hint` with setup instructions
-10. **Validate**:
+10. **Generate `.env.example`** — from `required_configs`:
+    - For each `env`-type config, write a commented template line:
+      ```
+      # <name> — <description>
+      # Hint: <check_hint>
+      # Required by features: <required_by ids>
+      <KEY>=
+      ```
+    - Add `.env` to `.gitignore` (`.env.example` is safe to commit; `.env` contains secrets)
+    - This template helps users know which values to fill in; the Worker Config Gate will prompt for missing values and store them in `.env`
+11. **Validate**:
     ```bash
     python scripts/validate_features.py feature-list.json
     ```
-11. **Scaffold project skeleton** (dirs, configs, dependency manifests) — based on **design doc** architecture
-12. **Git init + initial commit**
-13. **Run init script**, verify environment works
-14. **Update `task-progress.md`** with Session 0 entry (include SRS + design doc references)
-15. **Begin first Worker cycle** — **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-work`
+12. **Scaffold project skeleton** (dirs, configs, dependency manifests) — based on **design doc** architecture
+13. **Git init + initial commit**
+14. **Run init script**, verify environment works
+15. **Update `task-progress.md`** with Session 0 entry (include SRS + design doc references)
+16. **Begin first Worker cycle** — **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-work`
 
 ## Feature List Schema
 
@@ -161,6 +171,7 @@ Each feature:
 | `init.sh` / `init.ps1` | Environment bootstrap (LLM-generated) |
 | `long-task-guide.md` | Worker session guide (LLM-generated, validated) |
 | `docs/project-context.md` | User personas and domain glossary |
+| `.env.example` | Template for required env configs (safe to commit) |
 
 ## Integration
 

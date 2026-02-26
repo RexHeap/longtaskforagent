@@ -12,7 +12,7 @@ import tempfile
 SCRIPT_PATH = os.path.join(os.path.dirname(__file__), "..", "scripts", "check_configs.py")
 
 
-def run_checker(feature_data, feature_id=None, env_overrides=None):
+def run_checker(feature_data, feature_id=None, env_overrides=None, dotenv_path=None):
     """Run check_configs.py with given data, return (exit_code, stdout, stderr)."""
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         json.dump(feature_data, f, indent=2)
@@ -23,6 +23,8 @@ def run_checker(feature_data, feature_id=None, env_overrides=None):
         cmd = [sys.executable, SCRIPT_PATH, tmp_path]
         if feature_id is not None:
             cmd.extend(["--feature", str(feature_id)])
+        if dotenv_path is not None:
+            cmd.extend(["--dotenv", dotenv_path])
 
         env = os.environ.copy()
         if env_overrides:
@@ -194,6 +196,149 @@ def test_mixed_present_and_missing():
         os.unlink(cfg_path)
 
 
+def test_dotenv_loads_env_vars():
+    """--dotenv flag should load env vars from .env file, making configs pass."""
+    data = {
+        "project": "test",
+        "required_configs": [
+            {"name": "API Key", "type": "env", "key": "DOTENV_TEST_API_KEY_ABC",
+             "description": "Test API key", "required_by": [1]}
+        ],
+        "features": [{"id": 1}]
+    }
+    # Create a .env file with the required variable
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".env", delete=False) as dotenv:
+        dotenv.write("# Test dotenv\nDOTENV_TEST_API_KEY_ABC=my-secret-key\n")
+        dotenv_path = dotenv.name
+
+    # Ensure the env var is NOT set in the process environment
+    env = os.environ.copy()
+    env.pop("DOTENV_TEST_API_KEY_ABC", None)
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        json.dump(data, f, indent=2)
+        tmp_path = f.name
+    try:
+        result = subprocess.run(
+            [sys.executable, SCRIPT_PATH, tmp_path, "--dotenv", dotenv_path],
+            capture_output=True, text=True, env=env
+        )
+        assert result.returncode == 0, f"Expected 0 with dotenv: {result.stdout}"
+        assert "Loaded 1 variable" in result.stdout
+    finally:
+        os.unlink(tmp_path)
+        os.unlink(dotenv_path)
+
+
+def test_dotenv_missing_file_ignored():
+    """--dotenv pointing to non-existent file should not crash."""
+    data = {"project": "test", "required_configs": [], "features": []}
+    code, stdout, _ = run_checker(data, dotenv_path="/nonexistent/.env")
+    assert code == 0, f"Expected 0: {stdout}"
+
+
+def test_dotenv_quoted_values():
+    """--dotenv should handle single-quoted, double-quoted, and unquoted values."""
+    data = {
+        "project": "test",
+        "required_configs": [
+            {"name": "Key A", "type": "env", "key": "DOTENV_TEST_QUOTED_A",
+             "description": "Double-quoted", "required_by": [1]},
+            {"name": "Key B", "type": "env", "key": "DOTENV_TEST_QUOTED_B",
+             "description": "Single-quoted", "required_by": [1]},
+            {"name": "Key C", "type": "env", "key": "DOTENV_TEST_QUOTED_C",
+             "description": "Unquoted", "required_by": [1]}
+        ],
+        "features": [{"id": 1}]
+    }
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".env", delete=False) as dotenv:
+        dotenv.write('DOTENV_TEST_QUOTED_A="double-val"\n')
+        dotenv.write("DOTENV_TEST_QUOTED_B='single-val'\n")
+        dotenv.write("DOTENV_TEST_QUOTED_C=plain-val\n")
+        dotenv_path = dotenv.name
+
+    env = os.environ.copy()
+    for k in ("DOTENV_TEST_QUOTED_A", "DOTENV_TEST_QUOTED_B", "DOTENV_TEST_QUOTED_C"):
+        env.pop(k, None)
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        json.dump(data, f, indent=2)
+        tmp_path = f.name
+    try:
+        result = subprocess.run(
+            [sys.executable, SCRIPT_PATH, tmp_path, "--dotenv", dotenv_path],
+            capture_output=True, text=True, env=env
+        )
+        assert result.returncode == 0, f"Expected 0 with quoted dotenv: {result.stdout}"
+        assert "Loaded 3 variable" in result.stdout
+    finally:
+        os.unlink(tmp_path)
+        os.unlink(dotenv_path)
+
+
+def test_dotenv_comments_and_blanks():
+    """--dotenv should skip comments and blank lines."""
+    data = {
+        "project": "test",
+        "required_configs": [
+            {"name": "Key X", "type": "env", "key": "DOTENV_TEST_COMMENT_X",
+             "description": "Test", "required_by": [1]}
+        ],
+        "features": [{"id": 1}]
+    }
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".env", delete=False) as dotenv:
+        dotenv.write("# This is a comment\n")
+        dotenv.write("\n")
+        dotenv.write("   \n")
+        dotenv.write("DOTENV_TEST_COMMENT_X=works\n")
+        dotenv.write("# Another comment\n")
+        dotenv_path = dotenv.name
+
+    env = os.environ.copy()
+    env.pop("DOTENV_TEST_COMMENT_X", None)
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        json.dump(data, f, indent=2)
+        tmp_path = f.name
+    try:
+        result = subprocess.run(
+            [sys.executable, SCRIPT_PATH, tmp_path, "--dotenv", dotenv_path],
+            capture_output=True, text=True, env=env
+        )
+        assert result.returncode == 0, f"Expected 0: {result.stdout}"
+        assert "Loaded 1 variable" in result.stdout
+    finally:
+        os.unlink(tmp_path)
+        os.unlink(dotenv_path)
+
+
+def test_missing_env_shows_dotenv_key():
+    """Missing env config should show .env key in output."""
+    data = {
+        "project": "test",
+        "required_configs": [
+            {"name": "API Key", "type": "env", "key": "MISSING_KEY_FOR_DOTENV_TEST",
+             "description": "Test", "required_by": [1]}
+        ],
+        "features": [{"id": 1}]
+    }
+    env = os.environ.copy()
+    env.pop("MISSING_KEY_FOR_DOTENV_TEST", None)
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        json.dump(data, f, indent=2)
+        tmp_path = f.name
+    try:
+        result = subprocess.run(
+            [sys.executable, SCRIPT_PATH, tmp_path],
+            capture_output=True, text=True, env=env
+        )
+        assert result.returncode != 0
+        assert ".env key: MISSING_KEY_FOR_DOTENV_TEST" in result.stdout
+    finally:
+        os.unlink(tmp_path)
+
+
 if __name__ == "__main__":
     tests = [
         test_no_required_configs,
@@ -204,6 +349,11 @@ if __name__ == "__main__":
         test_file_config_missing,
         test_feature_filter,
         test_mixed_present_and_missing,
+        test_dotenv_loads_env_vars,
+        test_dotenv_missing_file_ignored,
+        test_dotenv_quoted_values,
+        test_dotenv_comments_and_blanks,
+        test_missing_env_shows_dotenv_key,
     ]
     passed = 0
     failed = 0
