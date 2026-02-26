@@ -239,7 +239,10 @@ long-task-agent/
 │   ├── long-task-requirements/SKILL.md # Phase 0a: Requirements & SRS (ISO 29148)
 │   ├── long-task-ucd/SKILL.md         # Phase 0b: UCD style guide (text-to-image prompts)
 │   ├── long-task-design/SKILL.md      # Phase 0c: Design (takes SRS + UCD as input)
-│   ├── long-task-init/SKILL.md        # Phase 1: Initialization (reads SRS + UCD + design)
+│   ├── long-task-init/                # Phase 1: Initialization (reads SRS + UCD + design)
+│   │   ├── SKILL.md
+│   │   └── references/
+│   │       └── init-script-recipes.md # Environment bootstrap templates (conda, venv, nvm, etc.)
 │   ├── long-task-work/               # Phase 2: Worker orchestrator
 │   │   ├── SKILL.md
 │   │   └── references/

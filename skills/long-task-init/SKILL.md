@@ -55,6 +55,16 @@ You MUST create a TodoWrite task for each step and complete them in order:
      python scripts/validate_guide.py long-task-guide.md --feature-list feature-list.json
      ```
 5. **Generate `init.sh` / `init.ps1`** — Create real, runnable bootstrap scripts:
+   - Read `references/init-script-recipes.md` (in the long-task-init skill directory) for per-tool templates and best practices
+   - **Detect environment manager** from design doc tech stack and project constraints:
+     - Python: miniconda/conda/mamba, venv, poetry, pipenv, uv, pyenv
+     - Node.js: nvm, fnm, volta, corepack
+     - Java: sdkman, jenv
+     - General: devcontainer, docker, nix
+   - **Must handle**: env creation, activation, dependency install, tool version verification
+   - **Must be idempotent** — safe to re-run without breaking an existing environment
+   - **Must be cross-platform** — `init.sh` for Unix/macOS, `init.ps1` for Windows
+   - **Must include**: error handling, version checks, clear success/failure output
    - Actual dependency installation commands (not commented stubs)
    - Service startup commands if needed
    - Must be immediately executable after `git clone`
