@@ -72,6 +72,8 @@ Context to carry forward:
 
 Context to carry forward:
 - Feature object from feature-list.json
+- Design document Key Feature Design section (section 4.N from `docs/plans/*-design.md`) for the target feature
+- Plan document (`docs/plans/YYYY-MM-DD-<feature-name>.md`) from Step 5
 - Git diff since before implementation began
 - Test results summary
 

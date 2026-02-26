@@ -15,9 +15,12 @@ Review runs after every feature, before Persist. No exceptions. Spec compliance 
 - Before the Persist phase (git commit)
 - No exceptions — even "simple" features need at least Stage 1
 
-## Stage 1: Spec Compliance
+## Stage 1: Spec & Design Compliance
 
-**Question**: Does the implementation do what the feature spec says?
+**Questions**:
+1. Does the implementation do what the **feature spec** says? (SRS traceability)
+2. Does the implementation follow the **design document**? (architecture, class structure, interaction flows, dependency versions)
+3. Does the implementation follow the **plan document**? (task decomposition, agreed approach)
 
 Dispatch subagent with `skills/long-task-review/prompts/spec-reviewer-prompt.md`:
 
@@ -25,11 +28,17 @@ Dispatch subagent with `skills/long-task-review/prompts/spec-reviewer-prompt.md`
 Task(
   subagent_type="general-purpose",
   prompt="""
-  You are a spec compliance reviewer.
+  You are a spec & design compliance reviewer.
   Read the prompt at: skills/long-task-review/prompts/spec-reviewer-prompt.md
 
   Feature spec:
   {feature_json}
+
+  Design document (Key Feature Design section for this feature):
+  {design_section}
+
+  Plan document:
+  {plan_content}
 
   Git diff:
   {diff_output}
@@ -42,7 +51,7 @@ Task(
 )
 ```
 
-### Checklist (S1-S5)
+### Spec Compliance Checklist (S1-S5)
 
 | # | Check |
 |---|-------|
@@ -52,7 +61,26 @@ Task(
 | S4 | Edge cases from the spec are handled |
 | S5 | Feature `description` matches actual behavior |
 
-**Any NO → FAIL. Stage 2 is skipped. Fix gaps, re-run tests, re-review Stage 1.**
+### Design Compliance Checklist (D1-D5)
+
+| # | Check |
+|---|-------|
+| D1 | Class/module structure matches the design document's class diagram |
+| D2 | Interaction flow matches the design document's sequence diagram |
+| D3 | Third-party dependency versions match the design document's dependency table |
+| D4 | Architectural layers/boundaries respected as defined in the logical view |
+| D5 | No unauthorized design deviations (or deviations are documented with user approval in the plan) |
+
+### Plan Compliance Checklist (P1-P3)
+
+| # | Check |
+|---|-------|
+| P1 | Implementation tasks match the plan's task decomposition |
+| P2 | Files created/modified match the plan's file list |
+| P3 | Design alignment section in plan is honored (class structure, interaction flow, deps) |
+
+**Any NO in S1-S5 or D1-D5 → FAIL. Stage 2 is skipped. Fix gaps, re-run tests, re-review Stage 1.**
+**NO in P1-P3 → Important (must fix before feature complete, but does not skip Stage 2).**
 
 ## Stage 2: Code Quality
 
@@ -134,15 +162,16 @@ Controller merges results:
 ## Review Loop
 
 ```
-Quality Gates Pass → Stage 1 (Spec Compliance)
+Quality Gates Pass → Stage 1 (Spec + Design + Plan Compliance)
                           ↓
-                     PASS? → Stage 2 (Code Quality)
-                     FAIL? → Fix → Re-test → Re-review Stage 1
+                     S1-S5 all PASS and D1-D5 all PASS?
+                          ↓ YES                    ↓ NO
+                     Stage 2 (Code Quality)   Fix → Re-test → Re-review Stage 1
+                          ↓
+                     PASS? → Feature complete
+                     FAIL? → Fix → Re-review (changed items only)
                                       ↓
-                                 PASS? → Feature complete
-                                 FAIL? → Fix → Re-review (changed items only)
-                                                  ↓
-                                             Max 3 rounds → Escalate to user
+                                 Max 3 rounds → Escalate to user
 ```
 
 After 3 failed rounds, escalate via `AskUserQuestion` with:
@@ -165,5 +194,10 @@ After 3 failed rounds, escalate via `AskUserQuestion` with:
 **Called by:** long-task-work (Step 10)
 **Dispatches:** spec-reviewer subagent (`skills/long-task-review/prompts/spec-reviewer-prompt.md`), code-quality-reviewer subagent (`skills/long-task-review/prompts/code-quality-reviewer-prompt.md`)
 **Requires:** Quality gates passed (long-task-quality)
+**Inputs:**
+- Feature spec from `feature-list.json`
+- Design document section (`docs/plans/*-design.md` § 4.N for the target feature)
+- Plan document (`docs/plans/YYYY-MM-DD-<feature-name>.md`)
+- Git diff, test results, coverage/mutation reports
 **Produces:** Review verdict (PASS/FAIL with findings)
 **Returns to:** long-task-work for Add Examples + Persist steps
