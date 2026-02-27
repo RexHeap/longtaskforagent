@@ -1,0 +1,189 @@
+#!/usr/bin/env python3
+"""Auto-loop script for long-task feature development.
+
+Repeatedly calls `claude -p "继续" --dangerously-skip-permissions` until all
+active features pass, max iterations are reached, or an error occurs.
+
+Usage:
+    python scripts/auto_loop.py feature-list.json
+    python scripts/auto_loop.py feature-list.json --max-iterations 30
+    python scripts/auto_loop.py feature-list.json --cooldown 10
+"""
+
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+
+# Error patterns that indicate unrecoverable failures
+ERROR_PATTERNS = [
+    re.compile(r"context.window", re.IGNORECASE),
+    re.compile(r"token.limit", re.IGNORECASE),
+    re.compile(r"rate.limit", re.IGNORECASE),
+    re.compile(r"exceeded.*max.*tokens", re.IGNORECASE),
+    re.compile(r"overloaded", re.IGNORECASE),
+]
+
+
+def load_feature_status(path: str) -> tuple[int, int, int]:
+    """Load feature-list.json and return (total_active, passing, failing) counts."""
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    features = data.get("features", [])
+    active = [f for f in features if not f.get("deprecated", False)]
+    passing = sum(1 for f in active if f.get("status") == "passing")
+    failing = len(active) - passing
+    return len(active), passing, failing
+
+
+def check_all_passing(path: str) -> bool:
+    """Return True if all active features are passing."""
+    try:
+        total, passing, _ = load_feature_status(path)
+        return total > 0 and passing == total
+    except (json.JSONDecodeError, FileNotFoundError, KeyError):
+        return False
+
+
+def detect_error(output: str) -> str | None:
+    """Check output for known error patterns. Return matched pattern or None."""
+    for pattern in ERROR_PATTERNS:
+        if pattern.search(output):
+            return pattern.pattern
+    return None
+
+
+def run_iteration(iteration: int, project_dir: str, prompt: str) -> tuple[int, str]:
+    """Run one claude iteration. Returns (exit_code, captured_output)."""
+    cmd = [
+        "claude",
+        "-p",
+        prompt,
+        "--dangerously-skip-permissions",
+    ]
+
+    header = f"\n{'='*60}\n  Iteration {iteration}\n{'='*60}\n"
+    print(header, flush=True)
+
+    captured = []
+    try:
+        proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            cwd=project_dir,
+            encoding="utf-8",
+            errors="replace",
+            bufsize=1,
+        )
+
+        for line in proc.stdout:
+            print(line, end="", flush=True)
+            captured.append(line)
+
+        proc.wait()
+        return proc.returncode, "".join(captured)
+
+    except FileNotFoundError:
+        print("ERROR: 'claude' command not found. Is Claude Code installed?", flush=True)
+        return -1, ""
+    except KeyboardInterrupt:
+        print("\nInterrupted by user.", flush=True)
+        if proc.poll() is None:
+            proc.terminate()
+        return -2, ""
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        description="Auto-loop claude for long-task feature development."
+    )
+    parser.add_argument("feature_list", help="Path to feature-list.json")
+    parser.add_argument(
+        "--max-iterations",
+        type=int,
+        default=50,
+        help="Maximum number of iterations (default: 50)",
+    )
+    parser.add_argument(
+        "--cooldown",
+        type=int,
+        default=5,
+        help="Seconds to wait between iterations (default: 5)",
+    )
+    parser.add_argument(
+        "--prompt",
+        default="继续",
+        help="Prompt to send each iteration (default: 继续)",
+    )
+    args = parser.parse_args()
+
+    feature_list_path = os.path.abspath(args.feature_list)
+    if not os.path.isfile(feature_list_path):
+        print(f"ERROR: feature-list.json not found: {feature_list_path}")
+        return 1
+
+    project_dir = os.path.dirname(feature_list_path)
+
+    # Show initial status
+    try:
+        total, passing, failing = load_feature_status(feature_list_path)
+        print(f"Project dir: {project_dir}")
+        print(f"Features: {total} total, {passing} passing, {failing} failing")
+        print(f"Max iterations: {args.max_iterations}, Cooldown: {args.cooldown}s")
+    except Exception as e:
+        print(f"ERROR: Cannot read feature-list.json: {e}")
+        return 1
+
+    if check_all_passing(feature_list_path):
+        print("All features already passing. Nothing to do.")
+        return 0
+
+    for i in range(1, args.max_iterations + 1):
+        exit_code, output = run_iteration(i, project_dir, args.prompt)
+
+        # Check for keyboard interrupt
+        if exit_code == -2:
+            return 130
+
+        # Check for command not found
+        if exit_code == -1:
+            return 1
+
+        # Check for error patterns in output
+        error_match = detect_error(output)
+        if error_match:
+            print(f"\nSTOPPED: Detected error pattern: {error_match}")
+            return 3
+
+        # Check for non-zero exit
+        if exit_code != 0:
+            print(f"\nSTOPPED: claude exited with code {exit_code}")
+            return 2
+
+        # Check if all features now pass
+        try:
+            total, passing, failing = load_feature_status(feature_list_path)
+            print(f"\n--- Status: {passing}/{total} passing, {failing} failing ---")
+        except Exception:
+            pass
+
+        if check_all_passing(feature_list_path):
+            print(f"\nSUCCESS: All features passing after {i} iteration(s)!")
+            return 0
+
+        # Cooldown before next iteration
+        if i < args.max_iterations:
+            print(f"Cooling down {args.cooldown}s before next iteration...")
+            time.sleep(args.cooldown)
+
+    print(f"\nSTOPPED: Reached max iterations ({args.max_iterations})")
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
