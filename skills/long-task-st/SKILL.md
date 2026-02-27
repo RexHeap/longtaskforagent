@@ -34,7 +34,7 @@ Then orient:
 - Read SRS document — extract all FR-xxx, NFR-xxx, IFR-xxx, CON-xxx requirements
 - Read design document — extract architecture, API design, testing strategy (section 9), third-party dependencies (section 8)
 - If UI features exist and UCD doc exists (`docs/plans/*-ucd.md`), read UCD style guide
-- Read `docs/project-context.md` — user personas and glossary
+- Read SRS **Stakeholders & User Personas** section and **Glossary** section (`docs/plans/*-srs.md`) — needed for E2E scenario derivation and exploratory testing
 - Read `task-progress.md` — session history context
 
 ### 2. ST Plan
@@ -140,7 +140,7 @@ Run them and record results.
 Test complete user workflows from SRS acceptance criteria (Given/When/Then).
 
 #### 5a. Scenario Derivation
-For each user persona in `docs/project-context.md`:
+For each user persona in the SRS Stakeholders section:
 - Extract the persona's primary workflows from SRS
 - Create E2E scenarios that span multiple features
 - Include both happy path and error recovery
@@ -405,7 +405,7 @@ Follow the systematic debugging process:
 ## Integration
 
 **Called by:** using-long-task (when feature-list.json exists AND all features passing), or long-task-work (Step 13 when no failing features remain)
-**Reads:** feature-list.json, `docs/plans/*-srs.md`, `docs/plans/*-design.md`, `docs/plans/*-ucd.md` (if UI), `docs/project-context.md`, `task-progress.md`, `.env`
+**Reads:** feature-list.json, `docs/plans/*-srs.md`, `docs/plans/*-design.md`, `docs/plans/*-ucd.md` (if UI), `task-progress.md`, `.env`
 **May invoke:** `long-task:long-task-work` (if Critical/Major defects found → fix loop)
 **Produces:** `docs/plans/YYYY-MM-DD-st-plan.md`, `docs/plans/YYYY-MM-DD-st-report.md`
 **Read on-demand (via Read tool, NOT Skill tool):** `references/st-recipes.md`

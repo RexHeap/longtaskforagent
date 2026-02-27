@@ -223,12 +223,11 @@ using-long-task (router)
 | `increment-request.json` | Increment | Signal file triggering incremental requirements (deleted after processing) |
 | `feature-list.json` | Init | Structured task inventory with status; includes `constraints[]`, `assumptions[]`, `waves[]` |
 | `CLAUDE.md` | Init | Cross-session navigation index (appended by `init_project.py`) |
-| `task-progress.md` | Init | Session-by-session progress log |
+| `task-progress.md` | Init | `## Current State` header (updated by Worker each session) + session log |
 | `RELEASE_NOTES.md` | Init | Living release notes (Keep a Changelog format) |
 | `examples/` | Worker | Runnable examples demonstrating completed features |
 | `init.sh` / `init.ps1` | Init | Environment bootstrap (LLM-generated) |
 | `long-task-guide.md` | Init | Worker session guide (LLM-generated, validated) |
-| `docs/project-context.md` | Init | User personas and domain glossary (from SRS) |
 | `.env.example` | Init | Template for required env configs (safe to commit; `.env` has secrets) |
 | `docs/plans/*-st-plan.md` | ST | System testing plan with Requirements Traceability Matrix |
 | `docs/plans/*-st-report.md` | ST | System testing report with Go/No-Go verdict |

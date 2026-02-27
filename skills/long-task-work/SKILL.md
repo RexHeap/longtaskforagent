@@ -17,13 +17,12 @@ You MUST create a TodoWrite task for each step and complete them in order:
 
 ### 1. Orient
 - Load `.env` file if it exists — this populates environment variables for required configs collected in previous sessions
-- Read `task-progress.md` — what was done in previous sessions
+- Read `task-progress.md` `## Current State` section — progress stats, last completed feature, next feature up
 - Read `feature-list.json` — note `constraints[]`, `assumptions[]`, `required_configs[]`, feature statuses
 - Read `long-task-guide.md` — project-specific workflow guidance
-- Read design document (`docs/plans/*-design.md`) — locate the **Key Feature Design** section (section 4.N) for the target feature to understand the approved architecture, class diagrams, sequence flows, and design decisions
+- Read design doc **Section 1** (`docs/plans/*-design.md`) — project overview and architecture snapshot for global context
 - Run `git log --oneline -10` — recent commit context
 - Pick next `"status": "failing"` feature by priority + dependency order — **skip features with `"deprecated": true`**
-- If target feature has `"ui": true` or involves domain terms, read `docs/project-context.md`
 - If target feature has `"ui": true` and UCD document exists (`docs/plans/*-ucd.md`), read the UCD style guide — reference style tokens, component prompts, and page prompts to ensure frontend implementation matches the approved visual style
 
 ### 2. Bootstrap
@@ -112,7 +111,9 @@ Create runnable examples in `examples/` demonstrating the completed feature.
 ### 12. Persist
 - Git commit (include implementation, tests, examples)
 - Update `RELEASE_NOTES.md` (Keep a Changelog format)
-- Update `task-progress.md` with session entry
+- Update `task-progress.md`:
+  - Update `## Current State` header: progress count (X/Y passing), last completed feature (#id title, date), next feature (#id title)
+  - Append session entry below the log separator
 - Mark feature `"status": "passing"` in `feature-list.json`
 - Validate:
   ```bash
@@ -173,5 +174,5 @@ Follow the systematic debugging process — **never guess-and-fix**:
 1. `long-task:long-task-tdd` (Steps 6-8) — TDD Red-Green-Refactor with Test Plan Review
 2. `long-task:long-task-quality` (Step 9) — Coverage + Mutation + Verification
 3. `long-task:long-task-review` (Step 10) — Two-stage Code Review
-**Reads/Writes:** feature-list.json, task-progress.md, RELEASE_NOTES.md
+**Reads/Writes:** feature-list.json, task-progress.md (including `## Current State`), RELEASE_NOTES.md
 **Read on-demand (via Read tool, NOT Skill tool):** `references/plan-writing.md`, `references/systematic-debugging.md`

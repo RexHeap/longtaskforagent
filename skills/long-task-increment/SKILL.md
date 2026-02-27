@@ -190,7 +190,6 @@ Update supporting files as needed:
 - **`long-task-guide.md`**: If new tools, frameworks, or patterns were introduced → regenerate or update relevant sections; re-validate with `python scripts/validate_guide.py long-task-guide.md --feature-list feature-list.json`
 - **`init.sh` / `init.ps1`**: If new dependencies were added → update bootstrap scripts (keep idempotent)
 - **`.env.example`**: If new `required_configs` of type `env` → append template lines
-- **`docs/project-context.md`**: If new personas or glossary terms → update
 
 ### 8. Finalize
 
@@ -208,15 +207,17 @@ Update supporting files as needed:
    Deprecated features: <ids>
    Total features: X (Y active, Z deprecated)
    ```
-4. Update `task-progress.md` with increment session entry:
-   ```
-   ## Session N — Increment Wave M
-   - **Date**: YYYY-MM-DD
-   - **Phase**: Increment
-   - **Scope**: <from increment-request.json>
-   - **Changes**: Added N features, modified M features, deprecated K features
-   - **Documents updated**: SRS, Design, [UCD]
-   ```
+4. Update `task-progress.md`:
+   - Update `## Current State` header: progress count (X/Y active features passing), last event (Increment Wave M, date), next up (first failing feature)
+   - Append session entry:
+     ```
+     ## Session N — Increment Wave M
+     - **Date**: YYYY-MM-DD
+     - **Phase**: Increment
+     - **Scope**: <from increment-request.json>
+     - **Changes**: Added N features, modified M features, deprecated K features
+     - **Documents updated**: SRS, Design, [UCD]
+     ```
 5. Update `RELEASE_NOTES.md` under `[Unreleased]` section
 6. Git commit progress files:
    ```

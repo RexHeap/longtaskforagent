@@ -41,13 +41,17 @@ CLAUDE_MD_MARKER = "<!-- long-task-agent -->"
 CLAUDE_MD_REFERENCE = (
     "\n\n<!-- long-task-agent -->\n"
     "## Long-Task Agent\n\n"
-    "This project uses a multi-session agent workflow.\n"
-    "Read `long-task-guide.md` at the start of EVERY session "
-    "to orient yourself and pick up the next task.\n\n"
-    "Key files: `feature-list.json` (task inventory, constraints, assumptions), "
+    "This project uses a multi-session agent workflow with 11 skills loaded on-demand.\n"
+    "The `using-long-task` skill is injected at session start and routes to the correct phase.\n"
+    "Flow: Requirements (SRS) → UCD (UI projects) → Design → Init → Worker cycles → System Testing.\n"
+    "Incremental development: place `increment-request.json` → Increment skill updates SRS/Design/UCD in place → new features appended → Worker cycles → ST.\n\n"
+    "Key files: `docs/plans/*-srs.md` (SRS), `docs/plans/*-ucd.md` (UCD style guide), "
+    "`docs/plans/*-design.md` (design), "
+    "`feature-list.json` (task inventory), "
     "`task-progress.md` (session log), "
     "`RELEASE_NOTES.md` (changelog), "
-    "`docs/project-context.md` (user personas, glossary).\n"
+    "`docs/plans/*-st-report.md` (ST report), "
+    "`increment-request.json` (increment signal).\n"
     "<!-- /long-task-agent -->\n"
 )
 
@@ -145,14 +149,14 @@ LANG_PRESETS = {
 
 
 def create_progress_log(project_name: str) -> str:
-    return f"""# Task Progress Log
+    return f"""# Task Progress — {project_name}
 
-## Project: {project_name}
-Created: {datetime.now().strftime("%Y-%m-%d")}
-Requirement Doc: [TODO: path to requirement doc]
-Design Doc: [TODO: path to design doc]
+## Current State
+Progress: 0/0 · Last: — · Next: —
 
 ---
+
+## Session Log
 
 """
 
@@ -298,7 +302,6 @@ def main():
     print("TODO (LLM generates during Initializer phase):")
     print("  - long-task-guide.md         (tailored Worker guide from SKILL.md + references + design doc)")
     print("  - init.sh / init.ps1         (environment bootstrap from design doc tech stack)")
-    print("  - docs/project-context.md    (user personas + glossary from design doc)")
 
 
 if __name__ == "__main__":

@@ -240,8 +240,7 @@ Its job:
 2. **Run `init_project.py`** — scaffolds deterministic artifacts: `feature-list.json`, `task-progress.md`, `RELEASE_NOTES.md`, `examples/`, `scripts/`, `docs/plans/`
 3. **LLM generates `long-task-guide.md`** — project-tailored Worker guide based on SKILL.md + references + design doc; only includes the project's language-specific commands; validated by `validate_guide.py`
 4. **LLM generates `init.sh`/`init.ps1`** — real, runnable bootstrap scripts based on the design doc's tech stack; must support the project's environment manager (conda/miniconda/mamba, venv, poetry, uv, nvm, fnm, sdkman, docker, etc.); see `skills/long-task-init/references/init-script-recipes.md` for per-tool templates; must be idempotent and cross-platform
-5. **LLM generates `docs/project-context.md`** — extracts "Stakeholders & User Personas" and "Glossary" from SRS; omit sections not present
-6. **Populate `feature-list.json`** — from SRS: `constraints[]` (CON-xxx), `assumptions[]` (ASM-xxx), NFR-xxx → non-functional features, FR-xxx → functional features with acceptance criteria as `verification_steps`; from design: `required_configs` for external dependencies
+5. **Populate `feature-list.json`** — from SRS: `constraints[]` (CON-xxx), `assumptions[]` (ASM-xxx), NFR-xxx → non-functional features, FR-xxx → functional features with acceptance criteria as `verification_steps`; from design: `required_configs` for external dependencies
 7. **Set up project skeleton** — directory structure, config files, package.json / pyproject.toml etc. (based on design doc architecture)
 8. **Initial git commit** — establish baseline
 9. **Verify environment** — run init script, confirm basic setup works
@@ -260,7 +259,6 @@ Its job:
 | `constraints[]` content | **LLM** | **SRS** | Extracted from SRS "Constraints" section (CON-xxx) |
 | `assumptions[]` content | **LLM** | **SRS** | Extracted from SRS "Assumptions" section (ASM-xxx) |
 | `required_configs[]` | **LLM** | **SRS** + Design | Interface requirements (IFR-xxx) + design integration points |
-| `docs/project-context.md` | **LLM** | **SRS** | Extracted from SRS "Stakeholders" and "Glossary" sections |
 
 ## Worker Session Workflow (Context Cycle)
 
@@ -272,7 +270,7 @@ Each worker cycle follows this exact sequence.
 3. Read `feature-list.json` — find next priority failing feature; note `constraints[]` and `assumptions[]` at root level
 4. `git log --oneline -20` — see recent commits
 5. `git diff HEAD~3` — check recent changes if needed
-6. If target feature has `"ui": true` OR description references domain terms → read `docs/project-context.md`
+6. Read design doc **Section 1** (Project Overview) — architecture snapshot for global context
 
 ### Phase 2: Bootstrap (restore environment)
 6. Run `init.sh` / `init.ps1` — start dev server / services

@@ -203,15 +203,16 @@ def test_feature_list_has_assumptions():
         shutil.rmtree(tmp)
 
 
-def test_claude_md_references_project_context():
-    """CLAUDE.md should reference docs/project-context.md."""
+def test_task_progress_has_current_state_header():
+    """task-progress.md should contain a ## Current State header for session orientation."""
     tmp = tempfile.mkdtemp()
     try:
         run_init("test-project", tmp)
-        cm_path = os.path.join(tmp, "CLAUDE.md")
-        with open(cm_path, "r", encoding="utf-8") as f:
+        tp_path = os.path.join(tmp, "task-progress.md")
+        with open(tp_path, "r", encoding="utf-8") as f:
             content = f.read()
-        assert "project-context.md" in content, "Should reference docs/project-context.md"
+        assert "## Current State" in content, "task-progress.md must have ## Current State header"
+        assert "Progress:" in content, "## Current State must include Progress field"
     finally:
         shutil.rmtree(tmp)
 
@@ -324,7 +325,7 @@ def test_appends_to_existing_claude_md():
             content = f.read()
         assert content.startswith("# Existing Content"), "Original content should be preserved"
         assert "<!-- long-task-agent -->" in content, "Should contain marker"
-        assert "long-task-guide.md" in content, "Should reference guide"
+        assert "feature-list.json" in content, "Should reference feature list"
     finally:
         shutil.rmtree(tmp)
 
@@ -344,17 +345,18 @@ def test_idempotent_claude_md():
         shutil.rmtree(tmp)
 
 
-def test_claude_md_contains_guide_reference():
-    """CLAUDE.md should reference long-task-guide.md, feature-list.json, task-progress.md."""
+def test_claude_md_contains_key_file_references():
+    """CLAUDE.md should reference key project files: feature-list.json, task-progress.md, docs/plans."""
     tmp = tempfile.mkdtemp()
     try:
         run_init("test-project", tmp)
         cm_path = os.path.join(tmp, "CLAUDE.md")
         with open(cm_path, "r", encoding="utf-8") as f:
             content = f.read()
-        assert "long-task-guide.md" in content, "Should reference guide"
         assert "feature-list.json" in content, "Should reference feature list"
         assert "task-progress.md" in content, "Should reference progress log"
+        assert "docs/plans" in content, "Should reference docs/plans for SRS/design/UCD"
+        assert "increment-request.json" in content, "Should reference increment signal file"
     finally:
         shutil.rmtree(tmp)
 

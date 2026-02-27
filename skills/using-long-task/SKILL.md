@@ -90,7 +90,7 @@ digraph phase_detection {
 | `docs/plans/*-ucd.md` | Approved UCD style guide — the LOOK (UI projects only) |
 | `docs/plans/*-design.md` | Approved design — the HOW |
 | `feature-list.json` | Task inventory — the central shared state |
-| `task-progress.md` | Session-by-session log |
+| `task-progress.md` | `## Current State` header (progress) + session-by-session log |
 | `long-task-guide.md` | Project-specific Worker guide |
 | `RELEASE_NOTES.md` | Living changelog |
 | `docs/plans/*-st-report.md` | System testing report — Go/No-Go verdict |

@@ -72,11 +72,7 @@ You MUST create a TodoWrite task for each step and complete them in order:
    - `constraints[]` — copy CON-xxx items from SRS "Constraints" section; each a concise string
    - `assumptions[]` — copy ASM-xxx items from SRS "Assumptions & Dependencies" section; each a concise string
    - NFR-xxx rows → create `category: "non-functional"` features with measurable `verification_steps`; coverage/mutation gates do not apply to NFR features
-7. **Generate `docs/project-context.md`** — from the **SRS document**:
-   - Extract "Stakeholders & User Personas" table
-   - Extract "Glossary & Definitions" table
-   - Omit sections that are "None identified" or "[Not applicable]"
-8. **Decompose requirements into features** — from the **SRS document** and **design document's Development Plan** (section 11), populate `feature-list.json` `features[]`:
+7. **Decompose requirements into features** — from the **SRS document** and **design document's Development Plan** (section 11), populate `feature-list.json` `features[]`:
    - Each FR-xxx → one or more features with `id`, `category`, `title`, `description`, `priority`, `status` (always `"failing"`), `verification_steps`, `dependencies`
    - `verification_steps` should trace to SRS acceptance criteria (Given/When/Then)
    - For UI features: set `"ui": true`, optionally `"ui_entry": "/path"`; include `[devtools]`-prefixed verification steps
@@ -84,29 +80,29 @@ You MUST create a TodoWrite task for each step and complete them in order:
    - **Priority ordering**: follow the design document's Task Decomposition table (section 11.2) — P0/P1/P2/P3 maps to high/high/medium/low
    - **Dependency chain**: follow the design document's Dependency Chain diagram (section 11.3) to populate each feature's `dependencies[]`
    - **Milestone mapping**: group features by the design document's milestones for logical ordering
-9. **Populate `required_configs`** — from the **SRS document** (IFR-xxx interface requirements) and design doc:
+8. **Populate `required_configs`** — from the **SRS document** (IFR-xxx interface requirements) and design doc:
    - API keys, service URLs → type `env`
    - Config files, certificates → type `file`
    - Link each to features via `required_by`; provide `check_hint` with setup instructions
-10. **Generate `.env.example`** — from `required_configs`:
-    - For each `env`-type config, write a commented template line:
-      ```
-      # <name> — <description>
-      # Hint: <check_hint>
-      # Required by features: <required_by ids>
-      <KEY>=
-      ```
-    - Add `.env` to `.gitignore` (`.env.example` is safe to commit; `.env` contains secrets)
-    - This template helps users know which values to fill in; the Worker Config Gate will prompt for missing values and store them in `.env`
-11. **Validate**:
+9. **Generate `.env.example`** — from `required_configs`:
+   - For each `env`-type config, write a commented template line:
+     ```
+     # <name> — <description>
+     # Hint: <check_hint>
+     # Required by features: <required_by ids>
+     <KEY>=
+     ```
+   - Add `.env` to `.gitignore` (`.env.example` is safe to commit; `.env` contains secrets)
+   - This template helps users know which values to fill in; the Worker Config Gate will prompt for missing values and store them in `.env`
+10. **Validate**:
     ```bash
     python scripts/validate_features.py feature-list.json
     ```
-12. **Scaffold project skeleton** (dirs, configs, dependency manifests) — based on **design doc** architecture
-13. **Git init + initial commit**
-14. **Run init script**, verify environment works
-15. **Update `task-progress.md`** with Session 0 entry (include SRS + design doc references)
-16. **Begin first Worker cycle** — **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-work`
+11. **Scaffold project skeleton** (dirs, configs, dependency manifests) — based on **design doc** architecture
+12. **Git init + initial commit**
+13. **Run init script**, verify environment works
+14. **Update `task-progress.md`** — update `## Current State` with initial progress (0/N features passing), then append Session 0 entry (include SRS + design doc references)
+15. **Begin first Worker cycle** — **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-work`
 
 ## Feature List Schema
 
@@ -170,7 +166,6 @@ Each feature:
 | `examples/` | Runnable examples directory |
 | `init.sh` / `init.ps1` | Environment bootstrap (LLM-generated) |
 | `long-task-guide.md` | Worker session guide (LLM-generated, validated) |
-| `docs/project-context.md` | User personas and domain glossary |
 | `.env.example` | Template for required env configs (safe to commit) |
 
 ## Integration
