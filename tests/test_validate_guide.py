@@ -76,9 +76,9 @@ COMPLETE_GUIDE = """# My Project — Long-Task Worker Guide
 ### Step 5.5v: Verification enforcement
 NEVER mark "passing" without fresh evidence — run tests, read output
 
-### Step 5.5r: Code Review
-1. Stage 1: Spec compliance
-2. Stage 2: Code quality
+### Step 5.5r: Compliance Review
+1. Spec compliance
+2. Design compliance
 
 ### Step 6: Add Examples
 1. Create runnable example in examples/
@@ -161,16 +161,17 @@ def test_missing_verification_enforcement_fails():
     assert code != 0, f"Expected non-zero when verification missing: {stdout}"
 
 
-def test_missing_code_review_fails():
-    """A guide missing Code Review should fail."""
-    content = COMPLETE_GUIDE.replace("Code Review", "Final Step")
+def test_missing_compliance_review_fails():
+    """A guide missing Compliance Review should fail."""
+    content = COMPLETE_GUIDE.replace("Compliance Review", "Final Step")
+    content = content.replace("compliance review", "final step")
     content = content.replace("code review", "final step")
     content = content.replace("Spec compliance", "Final check A")
-    content = content.replace("Code quality", "Final check B")
-    content = content.replace("two-stage review", "final-step process")
-    content = content.replace("two stage review", "final step process")
+    content = content.replace("Design compliance", "Final check B")
+    content = content.replace("spec compliance", "final check a")
+    content = content.replace("design compliance", "final check b")
     code, stdout, _ = run_validator(content)
-    assert code != 0, f"Expected non-zero when Code Review missing: {stdout}"
+    assert code != 0, f"Expected non-zero when Compliance Review missing: {stdout}"
 
 
 def test_missing_critical_rules_fails():
@@ -216,8 +217,8 @@ Run mutation tests, verify mutation score >= 80%.
 ### Verification enforcement
 NEVER mark "passing" without fresh evidence.
 
-### Two-stage review
-Stage 1: spec compliance. Stage 2: code quality.
+### Compliance review
+Spec compliance and design compliance checks.
 
 ### Examples
 Add runnable example in examples/ directory.
@@ -318,7 +319,7 @@ if __name__ == "__main__":
         test_missing_coverage_gate_fails,
         test_missing_mutation_gate_fails,
         test_missing_verification_enforcement_fails,
-        test_missing_code_review_fails,
+        test_missing_compliance_review_fails,
         test_missing_critical_rules_fails,
         test_alternative_wording_passes,
         test_nonexistent_file,

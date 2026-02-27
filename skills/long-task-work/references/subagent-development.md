@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Dispatch a fresh subagent for each implementation task. This prevents context pollution (one task's details don't confuse the next) and enables two-stage code review per task.
+Dispatch a fresh subagent for each implementation task. This prevents context pollution (one task's details don't confuse the next) and enables compliance review per task.
 
 ## When to Use
 
@@ -20,14 +20,11 @@ Controller (main agent)
   ├─ Dispatch Subagent: Task 1 (implementer)
   │   └─ Returns: code changes + test results
   │
-  ├─ Dispatch Subagent: Spec Review (reviewer)
+  ├─ Dispatch Subagent: Compliance Review (reviewer)
   │   └─ Returns: PASS or list of gaps
   │
   ├─ [If FAIL] Dispatch Subagent: Fix (implementer)
   │   └─ Returns: fixed code + test results
-  │
-  ├─ Dispatch Subagent: Code Quality Review (reviewer)
-  │   └─ Returns: PASS or list of issues
   │
   └─ Repeat for Task 2, Task 3, ...
 ```
@@ -87,16 +84,22 @@ You are implementing a task for the [project-name] project.
 
 After each task, dispatch a reviewer subagent:
 
-### Spec Reviewer Prompt Template
+### Compliance Reviewer Prompt Template
 
 ```markdown
-You are reviewing a completed implementation task for spec compliance.
+You are reviewing a completed implementation task for spec & design compliance.
 
 ## Feature Spec
 [Feature JSON from feature-list.json]
 
+## Design Document Section
+[Key Feature Design section from docs/plans/*-design.md]
+
 ## Task Plan
 [The task that was supposed to be implemented]
+
+## UCD Style Guide (UI features only)
+[UCD content from docs/plans/*-ucd.md, omit if not applicable]
 
 ## Changes Made
 [git diff output]
@@ -105,37 +108,20 @@ You are reviewing a completed implementation task for spec compliance.
 [test output]
 
 ## Your Job
-1. Check: does the implementation satisfy ALL verification_steps?
-2. Check: do tests cover the right behaviors?
-3. Verdict: PASS or FAIL with specific gaps
-```
-
-### Code Quality Reviewer Prompt Template
-
-```markdown
-You are reviewing code quality for a completed implementation task.
-
-## Changes Made
-[git diff output]
-
-## Existing Patterns
-[Examples of how similar code is written in this project]
-
-## Your Job
-1. Check: architecture, error handling, type safety, security, test quality
-2. Issues: list by severity (Critical / Important / Minor)
-3. Each issue: file:line + description + suggested fix
+1. Check: does the implementation satisfy ALL verification_steps? (S1-S5)
+2. Check: does the implementation follow the approved design? (D1-D5)
+3. Check: does the implementation follow the plan? (P1-P3)
+4. Check (UI only): does the implementation match UCD style tokens? (U1-U4)
+5. Verdict: PASS or FAIL with specific gaps
 ```
 
 ## Review Loop
 
 ```
 Implementer completes task
-  → Spec Review
-    → PASS → Code Quality Review
-               → PASS → Task complete
-               → FAIL → Implementer fixes → Code Quality Re-review
-    → FAIL → Implementer fixes → Spec Re-review
+  → Compliance Review
+    → PASS → Task complete
+    → FAIL → Implementer fixes → Re-review
   → Max 3 rounds → Escalate to user
 ```
 
@@ -160,7 +146,7 @@ When multiple tasks are independent (no shared files, no dependencies):
 | Anti-Pattern | Why It Fails | Correct Approach |
 |---|---|---|
 | Reference files instead of providing full text | Subagent may not have access or context | Copy full task text into prompt |
-| Skip spec review, only do code quality | May polish code that doesn't meet spec | Spec review gates code quality review |
+| Skip compliance review | May ship code that doesn't meet spec or design | Always run compliance review after implementation |
 | Dispatch without clear exit criteria | Subagent doesn't know when it's done | Define exact verification commands |
 | Parallelize dependent tasks | Race conditions, conflicting changes | Only parallelize truly independent tasks |
 | Ignore reviewer feedback | Compounds quality issues | Fix Critical/Important before proceeding |

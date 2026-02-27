@@ -75,7 +75,7 @@ See `references/plan-writing.md` for plan structure and task granularity.
 - The plan MUST reference the UCD component prompt for each UI component being implemented
 - Any visual deviation from UCD → explain why and get user approval
 
-### 6-8. TDD Cycle
+### 6-8. TDD Cycle (Red → Green → Refactor)
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-tdd` and follow it exactly.
 
 Context to carry forward:
@@ -91,7 +91,7 @@ Context to carry forward:
 - `quality_gates` thresholds from feature-list.json
 - `tech_stack` tool names for coverage/mutation commands
 
-### 10. Code Review
+### 10. Spec & Design Compliance Review
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-review` and follow it exactly.
 
 Context to carry forward:
@@ -130,7 +130,7 @@ Create runnable examples in `examples/` demonstrating the completed feature.
 
 - **One feature per cycle** — prevents context exhaustion
 - **Strict step order** — no skipping, no reordering
-- **Sub-skills are non-negotiable** — TDD, Quality, Review MUST be invoked via Skill tool
+- **Sub-skills are non-negotiable** — TDD, Quality, Compliance Review MUST be invoked via Skill tool
 - **Config gate before planning** — never plan or code when required configs are missing
 - **Never mark "passing" without fresh evidence** — run tests, read output, then mark
 - **Never remove or edit `verification_steps` in Worker** — use `/long-task:increment` for requirement changes
@@ -152,7 +152,6 @@ Create runnable examples in `examples/` demonstrating the completed feature.
 | "I'll skip the example for this one" | Only skip for pure infrastructure. |
 | "I'll update release notes at the end" | Update after every commit. |
 | "Mutation score is probably OK" | Run mutation tests and read the report. |
-| "I'll skip test review for this simple feature" | Test Plan Review is mandatory. |
 | "The UI looks correct to me" | Run automated detection + EXPECT/REJECT. |
 | "I need to change the verification_steps" | Use `/long-task:increment` — Worker cannot modify them. |
 | "This deprecated feature still needs work" | Skip it. Deprecated features are excluded. |
@@ -171,8 +170,8 @@ Follow the systematic debugging process — **never guess-and-fix**:
 
 **Called by:** using-long-task (when feature-list.json exists) or long-task-init (Step 16)
 **Invokes (in strict order):**
-1. `long-task:long-task-tdd` (Steps 6-8) — TDD Red-Green-Refactor with Test Plan Review
-2. `long-task:long-task-quality` (Step 9) — Coverage + Mutation + Verification
-3. `long-task:long-task-review` (Step 10) — Two-stage Code Review
+1. `long-task:long-task-tdd` (Steps 6-8) — TDD Red-Green-Refactor
+2. `long-task:long-task-quality` (Step 9) — Coverage + Mutation
+3. `long-task:long-task-review` (Step 10) — Spec & Design Compliance Review
 **Reads/Writes:** feature-list.json, task-progress.md (including `## Current State`), RELEASE_NOTES.md
 **Read on-demand (via Read tool, NOT Skill tool):** `references/plan-writing.md`, `references/systematic-debugging.md`

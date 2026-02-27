@@ -83,7 +83,6 @@ The final gate before marking a feature as "passing".
    - [test] command (full suite)
    - [coverage] command
    - [mutation-full] command
-   - Feature-specific verification_steps from feature-list.json
 
 2. RUN → Execute each command (fresh, in this message — not cached from earlier)
 
@@ -97,7 +96,6 @@ The final gate before marking a feature as "passing".
    - All tests pass (0 failures)?
    - Coverage >= thresholds?
    - Mutation >= threshold?
-   - All verification_steps satisfied?
 
 5. THEN CLAIM → Only now:
    - Mark feature "status": "passing" in feature-list.json

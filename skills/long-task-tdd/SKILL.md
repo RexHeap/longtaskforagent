@@ -1,6 +1,6 @@
 ---
 name: long-task-tdd
-description: "Use when implementing a feature through TDD in a long-task project - enforces Red-Green-Refactor with Test Plan Review hard gate"
+description: "Use when implementing a feature through TDD in a long-task project - enforces Red-Green-Refactor cycle"
 ---
 
 # Test-Driven Development for Long-Task
@@ -26,13 +26,10 @@ Write code before the test? Delete it. Start over. No exceptions.
 ```dot
 digraph tdd {
     "TDD Red: Write Failing Tests" [shape=box style=filled fillcolor=lightsalmon];
-    "Test Plan Review (HARD GATE)" [shape=diamond style=filled fillcolor=gold];
     "TDD Green: Minimal Implementation" [shape=box style=filled fillcolor=lightgreen];
     "TDD Refactor: Clean Up" [shape=box style=filled fillcolor=lightblue];
 
-    "TDD Red: Write Failing Tests" -> "Test Plan Review (HARD GATE)";
-    "Test Plan Review (HARD GATE)" -> "TDD Green: Minimal Implementation" [label="PASS"];
-    "Test Plan Review (HARD GATE)" -> "TDD Red: Write Failing Tests" [label="FAIL: fix tests"];
+    "TDD Red: Write Failing Tests" -> "TDD Green: Minimal Implementation";
     "TDD Green: Minimal Implementation" -> "TDD Refactor: Clean Up";
 }
 ```
@@ -109,47 +106,7 @@ See `references/ui-error-detection.md` for the full detection script and integra
 
 Run the test suite. **All tests must FAIL.** If any test passes → it tests nothing useful, rewrite it.
 
-## Step 2: Test Plan Review (HARD GATE)
-
-Dispatch an **independent subagent** — never self-review.
-
-```
-Task(
-  subagent_type="general-purpose",
-  prompt="""
-  You are a test plan reviewer. Read the prompt template at:
-  skills/long-task-tdd/prompts/test-plan-reviewer-prompt.md
-
-  Feature spec:
-  {feature_json}
-
-  Test code:
-  {test_code}
-
-  Test run output (should all FAIL):
-  {test_run_output}
-
-  Perform the 4-step review following the prompt template.
-  """
-)
-```
-
-The reviewer checks:
-- **A. Scenario Completeness** — all categories covered, negative ratio >= 40%
-- **B. Assertion Quality** — zero tests with ONLY None/isinstance/import; low-value <= 20%
-- **C. Test Independence** — behavior not implementation; "Wrong Implementation" challenge passes; no shared mutable state
-- **D. UI Checks** (if ui=true) — EXPECT/REJECT format; automated detection; console errors
-
-**Verdict rule:** Any NO in A-D → FAIL. Reviewer cannot override.
-
-**Review loop:** Max 2 rounds. FAIL → fix tests → re-dispatch. Still FAIL after 2 rounds → escalate to user.
-
-<HARD-GATE>
-Do NOT proceed to TDD Green until Test Plan Review returns PASS.
-No implementation code may be written until the test suite passes review.
-</HARD-GATE>
-
-## Step 3: TDD Green — Minimal Implementation
+## Step 2: TDD Green — Minimal Implementation
 
 Write ONLY enough code to make tests pass.
 
@@ -163,7 +120,7 @@ For subagent mode, dispatch with `skills/long-task-tdd/prompts/implementer-promp
 - One test at a time: make the simplest failing test pass first, then the next
 - No premature optimization or extra features
 
-## Step 4: TDD Refactor
+## Step 3: TDD Refactor
 
 Clean up while keeping tests green:
 - Extract duplication, improve naming, simplify
@@ -183,7 +140,7 @@ Full catalog of 14 anti-patterns: Read `skills/long-task-tdd/testing-anti-patter
 ## Integration
 
 **Called by:** long-task-work (Steps 6-8)
-**Dispatches:** test-plan-reviewer subagent (`skills/long-task-tdd/prompts/test-plan-reviewer-prompt.md`), implementer subagent (`skills/long-task-tdd/prompts/implementer-prompt.md`)
+**Dispatches:** implementer subagent (`skills/long-task-tdd/prompts/implementer-prompt.md`)
 **Requires:** Plan file exists (from Work Step 5)
 **Produces:** Passing tests + implementation code
 **Chains to:** long-task-quality (via Work Step 9)

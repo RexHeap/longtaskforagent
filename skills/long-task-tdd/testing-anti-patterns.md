@@ -275,7 +275,7 @@ Low-value assertion patterns (for counting):
 - `from module import X; assert X is not None` (import test)
 - Tests with no assertion at all (already covered by anti-pattern #9)
 
-**Relationship to other anti-patterns**: This is more specific than #9 (assertion-free tests) and #11 (gaming coverage). A test can have assertions and still be low-value if those assertions only verify existence/type. Mutation testing (#12) catches some but not all low-value assertions — the 20% ratio rule provides an additional check at the Test Plan Review stage.
+**Relationship to other anti-patterns**: This is more specific than #9 (assertion-free tests) and #11 (gaming coverage). A test can have assertions and still be low-value if those assertions only verify existence/type. Mutation testing (#12) catches some but not all low-value assertions — the 20% ratio rule provides an additional check during test writing.
 
 ## Quick Reference: Test Writing Checklist
 

@@ -113,9 +113,9 @@ The skill system uses on-demand loading via the `Skill` tool. Only the bootstrap
 
 | Skill | Purpose |
 |-------|---------|
-| `long-task-tdd` | TDD Red-Green-Refactor with Test Plan Review hard gate |
-| `long-task-quality` | Coverage Gate + Mutation Gate + Verification enforcement |
-| `long-task-review` | Two-stage Code Review (spec compliance → code quality) |
+| `long-task-tdd` | TDD Red-Green-Refactor |
+| `long-task-quality` | Coverage Gate + Mutation Gate |
+| `long-task-review` | Spec & Design Compliance Review |
 
 #### Skill Call Graph
 
@@ -182,9 +182,9 @@ using-long-task (router)
 
 2. **Worker Session** (`long-task-work` orchestrator):
    - Orient → Bootstrap → Config Gate → DevTools Gate → Plan
-   - **TDD** (`long-task-tdd`): Red → Test Plan Review → Green → Refactor
-   - **Quality** (`long-task-quality`): Coverage Gate → Mutation Gate → Verify & Mark
-   - **Review** (`long-task-review`): Spec Compliance → Code Quality
+   - **TDD** (`long-task-tdd`): Red → Green → Refactor
+   - **Quality** (`long-task-quality`): Coverage Gate → Mutation Gate
+   - **Review** (`long-task-review`): Spec & Design Compliance
    - Add Examples → Persist → Continue (chains to ST when all features pass)
 
 3. **System Testing** (`long-task-st`):
@@ -199,11 +199,11 @@ using-long-task (router)
 - **Requirements before UCD/design**: Run requirements elicitation; no UCD/design until SRS approved
 - **UCD before design (UI projects)**: Run UCD style guide generation; no design until UCD approved (auto-skips for non-UI projects)
 - **Design before implementation**: Run design phase; no coding until design approved
-- **Strict TDD**: Always Red→Test Plan Review→Green→Coverage→Refactor→Mutation
+- **Strict TDD**: Always Red→Green→Refactor→Coverage→Mutation
 - **Coverage gate after TDD Green**: Run coverage tool, verify line >= 90%, branch >= 80%
 - **Mutation gate after TDD Refactor**: Run incremental mutation testing, verify score >= 80%
 - **Verification enforcement**: Never mark "passing" without fresh evidence
-- **Code review after every feature**: Two-stage (spec + design + UCD compliance → code quality)
+- **Compliance review after every feature**: Spec + design + UCD compliance (no subjective code quality review — objective gates handle quality)
 - **UCD compliance for frontend features**: UI features must pass UCD style token checks (U1-U4) during review
 - **Systematic debugging**: Never guess-and-fix; always trace root cause first
 - **One feature per cycle**: Prevents context exhaustion
@@ -330,26 +330,22 @@ long-task-agent/
 │   │       └── worktree-isolation.md  # Git worktree isolation & branch finishing
 │   ├── long-task-st/                  # Phase 3: System Testing (IEEE 829)
 │   │   ├── SKILL.md
-│   │   ├── references/
-│   │   │   └── st-recipes.md          # Per-language ST tool recipes
-│   │   └── prompts/
-│   │       └── st-reviewer-prompt.md  # ST report review subagent
+│   │   └── references/
+│   │       └── st-recipes.md          # Per-language ST tool recipes
 │   ├── long-task-tdd/                 # TDD discipline
 │   │   ├── SKILL.md
 │   │   ├── testing-anti-patterns.md   # 14 anti-patterns catalog
 │   │   ├── references/
 │   │   │   └── ui-error-detection.md  # Three-layer UI error detection
 │   │   └── prompts/
-│   │       ├── implementer-prompt.md
-│   │       └── test-plan-reviewer-prompt.md
+│   │       └── implementer-prompt.md
 │   ├── long-task-quality/             # Quality gates
 │   │   ├── SKILL.md
 │   │   └── coverage-recipes.md        # Multi-language tool setup
-│   └── long-task-review/              # Code review
+│   └── long-task-review/              # Spec & design compliance review
 │       ├── SKILL.md
 │       └── prompts/
-│           ├── spec-reviewer-prompt.md
-│           └── code-quality-reviewer-prompt.md
+│           └── spec-reviewer-prompt.md
 ├── agents/
 │   └── code-reviewer.md              # Code reviewer agent definition
 ├── docs/

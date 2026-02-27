@@ -277,6 +277,12 @@ For Minor/Cosmetic defects the user chooses to defer:
 - Create tracking entries (if project uses issue tracker)
 
 ### 10. ST Report
+Before writing, verify completeness:
+- Every FR-xxx, NFR-xxx, IFR-xxx, CON-xxx from SRS appears in the RTM
+- Every NFR has a measured value (not estimate) that meets the SRS threshold
+- Every applicable test category (Step 2a) has execution results
+- All defects are classified with severity and status
+
 Generate `docs/plans/YYYY-MM-DD-st-report.md`:
 
 ```markdown

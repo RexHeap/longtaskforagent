@@ -1,11 +1,11 @@
 ---
 name: long-task-review
-description: "Use after quality gates pass in a long-task project - runs two-stage code review (spec compliance then code quality) before persisting"
+description: "Use after quality gates pass in a long-task project - runs spec & design compliance review before persisting"
 ---
 
-# Two-Stage Code Review
+# Spec & Design Compliance Review
 
-Review runs after every feature, before Persist. No exceptions. Spec compliance gates code quality — no point polishing wrong code.
+Review runs after every feature, before Persist. No exceptions. Verifies implementation matches the approved spec, design, plan, and UCD.
 
 **Announce at start:** "I'm using the long-task-review skill to review this feature."
 
@@ -13,7 +13,7 @@ Review runs after every feature, before Persist. No exceptions. Spec compliance 
 
 - After **every** feature passes quality gates
 - Before the Persist phase (git commit)
-- No exceptions — even "simple" features need at least Stage 1
+- No exceptions — even "simple" features need review
 
 ## Stage 1: Spec & Design Compliance
 
@@ -92,78 +92,9 @@ Task(
 | U3 | Spacing and layout (padding, margin, border radius, shadow) follow UCD spacing tokens |
 | U4 | Component structure and visual hierarchy match UCD component prompts for the implemented components |
 
-**Any NO in S1-S5 or D1-D5 → FAIL. Stage 2 is skipped. Fix gaps, re-run tests, re-review Stage 1.**
+**Any NO in S1-S5 or D1-D5 → FAIL. Fix gaps, re-run tests, re-review.**
 **Any NO in U1-U4 → FAIL (for ui:true features). Visual inconsistency must be fixed before proceeding.**
-**NO in P1-P3 → Important (must fix before feature complete, but does not skip Stage 2).**
-
-## Stage 2: Code Quality
-
-**Question**: Is the implementation well-crafted?
-
-Dispatch subagent with `skills/long-task-review/prompts/code-quality-reviewer-prompt.md`:
-
-```
-Task(
-  subagent_type="general-purpose",
-  prompt="""
-  You are a code quality reviewer.
-  Read the prompt at: skills/long-task-review/prompts/code-quality-reviewer-prompt.md
-
-  Feature spec:
-  {feature_json}
-
-  Git diff (BASE_SHA..HEAD_SHA):
-  {diff_output}
-
-  Test results:
-  {test_summary}
-
-  Coverage report:
-  {coverage_output}
-
-  Mutation report:
-  {mutation_output}
-
-  Perform the review following the prompt template.
-  """
-)
-```
-
-### Checklist (Q1-Q12)
-
-**Code Quality (Q1-Q6):**
-| # | Check |
-|---|-------|
-| Q1 | Follows existing project patterns and conventions |
-| Q2 | Error handling is appropriate (not excessive, not missing) |
-| Q3 | No security vulnerabilities (input validation, no hardcoded secrets) |
-| Q4 | No obvious performance issues |
-| Q5 | Types used correctly (if applicable) |
-| Q6 | YAGNI — no unnecessary features or abstractions |
-
-**Test Quality (Q7-Q12):**
-| # | Check |
-|---|-------|
-| Q7 | Tests are independent, deterministic, meaningful |
-| Q8 | Low-value assertion ratio <= 20% |
-| Q9 | Negative test ratio >= 40% |
-| Q10 | Coverage meets thresholds (line >= 90%, branch >= 80%) |
-| Q11 | Mutation score meets threshold (>= 80%) |
-| Q12 | No surviving mutants without documented justification |
-
-**Critical/Important NO in Q1-Q6 → FAIL. Issues in Q7-Q12 → listed as Important.**
-
-## Dual Review (for `priority: "high"` or `"ui": true`)
-
-For high-priority or UI features, dispatch **two independent subagents**:
-
-- **Reviewer A**: Standard rubric (as above)
-- **Reviewer B**: Adversarial framing — "Assume this code HAS bugs. Find them."
-
-Controller merges results:
-- Both must PASS
-- Either FAIL takes precedence
-- Conflicting findings → err on the side of the FAIL
+**NO in P1-P3 → Important (must fix before feature complete).**
 
 ## Issue Severity
 
@@ -176,16 +107,13 @@ Controller merges results:
 ## Review Loop
 
 ```
-Quality Gates Pass → Stage 1 (Spec + Design + Plan + UCD Compliance)
+Quality Gates Pass → Spec & Design Compliance Review
                           ↓
                      S1-S5 all PASS and D1-D5 all PASS (and U1-U4 if ui:true)?
                           ↓ YES                    ↓ NO
-                     Stage 2 (Code Quality)   Fix → Re-test → Re-review Stage 1
-                          ↓
-                     PASS? → Feature complete
-                     FAIL? → Fix → Re-review (changed items only)
-                                      ↓
-                                 Max 3 rounds → Escalate to user
+                     Feature complete         Fix → Re-test → Re-review
+                                                     ↓
+                                                Max 3 rounds → Escalate to user
 ```
 
 After 3 failed rounds, escalate via `AskUserQuestion` with:
@@ -197,22 +125,20 @@ After 3 failed rounds, escalate via `AskUserQuestion` with:
 
 | Anti-Pattern | Correct Approach |
 |---|---|
-| Skip review for "simple" features | Always run at least Stage 1 |
-| Review quality before spec compliance | Stage 1 gates Stage 2 |
+| Skip review for "simple" features | Always run review |
 | Bundle multiple issues into one finding | One concern per issue |
 | Performative agreement ("Great code!") | PASS or specific issues, no filler |
-| Implement suggestions without checking YAGNI | Verify suggestion is actually needed |
 
 ## Integration
 
 **Called by:** long-task-work (Step 10)
-**Dispatches:** spec-reviewer subagent (`skills/long-task-review/prompts/spec-reviewer-prompt.md`), code-quality-reviewer subagent (`skills/long-task-review/prompts/code-quality-reviewer-prompt.md`)
+**Dispatches:** spec-reviewer subagent (`skills/long-task-review/prompts/spec-reviewer-prompt.md`)
 **Requires:** Quality gates passed (long-task-quality)
 **Inputs:**
 - Feature spec from `feature-list.json`
 - Design document section (`docs/plans/*-design.md` § 4.N for the target feature)
 - Plan document (`docs/plans/YYYY-MM-DD-<feature-name>.md`)
 - UCD style guide (`docs/plans/*-ucd.md`) — only for `"ui": true` features
-- Git diff, test results, coverage/mutation reports
+- Git diff, test results
 **Produces:** Review verdict (PASS/FAIL with findings)
 **Returns to:** long-task-work for Add Examples + Persist steps

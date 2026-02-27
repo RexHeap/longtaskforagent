@@ -299,14 +299,6 @@ Each worker cycle follows this exact sequence.
     - Include console error gate via `list_console_messages(types=["error"])`
     - See [ui-error-detection.md](../../long-task-tdd/references/ui-error-detection.md) for full specification
 
-### Phase 3.5: Test Plan Review — verify test quality (HARD GATE)
-10a. Dispatch **independent subagent** (not self-review) with feature spec + test code + test run output
-10b. Subagent fills structured scoring rubric (sections A-D): scenario completeness, assertion quality, test independence, UI checks
-10c. **Verdict rule**: any NO in rubric → FAIL → fix tests and re-submit
-10d. Maximum 2 review rounds; if still failing, escalate to user via `AskUserQuestion`
-10e. Only proceed to Phase 4 when verdict is PASS
-10f. See [test-plan-review.md](test-plan-review.md) for full rubric and dispatch pattern
-
 ### Phase 4: TDD Green — implement to pass tests
 11. Write minimal code to make ALL tests pass (unit tests + functional tests)
 12. Run full test suite — confirm all new tests green, no regressions
@@ -329,12 +321,12 @@ Each worker cycle follows this exact sequence.
 15d. Record mutation report output as evidence
 15e. At project milestones: run full mutation testing (all source files)
 
-### Phase 5.5: Code Review
-16. Run two-stage review on the completed feature:
-    - **Stage 1: Spec Compliance** — Does implementation match all verification_steps? All edge cases covered?
-    - **Stage 2: Code Quality** — Follows patterns? Error handling? Security? Test quality?
+### Phase 5.5: Spec & Design Compliance Review
+16. Run compliance review on the completed feature:
+    - **Spec Compliance** — Does implementation match all verification_steps, feature spec, and SRS?
+    - **Design Compliance** — Does implementation follow approved class diagrams, sequence flows, and dependency versions?
+    - **UCD Compliance** (ui:true only) — Do style tokens, typography, and spacing match UCD guide?
 17. Fix Critical and Important issues immediately; Minor issues can be deferred
-18. See [code-review.md](code-review.md) for full process and [../agents/code-reviewer.md](../agents/code-reviewer.md) for subagent dispatch
 
 ### Phase 6: Add Examples (demonstrate completed feature)
 15. Create/update a runnable example in `examples/` for the completed feature
@@ -395,21 +387,19 @@ Requirements → SRS approved → Design → design approved → Initializer →
 | Skipping requirements phase | Incomplete/ambiguous requirements cause rework | Run requirements elicitation, produce approved SRS first |
 | Skipping design phase | Ad-hoc design causes inconsistency and rework | Run design phase after SRS, get approval first |
 | Guess-and-fix debugging | Random fixes waste time and may introduce new bugs | Follow systematic debugging — trace root cause. See [systematic-debugging.md](../../long-task-work/references/systematic-debugging.md) |
-| Skipping code review | Spec violations and quality issues compound across features | Two-stage review after every feature. See [code-review.md](code-review.md) |
+| Skipping compliance review | Spec violations compound across features | Compliance review after every feature |
 | Claiming "it works" without evidence | Unverified claims lead to false confidence | Show actual test output before marking passing. See [verification-enforcement.md](verification-enforcement.md) |
-| Skipping Test Plan Review | Bad tests waste entire TDD cycle; low-value assertions inflate coverage | Dispatch independent subagent reviewer after TDD Red. See [test-plan-review.md](test-plan-review.md) |
 | Accepting low-value assertions | Tests with None/isinstance/import checks provide zero bug-finding ability | Enforce <= 20% low-value assertion ratio. See [testing-anti-patterns.md](../../long-task-tdd/testing-anti-patterns.md) #14 |
 | Missing REJECT clause in UI tests | LLM only confirms positive expectations, misses obvious UI errors | Require EXPECT/REJECT format for all [devtools] steps. See [ui-error-detection.md](../../long-task-tdd/references/ui-error-detection.md) |
-| Self-reviewing test suite | Same LLM has same blind spots as test author | Always dispatch independent subagent for Test Plan Review |
 
 ## Verification Strategy
 
 ### For ALL features (TDD mandatory):
 1. **Red**: Write failing tests first — tests define the expected behavior
-   - Follow [test-scenario-rules.md](test-scenario-rules.md): category coverage, negative ratio >= 40%, low-value assertions <= 20%
-2. **Test Plan Review**: Independent subagent reviews test quality before implementation — see [test-plan-review.md](test-plan-review.md)
-3. **Green**: Write minimal implementation to pass tests
-4. **Refactor**: Clean up while keeping tests green
+   - Follow test scenario rules: category coverage, negative ratio >= 40%, low-value assertions <= 20%
+2. **Green**: Write minimal implementation to pass tests
+3. **Refactor**: Clean up while keeping tests green
+4. **Quality gates**: Coverage gate (line ≥90%, branch ≥80%) + Mutation gate (score ≥80%) objectively verify test quality
 
 ### For API / backend features:
 - Unit tests for business logic (pytest, jest, etc.)
@@ -465,44 +455,35 @@ Requirements → SRS approved → Design → design approved → Initializer →
 │ 4. Run tests → ALL FAIL  │
 └──────────┬───────────────┘
            ↓
-┌─── Test Plan Review ────┐
-│ 5. Dispatch subagent     │
-│    reviewer              │
-│ 6. Scoring rubric A-D    │
-│ 7. Any NO → FAIL →      │
-│    fix tests, re-review  │
-│ 8. Max 2 rounds          │
-└──────────┬───────────────┘
-           ↓
 ┌─── TDD Green ───────────┐
-│ 9. Write minimal code    │
-│ 10. Run tests → ALL PASS │
+│ 5. Write minimal code    │
+│ 6. Run tests → ALL PASS  │
 └──────────┬───────────────┘
            ↓
 ┌─── Coverage Gate ────────┐
-│ 11. Run coverage tool    │
-│ 12. Line % >= threshold? │
-│     Branch % >= threshold│
-│ 13. If below → more tests│
+│ 7. Run coverage tool     │
+│ 8. Line % >= threshold?  │
+│    Branch % >= threshold │
+│ 9. If below → more tests │
 └──────────┬───────────────┘
            ↓
 ┌─── TDD Refactor ────────┐
-│ 14. Clean up code        │
-│ 15. Run tests → STILL    │
+│ 10. Clean up code        │
+│ 11. Run tests → STILL    │
 │     ALL PASS             │
 └──────────┬───────────────┘
            ↓
 ┌─── Mutation Gate ────────┐
-│ 16. Run mutation tool    │
+│ 12. Run mutation tool    │
 │     (incremental)        │
-│ 17. Score >= threshold?  │
-│ 18. If below → improve   │
+│ 13. Score >= threshold?  │
+│ 14. If below → improve   │
 │     assertions           │
 └──────────┬───────────────┘
            ↓
 ┌─── Verify & Mark ────────┐
-│ 19. All evidence recorded │
-│ 20. Mark "passing"        │
+│ 15. All evidence recorded │
+│ 16. Mark "passing"        │
 └───────────────────────────┘
 ```
 

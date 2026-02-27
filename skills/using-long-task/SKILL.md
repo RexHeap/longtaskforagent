@@ -78,9 +78,9 @@ digraph phase_detection {
 ### Discipline Skills (invoked by long-task-work as sub-skills — do NOT invoke directly)
 | Skill | Purpose |
 |-------|---------|
-| `long-task:long-task-tdd` | TDD Red-Green-Refactor with Test Plan Review |
-| `long-task:long-task-quality` | Coverage Gate + Mutation Gate + Verification |
-| `long-task:long-task-review` | Two-stage Code Review |
+| `long-task:long-task-tdd` | TDD Red-Green-Refactor |
+| `long-task:long-task-quality` | Coverage Gate + Mutation Gate |
+| `long-task:long-task-review` | Spec & Design Compliance Review |
 
 ## Key Files (shared contract)
 
