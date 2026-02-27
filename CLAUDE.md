@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **Claude Code skill plugin** called `long-task-agent` that enables multi-session execution of complex software projects exceeding a single context window. It implements a five-phase architecture (Requirements → Design → Initializer → Worker → System Testing) with persistent state bridging via on-disk artifacts.
+This is a **Claude Code skill plugin** called `long-task-agent` that enables multi-session execution of complex software projects exceeding a single context window. It implements a six-phase architecture (Requirements → Design → Initializer → Worker → System Testing, with an Increment re-entry point) with persistent state bridging via on-disk artifacts.
 
-The skill system follows the **superpowers architectural pattern**: 10 independent skills loaded on-demand via the `Skill` tool, with a bootstrap router (`using-long-task`) injected at session start via hook.
+The skill system follows the **superpowers architectural pattern**: 11 independent skills loaded on-demand via the `Skill` tool, with a bootstrap router (`using-long-task`) injected at session start via hook.
 
 ## Key Commands
 
@@ -51,15 +51,34 @@ python long-task-agent/scripts/check_devtools.py feature-list.json --feature 3
 python long-task-agent/scripts/check_st_readiness.py feature-list.json
 ```
 
+### Validate increment request
+```bash
+python long-task-agent/scripts/validate_increment_request.py increment-request.json
+```
+
+### Get tech-stack CLI commands (eliminates per-language lookup)
+```bash
+python long-task-agent/scripts/get_tool_commands.py feature-list.json
+python long-task-agent/scripts/get_tool_commands.py feature-list.json --json
+```
+
 ### Run tests
 ```bash
-python long-task-agent/tests/test_validate_features.py
-python long-task-agent/tests/test_init_project.py
-python long-task-agent/tests/test_check_configs.py
-python long-task-agent/tests/test_validate_guide.py
-python long-task-agent/tests/test_check_devtools.py
-python long-task-agent/tests/test_check_st_readiness.py
+# Run all tests (from this repo's root)
+python -m pytest tests/
+
+# Run a single test file
+python -m pytest tests/test_validate_features.py
+python -m pytest tests/test_init_project.py
+python -m pytest tests/test_check_configs.py
+python -m pytest tests/test_validate_guide.py
+python -m pytest tests/test_check_devtools.py
+python -m pytest tests/test_check_st_readiness.py
+python -m pytest tests/test_get_tool_commands.py
+python -m pytest tests/test_validate_increment_request.py
 ```
+
+> **Path note**: the `python long-task-agent/scripts/...` paths above are consumer-facing (run from the target project root after plugin install). When developing in this repo, replace `long-task-agent/` with `./` or omit it entirely.
 
 ### Shortcut commands
 - `/long-task:requirements` — Start requirements elicitation and SRS generation
@@ -68,11 +87,12 @@ python long-task-agent/tests/test_check_st_readiness.py
 - `/long-task:init` — Initialize a project after design approval
 - `/long-task:work` — Start a Worker cycle
 - `/long-task:st` — Run system testing (requires all features passing)
+- `/long-task:increment` — Start incremental requirements development (requires existing project)
 - `/long-task:status` — Check project progress
 
 ## Architecture
 
-### 10-Skill System
+### 11-Skill System
 
 The skill system uses on-demand loading via the `Skill` tool. Only the bootstrap router is loaded at session start; other skills are loaded as needed.
 
@@ -81,12 +101,13 @@ The skill system uses on-demand loading via the `Skill` tool. Only the bootstrap
 | Skill | Phase | Trigger |
 |-------|-------|---------|
 | `using-long-task` | Bootstrap | Injected via SessionStart hook into every session |
+| `long-task-increment` | Phase 1.5 | increment-request.json exists (highest priority) |
 | `long-task-requirements` | Phase 0a | No SRS, no design doc, no feature-list.json |
 | `long-task-ucd` | Phase 0b | SRS exists, no UCD doc, no design doc, no feature-list.json |
 | `long-task-design` | Phase 0c | SRS + UCD exist (or no UI features), no design doc, no feature-list.json |
 | `long-task-init` | Phase 1 | Design doc exists, no feature-list.json |
-| `long-task-work` | Phase 2 | feature-list.json exists, some features failing |
-| `long-task-st` | Phase 3 | feature-list.json exists, ALL features passing |
+| `long-task-work` | Phase 2 | feature-list.json exists, some active features failing |
+| `long-task-st` | Phase 3 | feature-list.json exists, ALL active features passing |
 
 #### Discipline Skills (loaded by long-task-work as sub-skills)
 
@@ -102,16 +123,20 @@ The skill system uses on-demand loading via the `Skill` tool. Only the bootstrap
 using-long-task (router)
    ├─→ long-task-requirements ──→ long-task-ucd ──→ long-task-design ──→ long-task-init ──→ long-task-work
    │                              (auto-skip if no UI)                                        │
-   ├─→ long-task-work (if features remain failing)
+   ├─→ long-task-increment (if increment-request.json exists — highest priority)
+   │      └─→ updates SRS/Design/UCD in place, appends features to feature-list.json
+   │          └─→ long-task-work (new failing features detected)
+   │
+   ├─→ long-task-work (if active features remain failing)
    │      ├─→ long-task-tdd (Steps 6-8)
    │      ├─→ long-task-quality (Step 9)
    │      └─→ long-task-review (Step 10, includes UCD compliance for ui:true features)
    │
-   └─→ long-task-st (if ALL features passing)
+   └─→ long-task-st (if ALL active features passing)
           └─→ long-task-work (if defects found → fix → return to ST)
 ```
 
-### Six-Phase Workflow
+### Seven-Phase Workflow
 
 0a. **Requirements** (`long-task-requirements`):
    - Structured elicitation aligned with ISO/IEC/IEEE 29148
@@ -138,6 +163,15 @@ using-long-task (router)
    - Get section-by-section design approval
    - Save design doc to `docs/plans/YYYY-MM-DD-<topic>-design.md`
    - **Hard gate**: no coding until design approved
+
+1.5. **Increment** (`long-task-increment`):
+   - Triggered by `increment-request.json` signal file (highest routing priority)
+   - Collects new/modified/deprecated requirements with EARS templates
+   - Impact analysis against existing features (user-approved)
+   - Updates SRS, Design, UCD documents **in place** (git tracks history)
+   - Appends new features to `feature-list.json` with `wave` metadata
+   - Resets modified features to `"failing"`, marks deprecated features with `"deprecated": true`
+   - Deletes signal file on completion; router auto-detects failing features → Worker
 
 1. **Initializer Session** (`long-task-init`):
    - Reads both SRS and design documents
@@ -175,6 +209,9 @@ using-long-task (router)
 - **One feature per cycle**: Prevents context exhaustion
 - **UI features require Chrome DevTools MCP testing**: Mark with `"ui": true`
 - **System testing before release**: When all features pass, run ST phase (regression, integration, E2E, NFR, exploratory); no release without Go verdict
+- **Incremental changes via increment skill only**: Never manually edit feature-list.json to add/modify/deprecate features; use `/long-task:increment` for audited, tracked changes
+- **verification_steps immutable in Worker**: Only the increment skill can update verification_steps; Worker must use `/long-task:increment` for requirement changes
+- **Deprecated features excluded**: Worker skips deprecated features; ST readiness ignores them; routing counts only active features
 
 ### Generated Persistent Artifacts
 
@@ -183,7 +220,8 @@ using-long-task (router)
 | `docs/plans/*-srs.md` | Requirements | Approved SRS — the WHAT (ISO/IEC/IEEE 29148 aligned) |
 | `docs/plans/*-ucd.md` | UCD | Approved UCD style guide — the LOOK (UI projects only; text-to-image prompts, style tokens) |
 | `docs/plans/*-design.md` | Design | Approved design — the HOW |
-| `feature-list.json` | Init | Structured task inventory with status; includes `constraints[]` and `assumptions[]` |
+| `increment-request.json` | Increment | Signal file triggering incremental requirements (deleted after processing) |
+| `feature-list.json` | Init | Structured task inventory with status; includes `constraints[]`, `assumptions[]`, `waves[]` |
 | `CLAUDE.md` | Init | Cross-session navigation index (appended by `init_project.py`) |
 | `task-progress.md` | Init | Session-by-session progress log |
 | `RELEASE_NOTES.md` | Init | Living release notes (Keep a Changelog format) |
@@ -215,6 +253,13 @@ using-long-task (router)
     "branch_coverage_min": 80,
     "mutation_score_min": 80
   },
+  "waves": [
+    {
+      "id": 0,
+      "date": "2025-01-15",
+      "description": "Initial release"
+    }
+  ],
   "constraints": ["Hard limit — one string per item"],
   "assumptions": ["Implicit belief — one string per item"],
   "required_configs": [
@@ -236,6 +281,7 @@ Each feature in `features` array:
 ```json
 {
   "id": 1,
+  "wave": 0,
   "category": "core",
   "title": "Feature title",
   "description": "What it does",
@@ -244,15 +290,25 @@ Each feature in `features` array:
   "verification_steps": ["step 1", "step 2"],
   "dependencies": [],
   "ui": false,
-  "ui_entry": "/optional-path"
+  "ui_entry": "/optional-path",
+  "deprecated": false,
+  "deprecated_reason": null,
+  "supersedes": null
 }
 ```
+
+Increment-specific fields:
+- `waves[]` (root): Tracks each increment batch — `id` (0=initial), `date`, `description`
+- `wave` (feature): Which wave introduced/last modified this feature (default 0)
+- `deprecated` (feature): If `true`, excluded from Worker/ST/routing counts
+- `deprecated_reason` (feature): Required when `deprecated=true`
+- `supersedes` (feature): ID of the deprecated feature this one replaces (optional)
 
 ## File Structure
 
 ```
 long-task-agent/
-├── skills/                            # 10 skills (on-demand loaded via Skill tool)
+├── skills/                            # 11 skills (on-demand loaded via Skill tool)
 │   ├── using-long-task/               # Bootstrap router (injected via hook)
 │   │   ├── SKILL.md
 │   │   └── references/
@@ -260,6 +316,7 @@ long-task-agent/
 │   │       └── roadmap.md             # Future enhancements
 │   ├── long-task-requirements/SKILL.md # Phase 0a: Requirements & SRS (ISO 29148)
 │   ├── long-task-ucd/SKILL.md         # Phase 0b: UCD style guide (text-to-image prompts)
+│   ├── long-task-increment/SKILL.md    # Phase 1.5: Incremental requirements development
 │   ├── long-task-design/SKILL.md      # Phase 0c: Design (takes SRS + UCD as input)
 │   ├── long-task-init/                # Phase 1: Initialization (reads SRS + UCD + design)
 │   │   ├── SKILL.md
@@ -307,6 +364,7 @@ long-task-agent/
 │   ├── init.md                        # /long-task:init
 │   ├── work.md                        # /long-task:work
 │   ├── st.md                          # /long-task:st
+│   ├── increment.md                   # /long-task:increment
 │   └── status.md                      # /long-task:status
 ├── hooks/
 │   ├── hooks.json                     # SessionStart hook config
@@ -319,7 +377,8 @@ long-task-agent/
 │   ├── validate_guide.py              # Guide structural validation
 │   ├── check_configs.py               # Required config checking
 │   ├── check_devtools.py              # Chrome DevTools MCP checking
-│   └── check_st_readiness.py          # System testing readiness checking
+│   ├── check_st_readiness.py          # System testing readiness checking
+│   └── validate_increment_request.py  # Increment request signal validation
 ├── tests/
 │   ├── test_validate_features.py
 │   ├── test_init_project.py
@@ -327,7 +386,8 @@ long-task-agent/
 │   ├── test_check_configs.py
 │   ├── test_validate_guide.py
 │   ├── test_check_devtools.py
-│   └── test_check_st_readiness.py
+│   ├── test_check_st_readiness.py
+│   └── test_validate_increment_request.py
 ```
 
 ## See Also
@@ -346,9 +406,10 @@ long-task-agent/
 <!-- long-task-agent -->
 ## Long-Task Agent
 
-This project uses a multi-session agent workflow with 10 skills loaded on-demand.
+This project uses a multi-session agent workflow with 11 skills loaded on-demand.
 The `using-long-task` skill is injected at session start and routes to the correct phase.
 Flow: Requirements (SRS) → UCD (UI projects) → Design → Init → Worker cycles → System Testing.
+Incremental development: place `increment-request.json` → Increment skill updates SRS/Design/UCD in place → new features appended → Worker cycles → ST.
 
-Key files: `docs/plans/*-srs.md` (SRS), `docs/plans/*-ucd.md` (UCD style guide), `docs/plans/*-design.md` (design), `feature-list.json` (task inventory), `task-progress.md` (session log), `RELEASE_NOTES.md` (changelog), `docs/plans/*-st-report.md` (ST report).
+Key files: `docs/plans/*-srs.md` (SRS), `docs/plans/*-ucd.md` (UCD style guide), `docs/plans/*-design.md` (design), `feature-list.json` (task inventory), `task-progress.md` (session log), `RELEASE_NOTES.md` (changelog), `docs/plans/*-st-report.md` (ST report), `increment-request.json` (increment signal).
 <!-- /long-task-agent -->

@@ -50,6 +50,7 @@ def check_st_readiness(path: str) -> dict:
         "total_features": 0,
         "passing_features": 0,
         "failing_features": 0,
+        "deprecated_features": 0,
         "failing_ids": [],
         "srs_found": False,
         "srs_path": None,
@@ -66,14 +67,23 @@ def check_st_readiness(path: str) -> dict:
         data = json.load(f)
 
     features = data.get("features", [])
-    result["total_features"] = len(features)
 
-    if len(features) == 0:
-        result["issues"].append("No features defined in feature-list.json")
+    # Separate deprecated from active features
+    active_features = []
+    for feat in features:
+        if feat.get("deprecated", False):
+            result["deprecated_features"] += 1
+        else:
+            active_features.append(feat)
+
+    result["total_features"] = len(active_features)
+
+    if len(active_features) == 0:
+        result["issues"].append("No active features defined in feature-list.json")
         return result
 
-    # Check feature statuses
-    for feat in features:
+    # Check feature statuses (only active features)
+    for feat in active_features:
         status = feat.get("status", "failing")
         feat_id = feat.get("id", "?")
         if status == "passing":
@@ -120,13 +130,15 @@ def check_st_readiness(path: str) -> dict:
             "UI features exist but UCD document not found (docs/plans/*-ucd.md)"
         )
 
-    # Determine readiness
+    # Determine readiness (based on active features only)
     result["ready"] = (
         result["failing_features"] == 0
         and result["srs_found"]
         and result["design_found"]
         and result["total_features"] > 0
     )
+
+    # Note: deprecated features are excluded from readiness checks
 
     return result
 
@@ -143,7 +155,9 @@ def main():
         sys.exit(1)
 
     # Print summary
-    print(f"Features: {result['passing_features']}/{result['total_features']} passing")
+    print(f"Active features: {result['passing_features']}/{result['total_features']} passing")
+    if result["deprecated_features"] > 0:
+        print(f"Deprecated: {result['deprecated_features']} (excluded from checks)")
     if result["failing_features"] > 0:
         print(f"Failing: {result['failing_ids']}")
     print(f"SRS: {'found' if result['srs_found'] else 'MISSING'}")

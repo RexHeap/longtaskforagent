@@ -936,6 +936,239 @@ def test_devtools_step_without_expect_reject_warning():
     assert "REJECT" in stdout, f"Expected warning about missing REJECT: {stdout}"
 
 
+# --- wave/deprecated/supersedes validation tests ---
+
+def test_valid_wave_fields():
+    """Features with valid wave field should pass."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "waves": [
+            {"id": 0, "date": "2025-01-01", "description": "Initial release"},
+            {"id": 1, "date": "2025-03-01", "description": "Add export"}
+        ],
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "A",
+                "description": "A", "priority": "high", "status": "passing",
+                "verification_steps": ["Step 1"], "dependencies": [],
+                "wave": 0
+            },
+            {
+                "id": 2, "category": "core", "title": "B",
+                "description": "B", "priority": "high", "status": "failing",
+                "verification_steps": ["Step 1"], "dependencies": [1],
+                "wave": 1
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code == 0, f"Expected exit 0 for valid waves: {stdout}"
+    assert "Waves: 2" in stdout
+
+
+def test_wave_not_in_waves_array_fails():
+    """Feature with wave not in root waves[] should fail."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "waves": [
+            {"id": 0, "date": "2025-01-01", "description": "Initial"}
+        ],
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "A",
+                "description": "A", "priority": "high", "status": "failing",
+                "verification_steps": ["Step 1"], "dependencies": [],
+                "wave": 5
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code != 0, f"Expected non-zero for wave not in waves[]: {stdout}"
+
+
+def test_wave_negative_fails():
+    """Negative wave number should fail."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "A",
+                "description": "A", "priority": "high", "status": "failing",
+                "verification_steps": ["Step 1"], "dependencies": [],
+                "wave": -1
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code != 0, f"Expected non-zero for negative wave: {stdout}"
+
+
+def test_waves_duplicate_id_fails():
+    """Duplicate wave IDs should fail."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "waves": [
+            {"id": 0, "date": "2025-01-01", "description": "A"},
+            {"id": 0, "date": "2025-03-01", "description": "B"}
+        ],
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "A",
+                "description": "A", "priority": "high", "status": "failing",
+                "verification_steps": ["Step 1"], "dependencies": [],
+                "wave": 0
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code != 0, f"Expected non-zero for duplicate wave IDs: {stdout}"
+
+
+def test_valid_deprecated_feature():
+    """Deprecated feature with reason should pass."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "Old feature",
+                "description": "A", "priority": "high", "status": "passing",
+                "verification_steps": ["Step 1"], "dependencies": [],
+                "deprecated": True,
+                "deprecated_reason": "Replaced by feature 2"
+            },
+            {
+                "id": 2, "category": "core", "title": "New feature",
+                "description": "B", "priority": "high", "status": "failing",
+                "verification_steps": ["Step 1"], "dependencies": [],
+                "supersedes": 1
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code == 0, f"Expected exit 0 for valid deprecated: {stdout}"
+    assert "1 deprecated" in stdout
+
+
+def test_deprecated_without_reason_fails():
+    """deprecated=true without deprecated_reason should fail."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "A",
+                "description": "A", "priority": "high", "status": "passing",
+                "verification_steps": ["Step 1"], "dependencies": [],
+                "deprecated": True
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code != 0, f"Expected non-zero for deprecated without reason: {stdout}"
+
+
+def test_deprecated_not_boolean_fails():
+    """deprecated field that is not boolean should fail."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "A",
+                "description": "A", "priority": "high", "status": "failing",
+                "verification_steps": ["Step 1"], "dependencies": [],
+                "deprecated": "yes"
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code != 0, f"Expected non-zero for non-boolean deprecated: {stdout}"
+
+
+def test_supersedes_invalid_reference_fails():
+    """supersedes referencing non-existent ID should fail."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "A",
+                "description": "A", "priority": "high", "status": "failing",
+                "verification_steps": ["Step 1"], "dependencies": [],
+                "supersedes": 99
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code != 0, f"Expected non-zero for invalid supersedes ref: {stdout}"
+
+
+def test_supersedes_not_integer_fails():
+    """supersedes field that is not an integer should fail."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "A",
+                "description": "A", "priority": "high", "status": "failing",
+                "verification_steps": ["Step 1"], "dependencies": [],
+                "supersedes": "old"
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code != 0, f"Expected non-zero for non-integer supersedes: {stdout}"
+
+
+def test_no_wave_fields_backward_compat():
+    """Features without wave/deprecated/supersedes should pass (backward compat)."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "A",
+                "description": "A", "priority": "high", "status": "failing",
+                "verification_steps": ["Step 1"], "dependencies": []
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code == 0, f"Expected exit 0 for backward compat: {stdout}"
+
+
+def test_deprecated_excluded_from_summary_counts():
+    """Deprecated features should be shown separately in summary."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "A",
+                "description": "A", "priority": "high", "status": "passing",
+                "verification_steps": ["Step 1"], "dependencies": [],
+                "deprecated": True,
+                "deprecated_reason": "No longer needed"
+            },
+            {
+                "id": 2, "category": "core", "title": "B",
+                "description": "B", "priority": "high", "status": "passing",
+                "verification_steps": ["Step 1"], "dependencies": []
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code == 0, f"Expected exit 0: {stdout}"
+    assert "1 passing" in stdout
+    assert "1 deprecated" in stdout
+
+
 if __name__ == "__main__":
     tests = [
         test_valid_feature_list,
@@ -981,6 +1214,17 @@ if __name__ == "__main__":
         test_devtools_step_with_expect_reject_no_warning,
         test_devtools_step_missing_reject_warning,
         test_devtools_step_without_expect_reject_warning,
+        test_valid_wave_fields,
+        test_wave_not_in_waves_array_fails,
+        test_wave_negative_fails,
+        test_waves_duplicate_id_fails,
+        test_valid_deprecated_feature,
+        test_deprecated_without_reason_fails,
+        test_deprecated_not_boolean_fails,
+        test_supersedes_invalid_reference_fails,
+        test_supersedes_not_integer_fails,
+        test_no_wave_fields_backward_compat,
+        test_deprecated_excluded_from_summary_counts,
     ]
     passed = 0
     failed = 0

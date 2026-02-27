@@ -14,16 +14,24 @@ using_long_task_content=$(cat "${PLUGIN_ROOT}/skills/using-long-task/SKILL.md" 2
 
 # Detect project phase and build status hint
 status_hint=""
-if [ -f "feature-list.json" ]; then
-    # Count feature progress
-    total=$(python3 -c "import json; d=json.load(open('feature-list.json')); print(len(d.get('features',[])))" 2>/dev/null || echo "?")
-    passing=$(python3 -c "import json; d=json.load(open('feature-list.json')); print(sum(1 for f in d.get('features',[]) if f.get('status')=='passing'))" 2>/dev/null || echo "?")
+if [ -f "increment-request.json" ]; then
+    # Phase 1.5: Increment — incremental requirements development
+    status_hint="\\n\\nIncrement request found. Phase: Increment."
+elif [ -f "feature-list.json" ]; then
+    # Count feature progress (exclude deprecated features)
+    total=$(python3 -c "import json; d=json.load(open('feature-list.json')); print(len([f for f in d.get('features',[]) if not f.get('deprecated',False)]))" 2>/dev/null || echo "?")
+    passing=$(python3 -c "import json; d=json.load(open('feature-list.json')); print(sum(1 for f in d.get('features',[]) if f.get('status')=='passing' and not f.get('deprecated',False)))" 2>/dev/null || echo "?")
+    deprecated=$(python3 -c "import json; d=json.load(open('feature-list.json')); print(sum(1 for f in d.get('features',[]) if f.get('deprecated',False)))" 2>/dev/null || echo "0")
     if [ "$total" != "?" ] && [ "$passing" != "?" ] && [ "$total" = "$passing" ] && [ "$total" != "0" ]; then
-        # Phase 3: System Testing — all features passing
-        status_hint="\\n\\nProject status: ${passing}/${total} features passing (ALL). Phase: System Testing."
+        # Phase 3: System Testing — all active features passing
+        dep_note=""
+        [ "$deprecated" != "0" ] && dep_note=" (${deprecated} deprecated)"
+        status_hint="\\n\\nProject status: ${passing}/${total} active features passing (ALL)${dep_note}. Phase: System Testing."
     else
-        # Phase 2: Worker — some features still failing
-        status_hint="\\n\\nProject status: ${passing}/${total} features passing. Phase: Worker."
+        # Phase 2: Worker — some active features still failing
+        dep_note=""
+        [ "$deprecated" != "0" ] && dep_note=" (${deprecated} deprecated)"
+        status_hint="\\n\\nProject status: ${passing}/${total} active features passing${dep_note}. Phase: Worker."
     fi
 elif compgen -G "docs/plans/*-design.md" > /dev/null 2>&1; then
     status_hint="\\n\\nDesign doc found. Phase: Initializer."

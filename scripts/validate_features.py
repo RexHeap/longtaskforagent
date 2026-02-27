@@ -73,6 +73,32 @@ def validate(path: str) -> tuple[list[str], list[str]]:
                             f"quality_gates.{key} must be a number between 0 and 100, got {val!r}"
                         )
 
+    # Validate waves if present
+    waves = data.get("waves")
+    wave_ids = set()
+    if waves is not None:
+        if not isinstance(waves, list):
+            errors.append('"waves" must be an array')
+        else:
+            for wi, wave in enumerate(waves):
+                wprefix = f"waves[{wi}]"
+                if not isinstance(wave, dict):
+                    errors.append(f"{wprefix}: must be an object")
+                    continue
+                wid = wave.get("id")
+                if wid is None:
+                    errors.append(f"{wprefix}: missing 'id' field")
+                elif not isinstance(wid, int) or wid < 0:
+                    errors.append(f"{wprefix}: 'id' must be a non-negative integer")
+                else:
+                    if wid in wave_ids:
+                        errors.append(f"{wprefix}: duplicate wave id={wid}")
+                    wave_ids.add(wid)
+                if not wave.get("date"):
+                    errors.append(f"{wprefix}: missing or empty 'date' field")
+                if not wave.get("description"):
+                    errors.append(f"{wprefix}: missing or empty 'description' field")
+
     # Validate constraints if present
     constraints = data.get("constraints")
     if constraints is not None:
@@ -193,6 +219,35 @@ def validate(path: str) -> tuple[list[str], list[str]]:
         if ui_entry is not None and not isinstance(ui_entry, str):
             errors.append(f"{prefix} (id={fid}): 'ui_entry' must be a string, got {type(ui_entry).__name__}")
 
+        # Check wave field type
+        wave = feat.get("wave")
+        if wave is not None:
+            if not isinstance(wave, int) or wave < 0:
+                errors.append(f"{prefix} (id={fid}): 'wave' must be a non-negative integer, got {wave!r}")
+            elif wave_ids and wave not in wave_ids:
+                errors.append(f"{prefix} (id={fid}): wave={wave} not found in root 'waves' array")
+
+        # Check deprecated field
+        deprecated = feat.get("deprecated")
+        if deprecated is not None and not isinstance(deprecated, bool):
+            errors.append(f"{prefix} (id={fid}): 'deprecated' must be a boolean, got {type(deprecated).__name__}")
+
+        # Check deprecated_reason required when deprecated=true
+        if deprecated is True:
+            reason = feat.get("deprecated_reason")
+            if not reason or not isinstance(reason, str) or len(reason.strip()) == 0:
+                errors.append(f"{prefix} (id={fid}): 'deprecated_reason' is required when deprecated=true")
+
+        # Check deprecated_reason type when present
+        dep_reason = feat.get("deprecated_reason")
+        if dep_reason is not None and not isinstance(dep_reason, str):
+            errors.append(f"{prefix} (id={fid}): 'deprecated_reason' must be a string, got {type(dep_reason).__name__}")
+
+        # Check supersedes field
+        supersedes = feat.get("supersedes")
+        if supersedes is not None and not isinstance(supersedes, int):
+            errors.append(f"{prefix} (id={fid}): 'supersedes' must be an integer, got {type(supersedes).__name__}")
+
         # Check ui features have at least one [devtools] verification step
         if ui is True:
             steps = feat.get("verification_steps")
@@ -230,7 +285,7 @@ def validate(path: str) -> tuple[list[str], list[str]]:
                     # Defer check — dependency may appear later
                     pass
 
-    # Second pass: validate all dependencies reference existing IDs
+    # Second pass: validate all dependencies and supersedes reference existing IDs
     all_ids = {f.get("id") for f in features if isinstance(f, dict)}
     for feat in features:
         if not isinstance(feat, dict):
@@ -239,6 +294,9 @@ def validate(path: str) -> tuple[list[str], list[str]]:
         for dep in feat.get("dependencies", []):
             if dep not in all_ids:
                 errors.append(f"Feature id={fid}: dependency id={dep} does not exist")
+        sup = feat.get("supersedes")
+        if isinstance(sup, int) and sup not in all_ids:
+            errors.append(f"Feature id={fid}: supersedes id={sup} does not exist")
 
     # Validate required_configs.required_by references existing feature IDs
     if required_configs and isinstance(required_configs, list):
@@ -277,9 +335,14 @@ def main():
         with open(sys.argv[1], "r", encoding="utf-8") as f:
             data = json.load(f)
         features = data["features"]
-        passing = sum(1 for f in features if f.get("status") == "passing")
-        failing = sum(1 for f in features if f.get("status") == "failing")
-        summary = f"VALID — {len(features)} features ({passing} passing, {failing} failing)"
+        deprecated_count = sum(1 for f in features if isinstance(f, dict) and f.get("deprecated", False))
+        active_features = [f for f in features if isinstance(f, dict) and not f.get("deprecated", False)]
+        passing = sum(1 for f in active_features if f.get("status") == "passing")
+        failing = sum(1 for f in active_features if f.get("status") == "failing")
+        summary = f"VALID — {len(features)} features ({passing} passing, {failing} failing"
+        if deprecated_count > 0:
+            summary += f", {deprecated_count} deprecated"
+        summary += ")"
 
         # Show quality gates if configured
         qg = data.get("quality_gates")
@@ -301,6 +364,11 @@ def main():
         rc = data.get("required_configs", [])
         if rc:
             summary += f" | Required configs: {len(rc)}"
+
+        # Show wave distribution if waves exist
+        waves_data = data.get("waves", [])
+        if waves_data:
+            summary += f" | Waves: {len(waves_data)}"
 
         # Show tech stack if configured
         ts = data.get("tech_stack")

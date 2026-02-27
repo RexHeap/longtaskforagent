@@ -197,6 +197,70 @@ def test_failing_ids_listed():
         cleanup(tmp_dir)
 
 
+# --- deprecated feature exclusion tests ---
+
+def test_deprecated_features_excluded_from_counts():
+    """Deprecated features should be excluded from readiness checks."""
+    features = [
+        {"id": 1, "status": "passing", "title": "A"},
+        {"id": 2, "status": "passing", "title": "B", "deprecated": True, "deprecated_reason": "Old"},
+    ]
+    tmp_dir, fl_path = create_project(features, {"srs": True, "design": True})
+    try:
+        code, stdout, _ = run_checker(fl_path)
+        assert code == 0, f"Expected 0 (deprecated excluded): {stdout}"
+        assert "READY" in stdout
+        assert "1/1" in stdout, f"Expected 1/1 active features: {stdout}"
+    finally:
+        cleanup(tmp_dir)
+
+
+def test_deprecated_failing_excluded_still_ready():
+    """A deprecated feature with 'failing' status should not block readiness."""
+    features = [
+        {"id": 1, "status": "passing", "title": "A"},
+        {"id": 2, "status": "failing", "title": "B", "deprecated": True, "deprecated_reason": "Removed"},
+    ]
+    tmp_dir, fl_path = create_project(features, {"srs": True, "design": True})
+    try:
+        code, stdout, _ = run_checker(fl_path)
+        assert code == 0, f"Expected 0 (deprecated failing excluded): {stdout}"
+        assert "READY" in stdout
+    finally:
+        cleanup(tmp_dir)
+
+
+def test_all_deprecated_not_ready():
+    """If all features are deprecated → not ready (no active features)."""
+    features = [
+        {"id": 1, "status": "passing", "title": "A", "deprecated": True, "deprecated_reason": "Old"},
+    ]
+    tmp_dir, fl_path = create_project(features, {"srs": True, "design": True})
+    try:
+        code, stdout, _ = run_checker(fl_path)
+        assert code != 0, f"Expected non-zero (no active features): {stdout}"
+        assert "NOT READY" in stdout
+    finally:
+        cleanup(tmp_dir)
+
+
+def test_mixed_active_and_deprecated():
+    """Mixed active passing + deprecated → ready."""
+    features = [
+        {"id": 1, "status": "passing", "title": "A"},
+        {"id": 2, "status": "passing", "title": "B"},
+        {"id": 3, "status": "passing", "title": "C", "deprecated": True, "deprecated_reason": "Replaced"},
+        {"id": 4, "status": "failing", "title": "D", "deprecated": True, "deprecated_reason": "Removed"},
+    ]
+    tmp_dir, fl_path = create_project(features, {"srs": True, "design": True})
+    try:
+        code, stdout, _ = run_checker(fl_path)
+        assert code == 0, f"Expected 0: {stdout}"
+        assert "2/2" in stdout, f"Expected 2/2 active: {stdout}"
+    finally:
+        cleanup(tmp_dir)
+
+
 if __name__ == "__main__":
     tests = [
         test_all_passing_with_docs,
@@ -209,6 +273,10 @@ if __name__ == "__main__":
         test_nonexistent_file,
         test_invalid_json,
         test_failing_ids_listed,
+        test_deprecated_features_excluded_from_counts,
+        test_deprecated_failing_excluded_still_ready,
+        test_all_deprecated_not_ready,
+        test_mixed_active_and_deprecated,
     ]
     passed = 0
     failed = 0

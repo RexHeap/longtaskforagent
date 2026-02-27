@@ -22,11 +22,13 @@ Check project state and invoke the corresponding skill:
 ```dot
 digraph phase_detection {
     "Session Start" [shape=doublecircle];
+    "increment-request.json exists?" [shape=diamond];
     "feature-list.json exists?" [shape=diamond];
-    "All features passing?" [shape=diamond];
+    "All active features passing?" [shape=diamond];
     "Design doc (*-design.md) in docs/plans/?" [shape=diamond];
     "UCD doc (*-ucd.md) in docs/plans/?" [shape=diamond];
     "SRS doc (*-srs.md) in docs/plans/?" [shape=diamond];
+    "Invoke long-task:long-task-increment" [shape=box style=filled fillcolor=plum];
     "Invoke long-task:long-task-requirements" [shape=box style=filled fillcolor=lightyellow];
     "Invoke long-task:long-task-ucd" [shape=box style=filled fillcolor=lightorange];
     "Invoke long-task:long-task-design" [shape=box style=filled fillcolor=lightblue];
@@ -34,10 +36,12 @@ digraph phase_detection {
     "Invoke long-task:long-task-work" [shape=box style=filled fillcolor=lightgreen];
     "Invoke long-task:long-task-st" [shape=box style=filled fillcolor=lightcoral];
 
-    "Session Start" -> "feature-list.json exists?";
-    "feature-list.json exists?" -> "All features passing?" [label="yes"];
-    "All features passing?" -> "Invoke long-task:long-task-st" [label="yes"];
-    "All features passing?" -> "Invoke long-task:long-task-work" [label="no"];
+    "Session Start" -> "increment-request.json exists?";
+    "increment-request.json exists?" -> "Invoke long-task:long-task-increment" [label="yes"];
+    "increment-request.json exists?" -> "feature-list.json exists?" [label="no"];
+    "feature-list.json exists?" -> "All active features passing?" [label="yes"];
+    "All active features passing?" -> "Invoke long-task:long-task-st" [label="yes"];
+    "All active features passing?" -> "Invoke long-task:long-task-work" [label="no"];
     "feature-list.json exists?" -> "Design doc (*-design.md) in docs/plans/?" [label="no"];
     "Design doc (*-design.md) in docs/plans/?" -> "Invoke long-task:long-task-init" [label="yes"];
     "Design doc (*-design.md) in docs/plans/?" -> "UCD doc (*-ucd.md) in docs/plans/?" [label="no"];
@@ -49,9 +53,10 @@ digraph phase_detection {
 ```
 
 **Detection rules:**
+0. Check `increment-request.json` in project root → if exists → `long-task-increment` **(highest priority)**
 1. Check `feature-list.json` in project root → if exists:
-   - Run `python scripts/check_st_readiness.py feature-list.json` — if exit 0 (all features passing) → `long-task-st`
-   - Otherwise (some features failing) → `long-task-work`
+   - Run `python scripts/check_st_readiness.py feature-list.json` — if exit 0 (all active features passing, excludes deprecated) → `long-task-st`
+   - Otherwise (some active features failing) → `long-task-work`
 2. Check `docs/plans/*-design.md` → if any match → `long-task-init`
 3. Check `docs/plans/*-ucd.md` → if any match → `long-task-design` (UCD done, proceed to design)
 4. Check `docs/plans/*-srs.md` → if any match → `long-task-ucd` (SRS done, UCD next; if no UI features the UCD skill auto-skips to design)
@@ -62,12 +67,13 @@ digraph phase_detection {
 ### Phase Skills (invoke ONE based on detection above)
 | Skill | Phase | When |
 |-------|-------|------|
+| `long-task:long-task-increment` | Phase 1.5 | increment-request.json exists (highest priority) |
 | `long-task:long-task-requirements` | Phase 0a | No SRS, no design doc, no feature-list.json |
 | `long-task:long-task-ucd` | Phase 0b | SRS exists, no UCD doc, no design doc, no feature-list.json |
 | `long-task:long-task-design` | Phase 0c | SRS + UCD exist (or no UI features), no design doc, no feature-list.json |
 | `long-task:long-task-init` | Phase 1 | Design doc exists, no feature-list.json |
-| `long-task:long-task-work` | Phase 2 | feature-list.json exists, some features failing |
-| `long-task:long-task-st` | Phase 3 | feature-list.json exists, ALL features passing |
+| `long-task:long-task-work` | Phase 2 | feature-list.json exists, some active features failing |
+| `long-task:long-task-st` | Phase 3 | feature-list.json exists, ALL active features passing |
 
 ### Discipline Skills (invoked by long-task-work as sub-skills — do NOT invoke directly)
 | Skill | Purpose |
@@ -88,6 +94,7 @@ digraph phase_detection {
 | `long-task-guide.md` | Project-specific Worker guide |
 | `RELEASE_NOTES.md` | Living changelog |
 | `docs/plans/*-st-report.md` | System testing report — Go/No-Go verdict |
+| `increment-request.json` | Signal file — triggers incremental requirements (deleted after processing) |
 
 ## Red Flags
 
@@ -109,6 +116,8 @@ These thoughts mean STOP — you're rationalizing:
 | "This UI is too simple for a style guide" | Even simple UIs need tokens. UCD can be lightweight. |
 | "All features pass, we can ship" | Feature tests ≠ system tests. Run ST phase first. |
 | "System testing is overkill" | Integration bugs, NFR failures, and workflow gaps hide until ST. |
+| "I'll just add features to the JSON directly" | Use `/long-task:increment` for tracked, audited changes. |
+| "The requirement change is small, no need for impact analysis" | Increment skill catches hidden dependencies. |
 
 ## Skill Priority
 

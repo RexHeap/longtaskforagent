@@ -22,7 +22,7 @@ You MUST create a TodoWrite task for each step and complete them in order:
 - Read `long-task-guide.md` — project-specific workflow guidance
 - Read design document (`docs/plans/*-design.md`) — locate the **Key Feature Design** section (section 4.N) for the target feature to understand the approved architecture, class diagrams, sequence flows, and design decisions
 - Run `git log --oneline -10` — recent commit context
-- Pick next `"status": "failing"` feature by priority + dependency order
+- Pick next `"status": "failing"` feature by priority + dependency order — **skip features with `"deprecated": true`**
 - If target feature has `"ui": true` or involves domain terms, read `docs/project-context.md`
 - If target feature has `"ui": true` and UCD document exists (`docs/plans/*-ucd.md`), read the UCD style guide — reference style tokens, component prompts, and page prompts to ensure frontend implementation matches the approved visual style
 
@@ -121,8 +121,8 @@ Create runnable examples in `examples/` demonstrating the completed feature.
 - Git commit again (progress files)
 
 ### 13. Continue
-- If failing features remain and context allows → proceed to next feature (back to Step 1)
-- If **no failing features remain** → all features are passing. **Invoke `long-task:long-task-st`** to begin system testing.
+- If failing non-deprecated features remain and context allows → proceed to next feature (back to Step 1)
+- If **no failing non-deprecated features remain** → all active features are passing. **Invoke `long-task:long-task-st`** to begin system testing.
 - If context is exhausted → end session (ensure task-progress.md is updated)
 
 ## Critical Rules
@@ -132,7 +132,7 @@ Create runnable examples in `examples/` demonstrating the completed feature.
 - **Sub-skills are non-negotiable** — TDD, Quality, Review MUST be invoked via Skill tool
 - **Config gate before planning** — never plan or code when required configs are missing
 - **Never mark "passing" without fresh evidence** — run tests, read output, then mark
-- **Never remove or edit `verification_steps`** — immutable once created
+- **Never remove or edit `verification_steps` in Worker** — use `/long-task:increment` for requirement changes
 - **Systematic debugging only** — on error, read `references/systematic-debugging.md`; trace root cause, never guess-and-fix
 - **Update RELEASE_NOTES.md after every git commit**
 - **Always commit + update progress before ending session** — bridges context gap
@@ -153,6 +153,8 @@ Create runnable examples in `examples/` demonstrating the completed feature.
 | "Mutation score is probably OK" | Run mutation tests and read the report. |
 | "I'll skip test review for this simple feature" | Test Plan Review is mandatory. |
 | "The UI looks correct to me" | Run automated detection + EXPECT/REJECT. |
+| "I need to change the verification_steps" | Use `/long-task:increment` — Worker cannot modify them. |
+| "This deprecated feature still needs work" | Skip it. Deprecated features are excluded. |
 
 ## On Error
 
