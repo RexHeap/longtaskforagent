@@ -1,11 +1,11 @@
 ---
 name: long-task-work
-description: "Use when feature-list.json exists - orchestrate one feature per session through the full TDD pipeline with quality gates and code review"
+description: "Use when feature-list.json exists - orchestrate features through the full TDD pipeline with quality gates and code review"
 ---
 
-# Worker Session — One Feature Per Cycle
+# Worker — One Feature Per Cycle
 
-Execute multi-session software projects by implementing one feature per context cycle. Each cycle follows a strict pipeline: Orient → Gate → Plan → TDD → Quality → Review → Persist.
+Execute multi-session software projects by implementing one feature per cycle. Each cycle follows a strict pipeline: Orient → Gate → Plan → TDD → Quality → Review → Persist.
 
 **Announce at start:** "I'm using the long-task-work skill. Let me orient myself."
 

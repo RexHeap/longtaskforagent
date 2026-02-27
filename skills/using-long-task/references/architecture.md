@@ -369,7 +369,7 @@ Requirements → SRS approved → Design → design approved → Initializer →
 
 | Anti-Pattern | Why It Fails | Correct Approach |
 |---|---|---|
-| Attempting all features at once | Context exhaustion mid-implementation, cascading failures | One feature per session |
+| Attempting multiple features in parallel | Context exhaustion mid-implementation, cascading failures | One feature per cycle |
 | Declaring victory without testing | Features appear done but break in practice | Verify every feature through actual tests |
 | Writing code before tests (skipping TDD Red) | Tests end up testing implementation rather than behavior; missed edge cases | Always write failing tests first, then implement |
 | Skipping Chrome DevTools functional tests for UI | UI may render but not function correctly for users | Every UI feature (ui=true) needs [devtools] verification steps; run DevTools Gate before planning |
