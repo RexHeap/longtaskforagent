@@ -43,36 +43,6 @@ else
     status_hint="\\n\\nNo SRS, design, or feature-list.json found. Phase: Requirements."
 fi
 
-# ── Auto-continue background launcher (singleton) ──────────────────────────
-# Launches scripts/auto_continue.py as a background process during Worker phase.
-# Cross-platform: Windows (Git Bash) and Linux both support `&` and `kill -0`.
-AC_SCRIPT="${PLUGIN_ROOT}/scripts/auto_continue.py"
-AC_FEATURE_LIST="$(pwd)/feature-list.json"
-# PID/log files: TMPDIR (macOS) → TEMP (Windows) → /tmp (Linux)
-AC_PID_FILE="${TMPDIR:-${TEMP:-/tmp}}/claude-auto-continue.pid"
-AC_LOG_FILE="${TMPDIR:-${TEMP:-/tmp}}/claude-auto-continue.log"
-
-# Only launch in Worker phase (feature-list.json exists, some features failing)
-if [ -f "feature-list.json" ] && [ "$total" != "?" ] && [ "$passing" != "?" ] && [ "$total" != "$passing" ]; then
-    _ac_running=false
-    if [ -f "$AC_PID_FILE" ]; then
-        _ac_old_pid=$(cat "$AC_PID_FILE" 2>/dev/null || echo "")
-        if [ -n "$_ac_old_pid" ] && kill -0 "$_ac_old_pid" 2>/dev/null; then
-            _ac_running=true
-        else
-            rm -f "$AC_PID_FILE"
-        fi
-    fi
-
-    if [ "$_ac_running" = "false" ] && [ -f "$AC_SCRIPT" ]; then
-        python3 "$AC_SCRIPT" \
-            --feature-list "$AC_FEATURE_LIST" \
-            --max-iterations 50 \
-            > "$AC_LOG_FILE" 2>&1 &
-        echo $! > "$AC_PID_FILE"
-    fi
-fi
-
 # Escape string for JSON embedding using bash parameter substitution.
 escape_for_json() {
     local s="$1"
