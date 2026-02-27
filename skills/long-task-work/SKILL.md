@@ -25,6 +25,28 @@ You MUST create a TodoWrite task for each step and complete them in order:
 - Pick next `"status": "failing"` feature by priority + dependency order — **skip features with `"deprecated": true`**
 - If target feature has `"ui": true` and UCD document exists (`docs/plans/*-ucd.md`), read the UCD style guide — reference style tokens, component prompts, and page prompts to ensure frontend implementation matches the approved visual style
 
+**Document Lookup Protocol (used by Steps 5 and 10):**
+
+When you need the design section or SRS requirement for a feature, do NOT grep for the feature title. Instead:
+
+1. **Design document** (`docs/plans/*-design.md`):
+   - Read the design document's **Section 4 heading area** (use Read tool with offset/limit to scan section 4 headers — look for lines matching `### 4.N Feature:`)
+   - Identify which `### 4.N` subsection corresponds to the target feature by matching the feature title or FR-ID
+   - Read the **entire subsection** from `### 4.N` through the line before `### 4.(N+1)` (or end of section 4) — this includes Overview, Class Diagram, Sequence Diagram, Flow Diagram, and Design Decisions
+   - Store this full text as `{design_section}` for use in Plan (Step 5) and Review (Step 10)
+
+2. **SRS document** (`docs/plans/*-srs.md`):
+   - Read the SRS **Section 4 (Functional Requirements)** heading area to find the `### FR-xxx` subsection matching the target feature
+   - Read the **entire FR-xxx subsection** including EARS statement, priority, acceptance criteria, and Given/When/Then scenarios
+   - Store this as `{srs_section}` for use in Plan and Review
+
+3. **UCD document** (`docs/plans/*-ucd.md`, only for `"ui": true` features):
+   - Read the UCD's table of contents or section headers
+   - Find sections referencing the target feature's UI components or pages
+   - Read the **full relevant sections** including style tokens, component prompts, and page prompts
+
+**Why this matters:** Grep returns isolated matching lines without surrounding context. Design sections contain class diagrams, sequence diagrams, flow diagrams, and design rationale that span dozens of lines — all of which are needed for correct implementation and compliance review.
+
 ### 2. Bootstrap
 - Run `init.sh` / `init.ps1` — ensure environment is ready
 - Smoke-test previously passing features (quick verify)
@@ -64,7 +86,8 @@ Save to `docs/plans/YYYY-MM-DD-<feature-name>.md`.
 See `references/plan-writing.md` for plan structure and task granularity.
 
 **Design document reference (mandatory):**
-- Read the corresponding Key Feature Design section (section 4.N) from `docs/plans/*-design.md`
+- Using the Document Lookup Protocol above, read the full `{design_section}` for this feature — do NOT grep; read the complete subsection including all diagrams and design decisions
+- Also read the full `{srs_section}` (the FR-xxx requirement from the SRS) for complete acceptance criteria
 - The plan MUST align with the approved class diagrams, sequence flows, and architectural decisions
 - If the plan deviates from the design → explain why and get user approval before proceeding
 - Reference the design's third-party dependency versions when choosing libraries
@@ -96,9 +119,10 @@ Context to carry forward:
 
 Context to carry forward:
 - Feature object from feature-list.json
-- Design document Key Feature Design section (section 4.N from `docs/plans/*-design.md`) for the target feature
+- Full `{design_section}` text extracted via Document Lookup Protocol (the entire §4.N subsection, NOT a grep snippet)
+- Full `{srs_section}` text (the entire FR-xxx subsection from SRS)
 - Plan document (`docs/plans/YYYY-MM-DD-<feature-name>.md`) from Step 5
-- UCD style guide (`docs/plans/*-ucd.md`) — if feature has `"ui": true` and UCD exists
+- UCD style guide sections (`docs/plans/*-ucd.md`) — if feature has `"ui": true` and UCD exists
 - Git diff since before implementation began
 - Test results summary
 

@@ -35,7 +35,10 @@ Task(
   Feature spec:
   {feature_json}
 
-  Design document (Key Feature Design section for this feature):
+  SRS requirement section (full FR-xxx from SRS):
+  {srs_section}
+
+  Design document (Key Feature Design section for this feature — full §4.N subsection, NOT a grep snippet):
   {design_section}
 
   Plan document:
@@ -136,7 +139,8 @@ After 3 failed rounds, escalate via `AskUserQuestion` with:
 **Requires:** Quality gates passed (long-task-quality)
 **Inputs:**
 - Feature spec from `feature-list.json`
-- Design document section (`docs/plans/*-design.md` § 4.N for the target feature)
+- SRS requirement section (full FR-xxx subsection from `docs/plans/*-srs.md`)
+- Design document section (full §4.N subsection from `docs/plans/*-design.md` — NOT a grep snippet)
 - Plan document (`docs/plans/YYYY-MM-DD-<feature-name>.md`)
 - UCD style guide (`docs/plans/*-ucd.md`) — only for `"ui": true` features
 - Git diff, test results

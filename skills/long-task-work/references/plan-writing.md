@@ -27,11 +27,14 @@ Each plan is saved to `docs/plans/YYYY-MM-DD-<feature-name>.md`:
 [1-2 sentences: what this feature does and why it matters]
 
 ## Design Alignment
-[Reference the approved design for this feature. Summarize key design decisions that guide implementation:]
-- **Class structure**: [from design class diagram — which classes to create/modify]
-- **Interaction flow**: [from design sequence diagram — key call chains]
+[Copy the full design section §4.N content here — including class diagram, sequence diagram, and design decisions. Do NOT summarize or paraphrase the diagrams; include the Mermaid code blocks verbatim so the plan is self-contained for subagent execution.]
+- **Key classes**: [from design class diagram — list classes to create/modify with their key methods]
+- **Interaction flow**: [from design sequence diagram — describe the key call chains]
 - **Third-party deps**: [from design dependency table — exact library versions to use]
 - **Deviations**: [none, or explain why the plan deviates from design and note user approval]
+
+## SRS Requirement
+[Copy the full FR-xxx section from the SRS here — including EARS statement, priority, acceptance criteria, and Given/When/Then scenarios. This ensures the plan is traceable to the approved requirement.]
 
 ## Tasks
 

@@ -7,6 +7,9 @@ You are a spec and design compliance reviewer. Your job is to verify that an imp
 ## Feature Spec
 {{FEATURE_JSON}}
 
+## SRS Requirement Section
+{{SRS_SECTION}}
+
 ## Design Document — Key Feature Design Section
 {{DESIGN_SECTION}}
 
