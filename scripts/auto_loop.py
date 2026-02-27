@@ -4,6 +4,10 @@
 Repeatedly calls `claude -p "继续" --dangerously-skip-permissions` until all
 active features pass, max iterations are reached, or an error occurs.
 
+Interrupt handling:
+    1st Ctrl+C — graceful: finish current iteration, then stop
+    2nd Ctrl+C — forceful: kill child process immediately and exit
+
 Usage:
     python scripts/auto_loop.py feature-list.json
     python scripts/auto_loop.py feature-list.json --max-iterations 30
@@ -14,6 +18,7 @@ import argparse
 import json
 import os
 import re
+import signal
 import subprocess
 import sys
 import time
@@ -26,6 +31,32 @@ ERROR_PATTERNS = [
     re.compile(r"exceeded.*max.*tokens", re.IGNORECASE),
     re.compile(r"overloaded", re.IGNORECASE),
 ]
+
+# Global interrupt state
+_interrupt_requested = False  # 1st Ctrl+C: graceful stop
+_force_kill = False           # 2nd Ctrl+C: force kill
+_active_proc: subprocess.Popen | None = None  # currently running child
+
+
+def _signal_handler(signum, frame):
+    """Handle Ctrl+C with two-level escalation."""
+    global _interrupt_requested, _force_kill
+
+    if not _interrupt_requested:
+        # First Ctrl+C: request graceful stop
+        _interrupt_requested = True
+        print(
+            "\n>>> Ctrl+C received — will stop after current iteration. "
+            "Press Ctrl+C again to force kill. <<<",
+            flush=True,
+        )
+    else:
+        # Second Ctrl+C: force kill
+        _force_kill = True
+        print("\n>>> Force kill requested — terminating now. <<<", flush=True)
+        if _active_proc and _active_proc.poll() is None:
+            _active_proc.kill()
+        sys.exit(130)
 
 
 def load_feature_status(path: str) -> tuple[int, int, int]:
@@ -59,6 +90,8 @@ def detect_error(output: str) -> str | None:
 
 def run_iteration(iteration: int, project_dir: str, prompt: str) -> tuple[int, str]:
     """Run one claude iteration. Returns (exit_code, captured_output)."""
+    global _active_proc
+
     cmd = [
         "claude",
         "-p",
@@ -80,25 +113,46 @@ def run_iteration(iteration: int, project_dir: str, prompt: str) -> tuple[int, s
             errors="replace",
             bufsize=1,
         )
+        _active_proc = proc
 
         for line in proc.stdout:
             print(line, end="", flush=True)
             captured.append(line)
 
         proc.wait()
+        _active_proc = None
         return proc.returncode, "".join(captured)
 
     except FileNotFoundError:
+        _active_proc = None
         print("ERROR: 'claude' command not found. Is Claude Code installed?", flush=True)
         return -1, ""
     except KeyboardInterrupt:
-        print("\nInterrupted by user.", flush=True)
+        # Should not normally reach here (signal handler takes over),
+        # but keep as safety net.
         if proc.poll() is None:
             proc.terminate()
-        return -2, ""
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+        _active_proc = None
+        return -2, "".join(captured)
+
+
+def interruptible_sleep(seconds: int) -> bool:
+    """Sleep in 1-second increments, checking for interrupt. Returns True if interrupted."""
+    for _ in range(seconds):
+        if _interrupt_requested:
+            return True
+        time.sleep(1)
+    return _interrupt_requested
 
 
 def main() -> int:
+    # Install signal handler before anything else
+    signal.signal(signal.SIGINT, _signal_handler)
+
     parser = argparse.ArgumentParser(
         description="Auto-loop claude for long-task feature development."
     )
@@ -135,6 +189,7 @@ def main() -> int:
         print(f"Project dir: {project_dir}")
         print(f"Features: {total} total, {passing} passing, {failing} failing")
         print(f"Max iterations: {args.max_iterations}, Cooldown: {args.cooldown}s")
+        print(f"Tip: Ctrl+C once = stop after iteration, twice = force kill")
     except Exception as e:
         print(f"ERROR: Cannot read feature-list.json: {e}")
         return 1
@@ -144,6 +199,11 @@ def main() -> int:
         return 0
 
     for i in range(1, args.max_iterations + 1):
+        # Check for pending graceful stop before starting next iteration
+        if _interrupt_requested:
+            print(f"\nSTOPPED: Graceful interrupt before iteration {i}.")
+            return 130
+
         exit_code, output = run_iteration(i, project_dir, args.prompt)
 
         # Check for keyboard interrupt
@@ -176,10 +236,17 @@ def main() -> int:
             print(f"\nSUCCESS: All features passing after {i} iteration(s)!")
             return 0
 
-        # Cooldown before next iteration
+        # Check for graceful stop after iteration completed
+        if _interrupt_requested:
+            print(f"\nSTOPPED: Graceful interrupt after iteration {i}.")
+            return 130
+
+        # Cooldown before next iteration (interruptible)
         if i < args.max_iterations:
             print(f"Cooling down {args.cooldown}s before next iteration...")
-            time.sleep(args.cooldown)
+            if interruptible_sleep(args.cooldown):
+                print(f"\nSTOPPED: Interrupted during cooldown after iteration {i}.")
+                return 130
 
     print(f"\nSTOPPED: Reached max iterations ({args.max_iterations})")
     return 1
