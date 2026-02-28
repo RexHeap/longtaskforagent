@@ -130,6 +130,21 @@ def check_st_readiness(path: str) -> dict:
             "UI features exist but UCD document not found (docs/plans/*-ucd.md)"
         )
 
+    # Check ST test case coverage (warning, not blocking)
+    features_with_st_cases = 0
+    features_without_st_cases = []
+    for feat in active_features:
+        if feat.get("st_case_path"):
+            features_with_st_cases += 1
+        else:
+            features_without_st_cases.append(feat.get("id", "?"))
+    result["st_case_coverage"] = features_with_st_cases
+    result["st_case_missing"] = features_without_st_cases
+
+    # Check docs/test-cases/ directory exists
+    test_cases_dir = os.path.join(base_dir, "docs", "test-cases")
+    result["test_cases_dir_found"] = os.path.isdir(test_cases_dir)
+
     # Determine readiness (based on active features only)
     result["ready"] = (
         result["failing_features"] == 0
@@ -164,6 +179,14 @@ def main():
     print(f"Design: {'found' if result['design_found'] else 'MISSING'}")
     if result["has_ui_features"]:
         print(f"UCD: {'found' if result['ucd_found'] else 'MISSING (UI features exist)'}")
+
+    # ST test case coverage (warning) — only if st_case_coverage was computed
+    if "st_case_coverage" in result:
+        if result["st_case_missing"]:
+            print(f"ST test cases: {result['st_case_coverage']}/{result['total_features']} features covered")
+            print(f"  Warning: features without ST test cases: {result['st_case_missing']}")
+        else:
+            print(f"ST test cases: {result['st_case_coverage']}/{result['total_features']} features covered")
 
     if result["ready"]:
         print("\nREADY for system testing.")

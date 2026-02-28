@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a **Claude Code skill plugin** called `long-task-agent` that enables multi-session execution of complex software projects exceeding a single context window. It implements a six-phase architecture (Requirements → Design → Initializer → Worker → System Testing, with an Increment re-entry point) with persistent state bridging via on-disk artifacts.
 
-The skill system follows the **superpowers architectural pattern**: 11 independent skills loaded on-demand via the `Skill` tool, with a bootstrap router (`using-long-task`) injected at session start via hook.
+The skill system follows the **superpowers architectural pattern**: 12 independent skills loaded on-demand via the `Skill` tool, with a bootstrap router (`using-long-task`) injected at session start via hook.
 
 ## Key Commands
 
@@ -57,6 +57,12 @@ python long-task-agent/scripts/check_devtools.py feature-list.json --feature 3
 python long-task-agent/scripts/check_st_readiness.py feature-list.json
 ```
 
+### Validate ST test case document
+```bash
+python long-task-agent/scripts/validate_st_cases.py docs/test-cases/feature-1-user-login.md
+python long-task-agent/scripts/validate_st_cases.py docs/test-cases/feature-1-user-login.md --feature-list feature-list.json --feature 1
+```
+
 ### Validate increment request
 ```bash
 python long-task-agent/scripts/validate_increment_request.py increment-request.json
@@ -82,6 +88,7 @@ python -m pytest tests/test_check_devtools.py
 python -m pytest tests/test_check_st_readiness.py
 python -m pytest tests/test_get_tool_commands.py
 python -m pytest tests/test_validate_increment_request.py
+python -m pytest tests/test_validate_st_cases.py
 python -m pytest tests/test_validate_start_cleanup.py
 ```
 
@@ -99,7 +106,7 @@ python -m pytest tests/test_validate_start_cleanup.py
 
 ## Architecture
 
-### 11-Skill System
+### 12-Skill System
 
 The skill system uses on-demand loading via the `Skill` tool. Only the bootstrap router is loaded at session start; other skills are loaded as needed.
 
@@ -120,6 +127,7 @@ The skill system uses on-demand loading via the `Skill` tool. Only the bootstrap
 
 | Skill | Purpose |
 |-------|---------|
+| `long-task-st-case` | ISO/IEC/IEEE 29119 Test Case Generation (per-feature, before TDD) |
 | `long-task-tdd` | TDD Red-Green-Refactor |
 | `long-task-quality` | Coverage Gate + Mutation Gate |
 | `long-task-review` | Spec & Design Compliance Review |
@@ -135,9 +143,10 @@ using-long-task (router)
    │          └─→ long-task-work (new failing features detected)
    │
    ├─→ long-task-work (if active features remain failing)
-   │      ├─→ long-task-tdd (Steps 6-8)
-   │      ├─→ long-task-quality (Step 9)
-   │      └─→ long-task-review (Step 10, includes UCD compliance for ui:true features)
+   │      ├─→ long-task-st-case (Step 6)
+   │      ├─→ long-task-tdd (Steps 7-9)
+   │      ├─→ long-task-quality (Step 10)
+   │      └─→ long-task-review (Step 11, includes UCD compliance for ui:true features)
    │
    └─→ long-task-st (if ALL active features passing)
           └─→ long-task-work (if defects found → fix → return to ST)
@@ -189,13 +198,15 @@ using-long-task (router)
 
 2. **Worker Session** (`long-task-work` orchestrator):
    - Orient → Bootstrap → Config Gate → DevTools Gate → Plan
-   - **TDD** (`long-task-tdd`): Red → Green → Refactor
+   - **ST Test Cases** (`long-task-st-case`): ISO/IEC/IEEE 29119 test case generation per feature
+   - **TDD** (`long-task-tdd`): Red → Green → Refactor (reads ST test cases as input)
    - **Quality** (`long-task-quality`): Coverage Gate → Mutation Gate
-   - **Review** (`long-task-review`): Spec & Design Compliance
+   - **Review** (`long-task-review`): Spec & Design Compliance + Test Case Completeness (T1-T3)
    - Add Examples → Persist → Continue (chains to ST when all features pass)
 
 3. **System Testing** (`long-task-st`):
-   - ST Readiness Gate → ST Plan (RTM) → Regression → Integration → E2E → NFR Verification
+   - Cross-feature & system-wide verification (per-feature ST already done in Worker cycles)
+   - ST Readiness Gate → ST Plan (RTM) → Regression → Integration → Cross-Feature E2E → System-Wide NFR
    - Compatibility → Exploratory → Defect Triage → ST Report → Verdict (Go/No-Go)
    - If Critical/Major defects found → loops back to Worker for fixes
    - Aligned with IEEE 829 and ISTQB best practices
@@ -218,6 +229,7 @@ using-long-task (router)
 - **System testing before release**: When all features pass, run ST phase (regression, integration, E2E, NFR, exploratory); no release without Go verdict
 - **Incremental changes via increment skill only**: Never manually edit feature-list.json to add/modify/deprecate features; use `/long-task:increment` for audited, tracked changes
 - **verification_steps immutable in Worker**: Only the increment skill can update verification_steps; Worker must use `/long-task:increment` for requirement changes
+- **ST test cases before TDD**: Generate ISO/IEC/IEEE 29119 test cases per feature before TDD Red; test cases are requirements-driven, immutable during Worker
 - **Deprecated features excluded**: Worker skips deprecated features; ST readiness ignores them; routing counts only active features
 
 ### Generated Persistent Artifacts
@@ -240,8 +252,10 @@ using-long-task (router)
 | `.env.example` | Init | Template for required env configs (safe to commit; `.env` has secrets) |
 | `docs/plans/*-st-plan.md` | ST | System testing plan with Requirements Traceability Matrix |
 | `docs/plans/*-st-report.md` | ST | System testing report with Go/No-Go verdict |
+| `docs/test-cases/feature-*.md` | Worker | Per-feature ST test case documents (ISO/IEC/IEEE 29119) |
 | `docs/templates/srs-template.md` | — | Default SRS template (user-customizable) |
 | `docs/templates/design-template.md` | — | Default design document template (user-customizable) |
+| `docs/templates/st-case-template.md` | — | Default ST test case template (ISO/IEC/IEEE 29119-3, user-customizable) |
 
 ### Feature List Schema
 
@@ -281,6 +295,8 @@ using-long-task (router)
       "check_hint": "How to set it up"
     }
   ],
+  "st_case_template_path": "docs/templates/custom-st-template.md (optional)",
+  "st_case_example_path": "docs/templates/st-case-example.md (optional)",
   "features": [...]
 }
 ```
@@ -301,9 +317,17 @@ Each feature in `features` array:
   "ui_entry": "/optional-path",
   "deprecated": false,
   "deprecated_reason": null,
-  "supersedes": null
+  "supersedes": null,
+  "st_case_path": "docs/test-cases/feature-1-user-login.md (optional)",
+  "st_case_count": 8
 }
 ```
+
+ST test case fields (all optional, backward-compatible):
+- `st_case_template_path` (root): Custom ST test case template path (defines structure)
+- `st_case_example_path` (root): Example file path (defines style, language, detail level)
+- `st_case_path` (feature): Path to generated ST test case document
+- `st_case_count` (feature): Number of ST test cases generated for this feature
 
 Increment-specific fields:
 - `waves[]` (root): Tracks each increment batch — `id` (0=initial), `date`, `description`
@@ -316,7 +340,7 @@ Increment-specific fields:
 
 ```
 long-task-agent/
-├── skills/                            # 11 skills (on-demand loaded via Skill tool)
+├── skills/                            # 12 skills (on-demand loaded via Skill tool)
 │   ├── using-long-task/               # Bootstrap router (injected via hook)
 │   │   ├── SKILL.md
 │   │   └── references/
@@ -338,6 +362,7 @@ long-task-agent/
 │   │       ├── systematic-debugging.md # Four-phase debugging process
 │   │       ├── subagent-development.md # Subagent-driven development mode
 │   │       └── worktree-isolation.md  # Git worktree isolation & branch finishing
+│   ├── long-task-st-case/SKILL.md     # ST test case generation (ISO/IEC/IEEE 29119)
 │   ├── long-task-st/                  # Phase 3: System Testing (IEEE 829)
 │   │   ├── SKILL.md
 │   │   └── references/
@@ -361,7 +386,8 @@ long-task-agent/
 ├── docs/
 │   └── templates/                     # Document templates (user-customizable)
 │       ├── srs-template.md            # Default SRS template (ISO 29148)
-│       └── design-template.md         # Default design document template
+│       ├── design-template.md         # Default design document template
+│       └── st-case-template.md        # Default ST test case template (ISO/IEC/IEEE 29119-3)
 ├── commands/                          # User shortcut commands
 │   ├── requirements.md                # /long-task:requirements
 │   ├── ucd.md                         # /long-task:ucd
@@ -384,6 +410,7 @@ long-task-agent/
 │   ├── check_devtools.py              # Chrome DevTools MCP checking
 │   ├── check_st_readiness.py          # System testing readiness checking
 │   ├── validate_increment_request.py  # Increment request signal validation
+│   ├── validate_st_cases.py          # ST test case document validation
 │   └── validate_start_cleanup.py     # Start/cleanup script structural validation
 ├── tests/
 │   ├── test_validate_features.py
@@ -394,6 +421,7 @@ long-task-agent/
 │   ├── test_check_devtools.py
 │   ├── test_check_st_readiness.py
 │   ├── test_validate_increment_request.py
+│   ├── test_validate_st_cases.py
 │   └── test_validate_start_cleanup.py
 ```
 
@@ -414,10 +442,10 @@ long-task-agent/
 <!-- long-task-agent -->
 ## Long-Task Agent
 
-This project uses a multi-session agent workflow with 11 skills loaded on-demand.
+This project uses a multi-session agent workflow with 12 skills loaded on-demand.
 The `using-long-task` skill is injected at session start and routes to the correct phase.
 Flow: Requirements (SRS) → UCD (UI projects) → Design → Init → Worker cycles → System Testing.
 Incremental development: place `increment-request.json` → Increment skill updates SRS/Design/UCD in place → new features appended → Worker cycles → ST.
 
-Key files: `docs/plans/*-srs.md` (SRS), `docs/plans/*-ucd.md` (UCD style guide), `docs/plans/*-design.md` (design), `feature-list.json` (task inventory), `task-progress.md` (session log), `RELEASE_NOTES.md` (changelog), `docs/plans/*-st-report.md` (ST report), `increment-request.json` (increment signal).
+Key files: `docs/plans/*-srs.md` (SRS), `docs/plans/*-ucd.md` (UCD style guide), `docs/plans/*-design.md` (design), `feature-list.json` (task inventory), `task-progress.md` (session log), `RELEASE_NOTES.md` (changelog), `docs/test-cases/feature-*.md` (per-feature ST test cases), `docs/plans/*-st-report.md` (ST report), `increment-request.json` (increment signal).
 <!-- /long-task-agent -->

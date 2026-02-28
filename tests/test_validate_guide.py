@@ -76,6 +76,10 @@ COMPLETE_GUIDE = """# My Project — Long-Task Worker Guide
 ### Step 5.5v: Verification enforcement
 NEVER mark "passing" without fresh evidence — run tests, read output
 
+### Step 5.5c: ST Test Cases — test case generation
+1. Generate ISO/IEC/IEEE 29119 test cases via long-task-st-case
+2. Validate with validate_st_cases.py
+
 ### Step 5.5r: Compliance Review
 1. Spec compliance
 2. Design compliance
@@ -216,6 +220,9 @@ Run mutation tests, verify mutation score >= 80%.
 
 ### Verification enforcement
 NEVER mark "passing" without fresh evidence.
+
+### ST test case generation
+Generate 29119 test cases before TDD implementation.
 
 ### Compliance review
 Spec compliance and design compliance checks.

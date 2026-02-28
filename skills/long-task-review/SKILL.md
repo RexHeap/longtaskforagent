@@ -47,6 +47,9 @@ Task(
   UCD style guide (only for ui:true features, omit if not applicable):
   {ucd_content}
 
+  ST test case document (from Worker Step 6):
+  {st_case_content}
+
   Git diff:
   {diff_output}
 
@@ -95,8 +98,17 @@ Task(
 | U3 | Spacing and layout (padding, margin, border radius, shadow) follow UCD spacing tokens |
 | U4 | Component structure and visual hierarchy match UCD component prompts for the implemented components |
 
+### Test Case Completeness Checklist (T1-T3) — requires ST test case document from Worker Step 6
+
+| # | Check |
+|---|-------|
+| T1 | Every `verification_step` has at least one corresponding ST test case in `docs/test-cases/feature-{id}-{slug}.md` |
+| T2 | Every ST test case has at least one automated test implementing it (check test file comments for `# ST-xxx` references) |
+| T3 | UI test cases (if any) include EXPECT/REJECT clauses, console error gate, and accessibility checkpoint |
+
 **Any NO in S1-S5 or D1-D5 → FAIL. Fix gaps, re-run tests, re-review.**
 **Any NO in U1-U4 → FAIL (for ui:true features). Visual inconsistency must be fixed before proceeding.**
+**Any NO in T1-T3 → FAIL. Test case coverage gaps must be filled before proceeding.**
 **NO in P1-P3 → Important (must fix before feature complete).**
 
 ## Issue Severity
@@ -112,7 +124,7 @@ Task(
 ```
 Quality Gates Pass → Spec & Design Compliance Review
                           ↓
-                     S1-S5 all PASS and D1-D5 all PASS (and U1-U4 if ui:true)?
+                     S1-S5, D1-D5, T1-T3 all PASS (and U1-U4 if ui:true)?
                           ↓ YES                    ↓ NO
                      Feature complete         Fix → Re-test → Re-review
                                                      ↓
@@ -134,7 +146,7 @@ After 3 failed rounds, escalate via `AskUserQuestion` with:
 
 ## Integration
 
-**Called by:** long-task-work (Step 10)
+**Called by:** long-task-work (Step 11)
 **Dispatches:** spec-reviewer subagent (`skills/long-task-review/prompts/spec-reviewer-prompt.md`)
 **Requires:** Quality gates passed (long-task-quality)
 **Inputs:**
@@ -142,6 +154,7 @@ After 3 failed rounds, escalate via `AskUserQuestion` with:
 - SRS requirement section (full FR-xxx subsection from `docs/plans/*-srs.md`)
 - Design document section (full §4.N subsection from `docs/plans/*-design.md` — NOT a grep snippet)
 - Plan document (`docs/plans/YYYY-MM-DD-<feature-name>.md`)
+- ST test case document (`docs/test-cases/feature-{id}-{slug}.md`) — from Worker Step 6
 - UCD style guide (`docs/plans/*-ucd.md`) — only for `"ui": true` features
 - Git diff, test results
 **Produces:** Review verdict (PASS/FAIL with findings)

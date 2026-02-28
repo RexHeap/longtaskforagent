@@ -43,7 +43,7 @@ CLAUDE_MD_MARKER = "<!-- long-task-agent -->"
 CLAUDE_MD_REFERENCE = (
     "\n\n<!-- long-task-agent -->\n"
     "## Long-Task Agent\n\n"
-    "This project uses a multi-session agent workflow with 11 skills loaded on-demand.\n"
+    "This project uses a multi-session agent workflow with 12 skills loaded on-demand.\n"
     "The `using-long-task` skill is injected at session start and routes to the correct phase.\n"
     "Flow: Requirements (SRS) → UCD (UI projects) → Design → Init → Worker cycles → System Testing.\n"
     "Incremental development: place `increment-request.json` → Increment skill updates SRS/Design/UCD in place → new features appended → Worker cycles → ST.\n\n"
@@ -278,6 +278,7 @@ def main():
         "validate_guide.py",
         "get_tool_commands.py",
         "validate_start_cleanup.py",
+        "validate_st_cases.py",
     ]
     for script_name in helper_scripts:
         src = os.path.join(plugin_scripts_dir, script_name)
@@ -292,6 +293,21 @@ def main():
     plans_dir = os.path.join(out_dir, "docs", "plans")
     os.makedirs(plans_dir, exist_ok=True)
 
+    # docs/test-cases dir
+    test_cases_dir = os.path.join(out_dir, "docs", "test-cases")
+    os.makedirs(test_cases_dir, exist_ok=True)
+    print(f"Created: {test_cases_dir}")
+
+    # docs/templates dir — copy ST case template
+    templates_dir = os.path.join(out_dir, "docs", "templates")
+    os.makedirs(templates_dir, exist_ok=True)
+    plugin_templates_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "docs", "templates")
+    st_template_src = os.path.join(plugin_templates_dir, "st-case-template.md")
+    st_template_dst = os.path.join(templates_dir, "st-case-template.md")
+    if os.path.exists(st_template_src) and os.path.abspath(st_template_src) != os.path.abspath(st_template_dst):
+        shutil.copy2(st_template_src, st_template_dst)
+        print(f"Copied: st-case-template.md -> {templates_dir}")
+
     # examples dir + README.md
     examples_dir = os.path.join(out_dir, "examples")
     os.makedirs(examples_dir, exist_ok=True)
@@ -301,7 +317,7 @@ def main():
     print(f"Created: {examples_readme}")
 
     print(f"\nProject '{args.project_name}' initialized at {out_dir}")
-    print("Created: feature-list.json, CLAUDE.md, task-progress.md, RELEASE_NOTES.md, examples/, scripts/ (with helper scripts), docs/plans/")
+    print("Created: feature-list.json, CLAUDE.md, task-progress.md, RELEASE_NOTES.md, examples/, scripts/ (with helper scripts), docs/plans/, docs/test-cases/, docs/templates/")
     print("TODO (LLM generates during Initializer phase):")
     print("  - long-task-guide.md         (tailored Worker guide from SKILL.md + references + design doc)")
     print("  - init.sh / init.ps1         (environment bootstrap from design doc tech stack)")

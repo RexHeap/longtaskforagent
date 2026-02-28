@@ -5,7 +5,7 @@ description: "Use when feature-list.json exists - orchestrate features through t
 
 # Worker — One Feature Per Cycle
 
-Execute multi-session software projects by implementing one feature per cycle. Each cycle follows a strict pipeline: Orient → Gate → Plan → TDD → Quality → Review → Persist.
+Execute multi-session software projects by implementing one feature per cycle. Each cycle follows a strict pipeline: Orient → Gate → Plan → ST Test Cases → TDD → Quality → Review → Persist.
 
 **Announce at start:** "I'm using the long-task-work skill. Let me orient myself."
 
@@ -25,7 +25,7 @@ You MUST create a TodoWrite task for each step and complete them in order:
 - Pick next `"status": "failing"` feature by priority + dependency order — **skip features with `"deprecated": true`**
 - If target feature has `"ui": true` and UCD document exists (`docs/plans/*-ucd.md`), read the UCD style guide — reference style tokens, component prompts, and page prompts to ensure frontend implementation matches the approved visual style
 
-**Document Lookup Protocol (used by Steps 5 and 10):**
+**Document Lookup Protocol (used by Steps 5, 6, and 11):**
 
 When you need the design section or SRS requirement for a feature, do NOT grep for the feature title. Instead:
 
@@ -105,15 +105,36 @@ See `references/plan-writing.md` for plan structure and task granularity.
 - The plan MUST reference the UCD component prompt for each UI component being implemented
 - Any visual deviation from UCD → explain why and get user approval
 
-### 6-8. TDD Cycle (Red → Green → Refactor)
+### 6. ST Test Cases
+**REQUIRED SUB-SKILL:** Invoke `long-task:long-task-st-case` and follow it exactly.
+
+Generate ISO/IEC/IEEE 29119 compliant test case documents for the feature **before** TDD begins. Test cases are derived from requirements and design — not from code.
+
+Context to carry forward:
+- Current feature object from feature-list.json
+- Full `{srs_section}` and `{design_section}` from Document Lookup Protocol
+- Plan file path from Step 5
+- UCD sections (if `"ui": true`)
+- `quality_gates` and `tech_stack` from feature-list.json
+
+Output: `docs/test-cases/feature-{id}-{slug}.md`
+
+**Hard Gate — Environment & Execution:**
+- ST test case execution depends on `start.sh` / `start.ps1` succeeding in Step 2 (Bootstrap)
+- If services are not running, runtime test steps (UI interaction, API calls) are **BLOCKED** — not skipped
+- Any execution failure (environment or test case) must be reported to user via `AskUserQuestion`
+- **No bypass allowed** — cannot skip ST for any reason
+
+### 7-9. TDD Cycle (Red → Green → Refactor)
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-tdd` and follow it exactly.
 
 Context to carry forward:
 - Current feature object from feature-list.json
 - `quality_gates` and `tech_stack` from feature-list.json
 - Plan file path from Step 5
+- **ST test case document** from Step 6 (`docs/test-cases/feature-{id}-{slug}.md`) — TDD Red reads this as test specification input
 
-### 9. Quality Gates
+### 10. Quality Gates
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-quality` and follow it exactly.
 
 Context to carry forward:
@@ -121,7 +142,7 @@ Context to carry forward:
 - `quality_gates` thresholds from feature-list.json
 - `tech_stack` tool names for coverage/mutation commands
 
-### 10. Spec & Design Compliance Review
+### 11. Spec & Design Compliance Review
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-review` and follow it exactly.
 
 Context to carry forward:
@@ -129,30 +150,32 @@ Context to carry forward:
 - Full `{design_section}` text extracted via Document Lookup Protocol (the entire §4.N subsection, NOT a grep snippet)
 - Full `{srs_section}` text (the entire FR-xxx subsection from SRS)
 - Plan document (`docs/plans/YYYY-MM-DD-<feature-name>.md`) from Step 5
+- **ST test case document** (`docs/test-cases/feature-{id}-{slug}.md`) from Step 6
 - UCD style guide sections (`docs/plans/*-ucd.md`) — if feature has `"ui": true` and UCD exists
 - Git diff since before implementation began
 - Test results summary
 
-### 11. Add Examples
+### 12. Add Examples
 Create runnable examples in `examples/` demonstrating the completed feature.
 - Match example granularity to feature scope
 - Skip only for pure infrastructure features
 - Include in git commit
 
-### 12. Persist
-- Git commit (include implementation, tests, examples)
+### 13. Persist
+- Git commit (include implementation, tests, examples, **test case document**)
 - Update `RELEASE_NOTES.md` (Keep a Changelog format)
 - Update `task-progress.md`:
   - Update `## Current State` header: progress count (X/Y passing), last completed feature (#id title, date), next feature (#id title)
   - Append session entry below the log separator
 - Mark feature `"status": "passing"` in `feature-list.json`
+- Set `"st_case_path"` and `"st_case_count"` on the feature object in `feature-list.json`
 - Validate:
   ```bash
   python scripts/validate_features.py feature-list.json
   ```
 - Git commit again (progress files)
 
-### 13. Continue
+### 14. Continue
 - If failing non-deprecated features remain and context allows → proceed to next feature (back to Step 1)
 - If **no failing non-deprecated features remain** → all active features are passing. **Invoke `long-task:long-task-st`** to begin system testing.
 - If context is exhausted → end session (ensure task-progress.md is updated)
@@ -164,7 +187,7 @@ Create runnable examples in `examples/` demonstrating the completed feature.
 
 - **One feature per cycle** — prevents context exhaustion
 - **Strict step order** — no skipping, no reordering
-- **Sub-skills are non-negotiable** — TDD, Quality, Compliance Review MUST be invoked via Skill tool
+- **Sub-skills are non-negotiable** — ST Test Cases, TDD, Quality, Compliance Review MUST be invoked via Skill tool
 - **Config gate before planning** — never plan or code when required configs are missing
 - **Never mark "passing" without fresh evidence** — run tests, read output, then mark
 - **Never remove or edit `verification_steps` in Worker** — use `/long-task:increment` for requirement changes
@@ -178,6 +201,7 @@ Create runnable examples in `examples/` demonstrating the completed feature.
 | Rationalization | Correct Action |
 |---|---|
 | "I'll mock that config later" | Run Config Gate. Real configs needed. |
+| "This feature is trivial, skip test cases" | Invoke long-task-st-case. Every feature. |
 | "This feature is trivial, skip TDD" | Invoke long-task-tdd. Every feature. |
 | "Tests pass, mark it done" | Invoke long-task-quality first. |
 | "Coverage looks close enough" | Thresholds are hard gates. Run the tool. |
@@ -187,6 +211,8 @@ Create runnable examples in `examples/` demonstrating the completed feature.
 | "I'll update release notes at the end" | Update after every commit. |
 | "Mutation score is probably OK" | Run mutation tests and read the report. |
 | "The UI looks correct to me" | Run automated detection + EXPECT/REJECT. |
+| "ST test case failed but the code is fine" | Report to user. No bypass. Fix code or use `/long-task:increment` to modify test case. |
+| "Environment is down, skip ST cases" | BLOCKED, not skipped. Fix environment or ask user. |
 | "I need to change the verification_steps" | Use `/long-task:increment` — Worker cannot modify them. |
 | "This deprecated feature still needs work" | Skip it. Deprecated features are excluded. |
 
@@ -204,8 +230,9 @@ Follow the systematic debugging process — **never guess-and-fix**:
 
 **Called by:** using-long-task (when feature-list.json exists) or long-task-init (Step 16)
 **Invokes (in strict order):**
-1. `long-task:long-task-tdd` (Steps 6-8) — TDD Red-Green-Refactor
-2. `long-task:long-task-quality` (Step 9) — Coverage + Mutation
-3. `long-task:long-task-review` (Step 10) — Spec & Design Compliance Review
+1. `long-task:long-task-st-case` (Step 6) — ISO/IEC/IEEE 29119 Test Case Generation
+2. `long-task:long-task-tdd` (Steps 7-9) — TDD Red-Green-Refactor
+3. `long-task:long-task-quality` (Step 10) — Coverage + Mutation
+4. `long-task:long-task-review` (Step 11) — Spec & Design Compliance Review
 **Reads/Writes:** feature-list.json, task-progress.md (including `## Current State`), RELEASE_NOTES.md
 **Read on-demand (via Read tool, NOT Skill tool):** `references/plan-writing.md`, `references/systematic-debugging.md`

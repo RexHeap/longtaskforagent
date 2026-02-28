@@ -3,13 +3,13 @@ name: long-task-st
 description: "Use when all features in feature-list.json are passing - run comprehensive system testing before release, aligned with IEEE 829 and ISTQB best practices"
 ---
 
-# System Testing — Integrated Verification Before Release
+# System Testing — Cross-Feature & System-Wide Verification Before Release
 
-Run comprehensive system-level testing after all features are implemented and passing. Verifies the integrated system against the full SRS — including cross-feature interactions, end-to-end workflows, non-functional requirements, and exploratory testing.
+Run cross-feature and system-wide testing after all features are implemented and passing. Per-feature ST test cases (functional, boundary, UI, security, accessibility) have already been executed during each Worker cycle via `long-task-st-case`. This phase focuses on what per-feature testing **cannot** cover: cross-feature interactions, multi-feature E2E workflows, system-wide NFR verification, compatibility, and exploratory testing.
 
-**Announce at start:** "I'm using the long-task-st skill. All features are passing — time for system testing."
+**Announce at start:** "I'm using the long-task-st skill. All features are passing — time for cross-feature system testing."
 
-**Core principle:** Feature-level tests prove parts work in isolation. System testing proves the whole works together.
+**Core principle:** Per-feature ST test cases prove individual features meet their requirements. System testing proves the whole works together across feature boundaries.
 
 <HARD-GATE>
 Do NOT skip any applicable test category. A "Go" verdict requires evidence from EVERY category that applies to this project. "It probably works" is not evidence.
@@ -58,17 +58,17 @@ Determine which test categories apply based on project characteristics:
 | Exploratory | Always | Never |
 
 #### 2b. Requirements Traceability Matrix (RTM)
-Map EVERY requirement from SRS to ST test approach:
+Map EVERY requirement from SRS to ST test approach. Reference per-feature test case documents from Worker Step 6:
 
 ```markdown
-| Req ID | Requirement | ST Category | Test Approach | Priority |
-|--------|-------------|-------------|---------------|----------|
-| FR-001 | ... | E2E | Scenario: ... | High |
-| NFR-001 | ... | Performance | Benchmark: ... | Critical |
-| IFR-001 | ... | Integration | Contract test: ... | High |
+| Req ID | Requirement | Feature ST Status | System ST Category | Test Approach | Priority |
+|--------|-------------|-------------------|--------------------|---------------|----------|
+| FR-001 | ... | docs/test-cases/feature-1-xxx.md (PASS) | E2E | Scenario: ... | High |
+| NFR-001 | ... | docs/test-cases/feature-5-xxx.md (PASS) | Performance | Load test: ... | Critical |
+| IFR-001 | ... | N/A (cross-feature) | Integration | Contract test: ... | High |
 ```
 
-Every FR-xxx, NFR-xxx, IFR-xxx must appear in the RTM. Requirements without a test approach = **gap**.
+Every FR-xxx, NFR-xxx, IFR-xxx must appear in the RTM. The "Feature ST Status" column references per-feature test case documents. Requirements without a test approach = **gap**.
 
 #### 2c. Test Environment
 - Required infrastructure (servers, databases, external services)
@@ -139,13 +139,13 @@ For each pair of features that share data, state, or API boundaries:
 **Write integration tests** in a dedicated directory (e.g., `tests/integration/` or `tests/st/`).
 Run them and record results.
 
-### 5. E2E Scenario Testing
-Test complete user workflows from SRS acceptance criteria (Given/When/Then).
+### 5. Cross-Feature E2E Scenario Testing
+Test complete user workflows that **span multiple features** from SRS acceptance criteria (Given/When/Then). Per-feature E2E scenarios have already been covered by per-feature ST test cases during Worker cycles.
 
 #### 5a. Scenario Derivation
 For each user persona in the SRS Stakeholders section:
-- Extract the persona's primary workflows from SRS
-- Create E2E scenarios that span multiple features
+- Extract the persona's primary workflows that **cross feature boundaries**
+- Create E2E scenarios that span multiple features (single-feature scenarios are already covered)
 - Include both happy path and error recovery
 
 #### 5b. Scenario Execution
@@ -167,10 +167,10 @@ Use Chrome DevTools MCP tools:
 **Write E2E tests** in `tests/e2e/` or `tests/st/`.
 Run them and record results.
 
-### 6. NFR Verification
-For each NFR-xxx in the SRS, verify with **measured evidence** — not estimates.
+### 6. System-Wide NFR Verification
+For each NFR-xxx in the SRS, verify with **measured evidence** — not estimates. Per-feature NFR checks (response time for individual endpoints, single-feature security) have been handled in per-feature ST test cases. This step focuses on **system-wide** NFR measurement.
 
-#### 6a. Performance
+#### 6a. Performance (System-Wide)
 - **Response time**: measure p50, p95, p99 under expected load
 - **Throughput**: measure requests/operations per second
 - **Resource usage**: measure memory, CPU, disk I/O
@@ -301,13 +301,15 @@ Generate `docs/plans/YYYY-MM-DD-st-report.md`:
 
 ## 2. Requirements Traceability Matrix
 
-| Req ID | Requirement | ST Category | Test Result | Evidence |
-|--------|-------------|-------------|-------------|----------|
-| FR-001 | ... | E2E | PASS | [test name / log reference] |
-| NFR-001 | ... | Performance | PASS (measured: 150ms, threshold: 200ms) | [benchmark report] |
+| Req ID | Requirement | Feature ST | System ST Category | Test Result | Evidence |
+|--------|-------------|------------|--------------------|-------------|----------|
+| FR-001 | ... | feature-1-xxx.md (PASS) | E2E | PASS | [test name / log] |
+| NFR-001 | ... | feature-5-xxx.md (PASS) | Performance | PASS (150ms < 200ms) | [benchmark] |
+| IFR-001 | ... | N/A (cross-feature) | Integration | PASS | [test name] |
 
 **Coverage**: X/Y requirements tested (Z%)
 **Untested**: [list any gaps with justification]
+**Per-Feature ST**: X/Y features have test case documents
 
 ## 3. Test Execution Summary
 
@@ -414,8 +416,8 @@ Follow the systematic debugging process:
 
 ## Integration
 
-**Called by:** using-long-task (when feature-list.json exists AND all features passing), or long-task-work (Step 13 when no failing features remain)
-**Reads:** feature-list.json, `docs/plans/*-srs.md`, `docs/plans/*-design.md`, `docs/plans/*-ucd.md` (if UI), `task-progress.md`, `.env`
+**Called by:** using-long-task (when feature-list.json exists AND all features passing), or long-task-work (Step 14 when no failing features remain)
+**Reads:** feature-list.json, `docs/plans/*-srs.md`, `docs/plans/*-design.md`, `docs/plans/*-ucd.md` (if UI), `docs/test-cases/feature-*.md` (per-feature ST test cases), `task-progress.md`, `.env`
 **May invoke:** `long-task:long-task-work` (if Critical/Major defects found → fix loop)
 **Produces:** `docs/plans/YYYY-MM-DD-st-plan.md`, `docs/plans/YYYY-MM-DD-st-report.md`
 **Read on-demand (via Read tool, NOT Skill tool):** `references/st-recipes.md`

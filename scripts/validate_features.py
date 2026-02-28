@@ -119,6 +119,16 @@ def validate(path: str) -> tuple[list[str], list[str]]:
                 if not isinstance(item, str):
                     errors.append(f"assumptions[{ai}]: must be a string, got {type(item).__name__}")
 
+    # Validate st_case_template_path if present (root-level)
+    st_case_template = data.get("st_case_template_path")
+    if st_case_template is not None and not isinstance(st_case_template, str):
+        errors.append(f"st_case_template_path must be a string, got {type(st_case_template).__name__}")
+
+    # Validate st_case_example_path if present (root-level)
+    st_case_example = data.get("st_case_example_path")
+    if st_case_example is not None and not isinstance(st_case_example, str):
+        errors.append(f"st_case_example_path must be a string, got {type(st_case_example).__name__}")
+
     # Validate required_configs if present
     required_configs = data.get("required_configs")
     if required_configs is not None:
@@ -247,6 +257,17 @@ def validate(path: str) -> tuple[list[str], list[str]]:
         supersedes = feat.get("supersedes")
         if supersedes is not None and not isinstance(supersedes, int):
             errors.append(f"{prefix} (id={fid}): 'supersedes' must be an integer, got {type(supersedes).__name__}")
+
+        # Check st_case_path field type (optional)
+        st_case_path = feat.get("st_case_path")
+        if st_case_path is not None and not isinstance(st_case_path, str):
+            errors.append(f"{prefix} (id={fid}): 'st_case_path' must be a string, got {type(st_case_path).__name__}")
+
+        # Check st_case_count field type (optional)
+        st_case_count = feat.get("st_case_count")
+        if st_case_count is not None:
+            if not isinstance(st_case_count, int) or st_case_count < 0:
+                errors.append(f"{prefix} (id={fid}): 'st_case_count' must be a non-negative integer, got {st_case_count!r}")
 
         # Check ui features have at least one [devtools] verification step
         if ui is True:
