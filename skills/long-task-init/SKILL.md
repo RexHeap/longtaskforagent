@@ -68,7 +68,7 @@ You MUST create a TodoWrite task for each step and complete them in order:
    - Actual dependency installation commands (not commented stubs)
    - Service startup commands if needed
    - Must be immediately executable after `git clone`
-5b. **Generate `start.sh` / `start.ps1` and `cleanup.sh` / `cleanup.ps1`** — Create runtime service lifecycle scripts:
+6. **Generate `start.sh` / `start.ps1` and `cleanup.sh` / `cleanup.ps1`** — Create runtime service lifecycle scripts:
    - Read `references/start-cleanup-recipes.md` (in the long-task-init skill directory) for per-service templates and best practices
    - **Detect all runtime services** from design doc (dev servers, databases, caches, queues, message brokers)
    - **Detect build/compile requirements** from tech stack (TypeScript→tsc, Java→mvn/gradle, C/C++→cmake/make, Go→go build, Rust→cargo build)
@@ -84,7 +84,7 @@ You MUST create a TodoWrite task for each step and complete them in order:
      ```bash
      python scripts/validate_start_cleanup.py start.sh cleanup.sh
      ```
-5c. **Generate `test.sh` / `test.ps1` and `mutate.sh` / `mutate.ps1`** — Create test runner and mutation testing wrapper scripts:
+7. **Generate `test.sh` / `test.ps1` and `mutate.sh` / `mutate.ps1`** — Create test runner and mutation testing wrapper scripts:
    - Read `references/test-mutation-recipes.md` (in the long-task-init skill directory) for per-tech-stack templates and best practices
    - **test.sh / test.ps1**: Wrapper for running unit tests and coverage
      - Modes: `./test.sh` (full test suite), `./test.sh --coverage` (with coverage report)
@@ -102,11 +102,11 @@ You MUST create a TodoWrite task for each step and complete them in order:
      ```bash
      python scripts/validate_test_mutation.py test.sh mutate.sh
      ```
-6. **Populate SRS fields in `feature-list.json`** — from the **SRS document**:
+8. **Populate SRS fields in `feature-list.json`** — from the **SRS document**:
    - `constraints[]` — copy CON-xxx items from SRS "Constraints" section; each a concise string
    - `assumptions[]` — copy ASM-xxx items from SRS "Assumptions & Dependencies" section; each a concise string
    - NFR-xxx rows → create `category: "non-functional"` features with measurable `verification_steps`; coverage/mutation gates do not apply to NFR features
-7. **Decompose requirements into features** — from the **SRS document** and **design document's Development Plan** (section 11), populate `feature-list.json` `features[]`:
+9. **Decompose requirements into features** — from the **SRS document** and **design document's Development Plan** (section 11), populate `feature-list.json` `features[]`:
    - Each FR-xxx → one or more features with `id`, `category`, `title`, `description`, `priority`, `status` (always `"failing"`), `verification_steps`, `dependencies`
    - `verification_steps` should trace to SRS acceptance criteria (Given/When/Then)
    - For UI features: set `"ui": true`, optionally `"ui_entry": "/path"`; include `[devtools]`-prefixed verification steps
@@ -114,11 +114,11 @@ You MUST create a TodoWrite task for each step and complete them in order:
    - **Priority ordering**: follow the design document's Task Decomposition table (section 11.2) — P0/P1/P2/P3 maps to high/high/medium/low
    - **Dependency chain**: follow the design document's Dependency Chain diagram (section 11.3) to populate each feature's `dependencies[]`
    - **Milestone mapping**: group features by the design document's milestones for logical ordering
-8. **Populate `required_configs`** — from the **SRS document** (IFR-xxx interface requirements) and design doc:
+10. **Populate `required_configs`** — from the **SRS document** (IFR-xxx interface requirements) and design doc:
    - API keys, service URLs → type `env`
    - Config files, certificates → type `file`
    - Link each to features via `required_by`; provide `check_hint` with setup instructions
-9. **Generate `.env.example`** — from `required_configs`:
+11. **Generate `.env.example`** — from `required_configs`:
    - For each `env`-type config, write a commented template line:
      ```
      # <name> — <description>
@@ -128,15 +128,15 @@ You MUST create a TodoWrite task for each step and complete them in order:
      ```
    - Add `.env` to `.gitignore` (`.env.example` is safe to commit; `.env` contains secrets)
    - This template helps users know which values to fill in; the Worker Config Gate will prompt for missing values and store them in `.env`
-10. **Validate**:
+12. **Validate**:
     ```bash
     python scripts/validate_features.py feature-list.json
     ```
-11. **Scaffold project skeleton** (dirs, configs, dependency manifests) — based on **design doc** architecture
-12. **Git init + initial commit**
-13. **Run init script**, verify environment works. Then run `start.sh`, verify all services respond to health checks. Then run `test.sh`, verify tests execute. Then run `mutate.sh --full`, verify mutation testing works. Then run `cleanup.sh`, verify ports are released and PID files cleaned
-14. **Update `task-progress.md`** — update `## Current State` with initial progress (0/N features passing), then append Session 0 entry (include SRS + design doc references)
-15. **Begin first Worker cycle** — **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-work`
+13. **Scaffold project skeleton** (dirs, configs, dependency manifests) — based on **design doc** architecture
+14. **Git init + initial commit**
+15. **Run init script**, verify environment works. Then run `start.sh`, verify all services respond to health checks. Then run `test.sh`, verify tests execute. Then run `mutate.sh --full`, verify mutation testing works. Then run `cleanup.sh`, verify ports are released and PID files cleaned
+16. **Update `task-progress.md`** — update `## Current State` with initial progress (0/N features passing), then append Session 0 entry (include SRS + design doc references)
+17. **Begin first Worker cycle** — **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-work`
 
 ## Feature List Schema
 
