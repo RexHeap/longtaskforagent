@@ -189,6 +189,8 @@ Update supporting files as needed:
 
 - **`long-task-guide.md`**: If new tools, frameworks, or patterns were introduced → regenerate or update relevant sections; re-validate with `python scripts/validate_guide.py long-task-guide.md --feature-list feature-list.json`
 - **`init.sh` / `init.ps1`**: If new dependencies were added → update bootstrap scripts (keep idempotent)
+- **`start.sh` / `start.ps1`**: If new services were added (DB, cache, queue, microservice) → update startup sequence: add build step if new compiled dependency, add health check for the new service, add PID management, update startup order; re-validate with `python scripts/validate_start_cleanup.py start.sh cleanup.sh`
+- **`cleanup.sh` / `cleanup.ps1`**: If services were added or removed → update reverse-order teardown steps for the new/removed service
 - **`.env.example`**: If new `required_configs` of type `env` → append template lines
 
 ### 8. Finalize

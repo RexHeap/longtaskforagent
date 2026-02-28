@@ -49,6 +49,13 @@ When you need the design section or SRS requirement for a feature, do NOT grep f
 
 ### 2. Bootstrap
 - Run `init.sh` / `init.ps1` — ensure environment is ready
+- Run `start.sh` / `start.ps1` — build project and start all runtime services (build → DB → backend → frontend)
+  - If `start.sh` does not exist: skip (project may be CLI/library only)
+  - If `start.sh` exits non-zero: DO NOT proceed. Read the failure output.
+    - **Build failure**: compilation error → read error output, attempt fix, re-run. If unfixable after 3 attempts, record in `task-progress.md` and ask user.
+    - **Service failure**: record failure in `task-progress.md`. Ask user to start services manually and confirm before continuing.
+    - **Never skip a failed startup.**
+  - **Staleness check**: If `required_configs` references a service URL/connection string (e.g., REDIS_URL, DATABASE_URL) but `start.sh` has no corresponding startup block, warn: "start.sh may be stale — run `/long-task:increment` to update scripts"
 - Smoke-test previously passing features (quick verify)
 
 ### 3. Config Gate
@@ -149,6 +156,9 @@ Create runnable examples in `examples/` demonstrating the completed feature.
 - If failing non-deprecated features remain and context allows → proceed to next feature (back to Step 1)
 - If **no failing non-deprecated features remain** → all active features are passing. **Invoke `long-task:long-task-st`** to begin system testing.
 - If context is exhausted → end session (ensure task-progress.md is updated)
+- **Before ending any session** (context exhausted or transitioning to ST):
+  - Run `cleanup.sh` / `cleanup.ps1` if it exists — tear down runtime services to release ports and processes
+  - If cleanup exits non-zero: record in `task-progress.md`; instruct user to run `cleanup.sh` manually
 
 ## Critical Rules
 

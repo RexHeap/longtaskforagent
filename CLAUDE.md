@@ -33,6 +33,12 @@ python long-task-agent/scripts/validate_guide.py long-task-guide.md
 python long-task-agent/scripts/validate_guide.py long-task-guide.md --feature-list feature-list.json
 ```
 
+### Validate start/cleanup scripts
+```bash
+python long-task-agent/scripts/validate_start_cleanup.py start.sh cleanup.sh
+python long-task-agent/scripts/validate_start_cleanup.py start.sh cleanup.sh --powershell start.ps1 cleanup.ps1
+```
+
 ### Check required configurations
 ```bash
 python long-task-agent/scripts/check_configs.py feature-list.json
@@ -76,6 +82,7 @@ python -m pytest tests/test_check_devtools.py
 python -m pytest tests/test_check_st_readiness.py
 python -m pytest tests/test_get_tool_commands.py
 python -m pytest tests/test_validate_increment_request.py
+python -m pytest tests/test_validate_start_cleanup.py
 ```
 
 > **Path note**: the `python long-task-agent/scripts/...` paths above are consumer-facing (run from the target project root after plugin install). When developing in this repo, replace `long-task-agent/` with `./` or omit it entirely.
@@ -227,6 +234,8 @@ using-long-task (router)
 | `RELEASE_NOTES.md` | Init | Living release notes (Keep a Changelog format) |
 | `examples/` | Worker | Runnable examples demonstrating completed features |
 | `init.sh` / `init.ps1` | Init | Environment bootstrap (LLM-generated) |
+| `start.sh` / `start.ps1` | Init | Runtime service startup: build → DB → backend → frontend; proxy-aware, health-checked, self-healing (LLM-generated) |
+| `cleanup.sh` / `cleanup.ps1` | Init | Reverse-order service teardown; PID cleanup; port release verification (LLM-generated) |
 | `long-task-guide.md` | Init | Worker session guide (LLM-generated, validated) |
 | `.env.example` | Init | Template for required env configs (safe to commit; `.env` has secrets) |
 | `docs/plans/*-st-plan.md` | ST | System testing plan with Requirements Traceability Matrix |
@@ -320,7 +329,8 @@ long-task-agent/
 │   ├── long-task-init/                # Phase 1: Initialization (reads SRS + UCD + design)
 │   │   ├── SKILL.md
 │   │   └── references/
-│   │       └── init-script-recipes.md # Environment bootstrap templates (conda, venv, nvm, etc.)
+│   │       ├── init-script-recipes.md # Environment bootstrap templates (conda, venv, nvm, etc.)
+│   │       └── start-cleanup-recipes.md # Service startup/teardown templates (proxy, health checks, per-tech-stack)
 │   ├── long-task-work/               # Phase 2: Worker orchestrator
 │   │   ├── SKILL.md
 │   │   └── references/
@@ -373,7 +383,8 @@ long-task-agent/
 │   ├── check_configs.py               # Required config checking
 │   ├── check_devtools.py              # Chrome DevTools MCP checking
 │   ├── check_st_readiness.py          # System testing readiness checking
-│   └── validate_increment_request.py  # Increment request signal validation
+│   ├── validate_increment_request.py  # Increment request signal validation
+│   └── validate_start_cleanup.py     # Start/cleanup script structural validation
 ├── tests/
 │   ├── test_validate_features.py
 │   ├── test_init_project.py
@@ -382,7 +393,8 @@ long-task-agent/
 │   ├── test_validate_guide.py
 │   ├── test_check_devtools.py
 │   ├── test_check_st_readiness.py
-│   └── test_validate_increment_request.py
+│   ├── test_validate_increment_request.py
+│   └── test_validate_start_cleanup.py
 ```
 
 ## See Also
@@ -395,6 +407,7 @@ long-task-agent/
 - [skills/long-task-work/references/subagent-development.md](skills/long-task-work/references/subagent-development.md) - Subagent-driven development
 - [skills/long-task-work/references/worktree-isolation.md](skills/long-task-work/references/worktree-isolation.md) - Worktree isolation & branch finishing
 - [skills/long-task-tdd/references/ui-error-detection.md](skills/long-task-tdd/references/ui-error-detection.md) - UI error detection specification
+- [skills/long-task-init/references/start-cleanup-recipes.md](skills/long-task-init/references/start-cleanup-recipes.md) - Start/cleanup script recipes (proxy, health checks, per-tech-stack)
 - [skills/long-task-st/references/st-recipes.md](skills/long-task-st/references/st-recipes.md) - System testing recipes per language
 
 

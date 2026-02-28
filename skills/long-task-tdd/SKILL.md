@@ -93,6 +93,11 @@ Would the test **fail** for each? If NO for most → rewrite.
 
 **Rule 5: UI-Specific Test Rules** (when `"ui": true`)
 
+- **UI Pre-condition (verify before first [devtools] step):**
+  Before any Chrome DevTools MCP testing, verify the application is reachable:
+  1. Confirm `start.sh` ran successfully in Worker Step 2 (Bootstrap)
+  2. Use `navigate_page` to the feature's `ui_entry` URL (or default localhost URL)
+  3. If connection refused or page error (ERR_CONNECTION_REFUSED, etc.) → the app is not running. DO NOT proceed with UI tests. Ask user to start services manually. Never skip UI verification.
 - Every `[devtools]` step must use EXPECT/REJECT format:
   ```
   [devtools] <page-path> | EXPECT: <positive criteria> | REJECT: <negative criteria>

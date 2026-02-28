@@ -68,6 +68,22 @@ You MUST create a TodoWrite task for each step and complete them in order:
    - Actual dependency installation commands (not commented stubs)
    - Service startup commands if needed
    - Must be immediately executable after `git clone`
+5b. **Generate `start.sh` / `start.ps1` and `cleanup.sh` / `cleanup.ps1`** — Create runtime service lifecycle scripts:
+   - Read `references/start-cleanup-recipes.md` (in the long-task-init skill directory) for per-service templates and best practices
+   - **Detect all runtime services** from design doc (dev servers, databases, caches, queues, message brokers)
+   - **Detect build/compile requirements** from tech stack (TypeScript→tsc, Java→mvn/gradle, C/C++→cmake/make, Go→go build, Rust→cargo build)
+   - **Determine startup order**: build/compile → databases/caches → backend → frontend
+   - **Must include**: build step (if compiled language; explicit skip comment for interpreted), proxy detection (HTTP_PROXY/HTTPS_PROXY/NO_PROXY with localhost always added), health checks per service (port or HTTP polling), retry logic (up to 3 attempts with backoff), PID management (`.run/` directory), graceful failure handling (record to `task-progress.md`, print manual commands, exit non-zero)
+   - **Build failure = hard stop** — if compilation fails, no services should start; report the build error clearly
+   - **Must be idempotent** — re-running when services already running should detect and skip
+   - **Must be cross-platform** — `start.sh`/`cleanup.sh` for Unix/macOS, `start.ps1`/`cleanup.ps1` for Windows
+   - Add `.run/` to `.gitignore` (PID files and service logs — not committed)
+   - If project is CLI/library only (no runtime services), generate minimal scripts that print "No services to start" and exit 0
+   - If project has `"ui": true` features, start script MUST ensure the frontend dev server is running and health-checked — this is the prerequisite for Chrome DevTools MCP testing
+   - Validate:
+     ```bash
+     python scripts/validate_start_cleanup.py start.sh cleanup.sh
+     ```
 6. **Populate SRS fields in `feature-list.json`** — from the **SRS document**:
    - `constraints[]` — copy CON-xxx items from SRS "Constraints" section; each a concise string
    - `assumptions[]` — copy ASM-xxx items from SRS "Assumptions & Dependencies" section; each a concise string
@@ -100,7 +116,7 @@ You MUST create a TodoWrite task for each step and complete them in order:
     ```
 11. **Scaffold project skeleton** (dirs, configs, dependency manifests) — based on **design doc** architecture
 12. **Git init + initial commit**
-13. **Run init script**, verify environment works
+13. **Run init script**, verify environment works. Then run `start.sh`, verify all services respond to health checks. Then run `cleanup.sh`, verify ports are released and PID files cleaned
 14. **Update `task-progress.md`** — update `## Current State` with initial progress (0/N features passing), then append Session 0 entry (include SRS + design doc references)
 15. **Begin first Worker cycle** — **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-work`
 
@@ -165,6 +181,8 @@ Each feature:
 | `RELEASE_NOTES.md` | Living release notes (Keep a Changelog format) |
 | `examples/` | Runnable examples directory |
 | `init.sh` / `init.ps1` | Environment bootstrap (LLM-generated) |
+| `start.sh` / `start.ps1` | Runtime service startup: build → DB → backend → frontend; proxy-aware, health-checked, self-healing (LLM-generated) |
+| `cleanup.sh` / `cleanup.ps1` | Reverse-order service teardown; PID cleanup; port release verification (LLM-generated) |
 | `long-task-guide.md` | Worker session guide (LLM-generated, validated) |
 | `.env.example` | Template for required env configs (safe to commit) |
 

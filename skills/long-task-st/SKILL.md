@@ -30,6 +30,9 @@ Verify preconditions:
 
 Then orient:
 - Load `.env` if it exists
+- Run `start.sh` / `start.ps1` — ensure all runtime services are up for ST
+  - If `start.sh` does not exist: skip (project may be CLI/library only)
+  - If `start.sh` fails: STOP. Record failure in `task-progress.md`. Ask user to start services manually. ST cannot proceed without a running environment.
 - Read `feature-list.json` — note `tech_stack`, `quality_gates`, `constraints[]`, `assumptions[]`
 - Read SRS document — extract all FR-xxx, NFR-xxx, IFR-xxx, CON-xxx requirements
 - Read design document — extract architecture, API design, testing strategy (section 9), third-party dependencies (section 8)
@@ -355,6 +358,7 @@ Generate `docs/plans/YYYY-MM-DD-st-report.md`:
   ```bash
   python scripts/validate_features.py feature-list.json
   ```
+- Run `cleanup.sh` / `cleanup.ps1` if it exists — clean up runtime services after ST is complete
 
 ### 12. Verdict
 Present the ST report summary and Go/No-Go recommendation to the user via `AskUserQuestion`:
