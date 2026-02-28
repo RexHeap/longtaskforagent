@@ -84,6 +84,24 @@ You MUST create a TodoWrite task for each step and complete them in order:
      ```bash
      python scripts/validate_start_cleanup.py start.sh cleanup.sh
      ```
+5c. **Generate `test.sh` / `test.ps1` and `mutate.sh` / `mutate.ps1`** — Create test runner and mutation testing wrapper scripts:
+   - Read `references/test-mutation-recipes.md` (in the long-task-init skill directory) for per-tech-stack templates and best practices
+   - **test.sh / test.ps1**: Wrapper for running unit tests and coverage
+     - Modes: `./test.sh` (full test suite), `./test.sh --coverage` (with coverage report)
+     - Must: load `.env`, activate environment (venv/conda/nvm/sdkman), check tool availability (`command -v` / `Get-Command`), parse output for structured results
+     - Exit codes: `0` = all tests pass (coverage above threshold if `--coverage`), `1` = test failures or coverage below threshold, `2` = tool not found / environment error
+   - **mutate.sh / mutate.ps1**: Wrapper for running mutation testing
+     - Modes: `./mutate.sh --incremental <files>` (changed files only), `./mutate.sh --full` (entire codebase)
+     - Must: load `.env`, activate environment, check mutation tool availability, parse output for mutation score
+     - Exit codes: `0` = mutation score above threshold, `1` = score below threshold, `2` = tool not found / environment error
+   - **Must be cross-platform** — `test.sh`/`mutate.sh` for Unix/macOS, `test.ps1`/`mutate.ps1` for Windows
+   - **Must be idempotent** — safe to re-run without side effects
+   - **Graceful failure**: if tool is missing or environment broken, print clear diagnostic and manual fix instructions; record to `task-progress.md`; never silently skip
+   - If project has no tests configured (CLI/library only), generate minimal scripts that print "No tests configured" and exit 0
+   - Validate:
+     ```bash
+     python scripts/validate_test_mutation.py test.sh mutate.sh
+     ```
 6. **Populate SRS fields in `feature-list.json`** — from the **SRS document**:
    - `constraints[]` — copy CON-xxx items from SRS "Constraints" section; each a concise string
    - `assumptions[]` — copy ASM-xxx items from SRS "Assumptions & Dependencies" section; each a concise string
@@ -116,7 +134,7 @@ You MUST create a TodoWrite task for each step and complete them in order:
     ```
 11. **Scaffold project skeleton** (dirs, configs, dependency manifests) — based on **design doc** architecture
 12. **Git init + initial commit**
-13. **Run init script**, verify environment works. Then run `start.sh`, verify all services respond to health checks. Then run `cleanup.sh`, verify ports are released and PID files cleaned
+13. **Run init script**, verify environment works. Then run `start.sh`, verify all services respond to health checks. Then run `test.sh`, verify tests execute. Then run `mutate.sh --full`, verify mutation testing works. Then run `cleanup.sh`, verify ports are released and PID files cleaned
 14. **Update `task-progress.md`** — update `## Current State` with initial progress (0/N features passing), then append Session 0 entry (include SRS + design doc references)
 15. **Begin first Worker cycle** — **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-work`
 
@@ -183,6 +201,8 @@ Each feature:
 | `init.sh` / `init.ps1` | Environment bootstrap (LLM-generated) |
 | `start.sh` / `start.ps1` | Runtime service startup: build → DB → backend → frontend; proxy-aware, health-checked, self-healing (LLM-generated) |
 | `cleanup.sh` / `cleanup.ps1` | Reverse-order service teardown; PID cleanup; port release verification (LLM-generated) |
+| `test.sh` / `test.ps1` | Test runner wrapper: env activation, tool check, coverage mode, structured output (LLM-generated) |
+| `mutate.sh` / `mutate.ps1` | Mutation testing wrapper: env activation, tool check, incremental/full modes, structured output (LLM-generated) |
 | `long-task-guide.md` | Worker session guide (LLM-generated, validated) |
 | `.env.example` | Template for required env configs (safe to commit) |
 

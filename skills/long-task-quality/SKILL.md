@@ -17,21 +17,49 @@ NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE
 
 If you haven't run the verification command in this message, you cannot claim it passes.
 
+## Prefer Wrapper Scripts
+
+If `test.sh` / `mutate.sh` exist (generated during Init phase), **use them instead of raw CLI commands**:
+
+```bash
+# Instead of raw coverage command:
+./test.sh --coverage
+
+# Instead of raw incremental mutation command:
+./mutate.sh --incremental src/changed_module.py
+
+# Instead of raw full mutation command:
+./mutate.sh --full
+
+# Instead of raw test command:
+./test.sh
+```
+
+**Self-repair protocol** — if script exits with code 2 (tool/environment error):
+1. **Read** error output — identify the specific tool or environment issue
+2. **Diagnose** root cause (tool not installed, venv not activated, wrong path, missing config)
+3. **Attempt fix** — make one targeted change (install tool via `init.sh`, fix path, activate env)
+4. **Re-run** the script once
+5. **If still fails** → escalate to user via `AskUserQuestion` with the error message and what was tried
+6. **NEVER skip** — testing is a hard gate; no bypass allowed
+
+**Fallback**: If wrapper scripts do not exist (legacy projects), fall back to raw commands via `get_tool_commands.py`.
+
 ## Get Tool Commands
 
-Before running any gate, get the exact commands for this project's tech stack:
+Before running any gate, get the exact commands for this project's tech stack (used as fallback if wrapper scripts don't exist):
 
 ```bash
 python scripts/get_tool_commands.py feature-list.json
 ```
 
-This outputs the concrete test, coverage, and mutation commands — use them directly below.
+This outputs the concrete test, coverage, and mutation commands.
 
 ## Gate 1: Coverage
 
 After TDD Green (all tests pass), run the coverage tool.
 
-1. **Run** the `[coverage]` command from `get_tool_commands.py` output
+1. **Run** `./test.sh --coverage` (preferred) or the `[coverage]` command from `get_tool_commands.py` output (fallback)
 2. **Read** the FULL output (not just summary line)
 3. **Verify**: line coverage >= `[thresholds] line_coverage`, branch coverage >= `[thresholds] branch_coverage`
 4. **If FAIL**: identify uncovered lines/branches → add tests → re-run TDD cycle for those paths
@@ -50,7 +78,7 @@ After TDD Green (all tests pass), run the coverage tool.
 
 After TDD Refactor, run mutation testing on changed files.
 
-1. **Run** the `[mutation-incremental]` command from `get_tool_commands.py` output — replace `{changed_files}` / `{changed_classes}` with actual paths
+1. **Run** `./mutate.sh --incremental <files>` (preferred) or the `[mutation-incremental]` command from `get_tool_commands.py` output (fallback) — replace `{changed_files}` / `{changed_classes}` with actual paths
 2. **Read** the FULL output
 3. **Verify**: mutation score >= `[thresholds] mutation_score`
 4. **If surviving mutants**, analyze each:
@@ -79,10 +107,10 @@ After TDD Refactor, run mutation testing on changed files.
 The final gate before marking a feature as "passing".
 
 ```
-1. IDENTIFY → Get the commands via `python scripts/get_tool_commands.py feature-list.json`:
-   - [test] command (full suite)
-   - [coverage] command
-   - [mutation-full] command
+1. IDENTIFY → Use wrapper scripts if available, otherwise get commands via `python scripts/get_tool_commands.py feature-list.json`:
+   - `./test.sh` or [test] command (full suite)
+   - `./test.sh --coverage` or [coverage] command
+   - `./mutate.sh --full` or [mutation-full] command
 
 2. RUN → Execute each command (fresh, in this message — not cached from earlier)
 

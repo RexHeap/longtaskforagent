@@ -279,6 +279,7 @@ def main():
         "get_tool_commands.py",
         "validate_start_cleanup.py",
         "validate_st_cases.py",
+        "validate_test_mutation.py",
     ]
     for script_name in helper_scripts:
         src = os.path.join(plugin_scripts_dir, script_name)
@@ -323,6 +324,8 @@ def main():
     print("  - init.sh / init.ps1         (environment bootstrap from design doc tech stack)")
     print("  - start.sh / start.ps1       (runtime service startup from design doc)")
     print("  - cleanup.sh / cleanup.ps1   (service teardown from design doc)")
+    print("  - test.sh / test.ps1         (test runner wrapper from design doc tech stack)")
+    print("  - mutate.sh / mutate.ps1     (mutation testing wrapper from design doc tech stack)")
 
 
 if __name__ == "__main__":

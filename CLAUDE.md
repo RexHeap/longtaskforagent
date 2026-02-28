@@ -39,6 +39,12 @@ python long-task-agent/scripts/validate_start_cleanup.py start.sh cleanup.sh
 python long-task-agent/scripts/validate_start_cleanup.py start.sh cleanup.sh --powershell start.ps1 cleanup.ps1
 ```
 
+### Validate test/mutation scripts
+```bash
+python long-task-agent/scripts/validate_test_mutation.py test.sh mutate.sh
+python long-task-agent/scripts/validate_test_mutation.py test.sh mutate.sh --powershell test.ps1 mutate.ps1
+```
+
 ### Check required configurations
 ```bash
 python long-task-agent/scripts/check_configs.py feature-list.json
@@ -90,6 +96,7 @@ python -m pytest tests/test_get_tool_commands.py
 python -m pytest tests/test_validate_increment_request.py
 python -m pytest tests/test_validate_st_cases.py
 python -m pytest tests/test_validate_start_cleanup.py
+python -m pytest tests/test_validate_test_mutation.py
 ```
 
 > **Path note**: the `python long-task-agent/scripts/...` paths above are consumer-facing (run from the target project root after plugin install). When developing in this repo, replace `long-task-agent/` with `./` or omit it entirely.
@@ -248,6 +255,8 @@ using-long-task (router)
 | `init.sh` / `init.ps1` | Init | Environment bootstrap (LLM-generated) |
 | `start.sh` / `start.ps1` | Init | Runtime service startup: build → DB → backend → frontend; proxy-aware, health-checked, self-healing (LLM-generated) |
 | `cleanup.sh` / `cleanup.ps1` | Init | Reverse-order service teardown; PID cleanup; port release verification (LLM-generated) |
+| `test.sh` / `test.ps1` | Init | Test runner wrapper: env activation, tool check, coverage mode, structured output (LLM-generated) |
+| `mutate.sh` / `mutate.ps1` | Init | Mutation testing wrapper: env activation, tool check, incremental/full modes, structured output (LLM-generated) |
 | `long-task-guide.md` | Init | Worker session guide (LLM-generated, validated) |
 | `.env.example` | Init | Template for required env configs (safe to commit; `.env` has secrets) |
 | `docs/plans/*-st-plan.md` | ST | System testing plan with Requirements Traceability Matrix |
@@ -354,7 +363,8 @@ long-task-agent/
 │   │   ├── SKILL.md
 │   │   └── references/
 │   │       ├── init-script-recipes.md # Environment bootstrap templates (conda, venv, nvm, etc.)
-│   │       └── start-cleanup-recipes.md # Service startup/teardown templates (proxy, health checks, per-tech-stack)
+│   │       ├── start-cleanup-recipes.md # Service startup/teardown templates (proxy, health checks, per-tech-stack)
+│   │       └── test-mutation-recipes.md # Test runner & mutation testing templates (per-tech-stack, self-repair)
 │   ├── long-task-work/               # Phase 2: Worker orchestrator
 │   │   ├── SKILL.md
 │   │   └── references/
@@ -411,7 +421,8 @@ long-task-agent/
 │   ├── check_st_readiness.py          # System testing readiness checking
 │   ├── validate_increment_request.py  # Increment request signal validation
 │   ├── validate_st_cases.py          # ST test case document validation
-│   └── validate_start_cleanup.py     # Start/cleanup script structural validation
+│   ├── validate_start_cleanup.py     # Start/cleanup script structural validation
+│   └── validate_test_mutation.py     # Test/mutation script structural validation
 ├── tests/
 │   ├── test_validate_features.py
 │   ├── test_init_project.py
@@ -422,7 +433,8 @@ long-task-agent/
 │   ├── test_check_st_readiness.py
 │   ├── test_validate_increment_request.py
 │   ├── test_validate_st_cases.py
-│   └── test_validate_start_cleanup.py
+│   ├── test_validate_start_cleanup.py
+│   └── test_validate_test_mutation.py
 ```
 
 ## See Also

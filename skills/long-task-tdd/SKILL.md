@@ -124,6 +124,8 @@ See `references/ui-error-detection.md` for the full detection script and integra
 
 Run the test suite. **All tests must FAIL.** If any test passes → it tests nothing useful, rewrite it.
 
+**Running tests**: Prefer `./test.sh` if available (handles env activation, tool checks, exit codes); fall back to raw command from `python scripts/get_tool_commands.py feature-list.json`. If `test.sh` exits with code 2 (tool/env error): diagnose root cause, attempt one fix, retry once, escalate to user if still failing. **Never skip.**
+
 ## Step 2: TDD Green — Minimal Implementation
 
 Write ONLY enough code to make tests pass.
@@ -142,7 +144,7 @@ For subagent mode, dispatch with `skills/long-task-tdd/prompts/implementer-promp
 
 Clean up while keeping tests green:
 - Extract duplication, improve naming, simplify
-- Run tests after EVERY change
+- Run tests after EVERY change (use `./test.sh` if available)
 - No new functionality in this step
 
 ## Testing Anti-Patterns (Top 5)

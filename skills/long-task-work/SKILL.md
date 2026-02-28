@@ -56,7 +56,12 @@ When you need the design section or SRS requirement for a feature, do NOT grep f
     - **Service failure**: record failure in `task-progress.md`. Ask user to start services manually and confirm before continuing.
     - **Never skip a failed startup.**
   - **Staleness check**: If `required_configs` references a service URL/connection string (e.g., REDIS_URL, DATABASE_URL) but `start.sh` has no corresponding startup block, warn: "start.sh may be stale — run `/long-task:increment` to update scripts"
-- Smoke-test previously passing features (quick verify)
+- If `test.sh` and `mutate.sh` exist, validate structural completeness:
+  ```bash
+  python scripts/validate_test_mutation.py test.sh mutate.sh
+  ```
+  If validation fails → warn user and attempt regeneration (re-read `references/test-mutation-recipes.md` and regenerate) or manual fix before proceeding.
+- Smoke-test previously passing features (quick verify — use `./test.sh` if available)
 
 ### 3. Config Gate
 ```bash
@@ -133,6 +138,7 @@ Context to carry forward:
 - `quality_gates` and `tech_stack` from feature-list.json
 - Plan file path from Step 5
 - **ST test case document** from Step 6 (`docs/test-cases/feature-{id}-{slug}.md`) — TDD Red reads this as test specification input
+- **Test wrapper scripts**: `test.sh` / `mutate.sh` availability — TDD and Quality sub-skills prefer these over raw commands
 
 ### 10. Quality Gates
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-quality` and follow it exactly.
@@ -141,6 +147,7 @@ Context to carry forward:
 - Feature ID and verification_steps
 - `quality_gates` thresholds from feature-list.json
 - `tech_stack` tool names for coverage/mutation commands
+- **Test wrapper scripts**: `test.sh` / `mutate.sh` availability — Quality skill prefers these over raw commands
 
 ### 11. Spec & Design Compliance Review
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-review` and follow it exactly.
