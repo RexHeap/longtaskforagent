@@ -1169,6 +1169,154 @@ def test_deprecated_excluded_from_summary_counts():
     assert "1 deprecated" in stdout
 
 
+# --- UI dependency satisfaction warning tests ---
+
+def test_ui_feature_with_failing_dep_warning():
+    """UI feature depending on a failing feature should produce a warning."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "features": [
+            {
+                "id": 1, "category": "backend", "title": "User API",
+                "description": "REST API", "priority": "high", "status": "failing",
+                "verification_steps": ["Given valid user data, when POST /api/users, then 201"],
+                "dependencies": []
+            },
+            {
+                "id": 2, "category": "frontend", "title": "User Profile Page",
+                "description": "UI page", "priority": "high", "status": "failing",
+                "verification_steps": [
+                    "[devtools] /profile | EXPECT: user data from API | REJECT: empty state"
+                ],
+                "dependencies": [1],
+                "ui": True,
+                "ui_entry": "/profile"
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code == 0, f"Expected exit 0 (warning, not error): {stdout}"
+    assert "E2E testing may be incomplete" in stdout, f"Expected dependency warning: {stdout}"
+
+
+def test_ui_feature_with_passing_dep_no_warning():
+    """UI feature depending on a passing feature should NOT produce the dep warning."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "features": [
+            {
+                "id": 1, "category": "backend", "title": "User API",
+                "description": "REST API", "priority": "high", "status": "passing",
+                "verification_steps": ["Given valid user data, when POST /api/users, then 201"],
+                "dependencies": []
+            },
+            {
+                "id": 2, "category": "frontend", "title": "User Profile Page",
+                "description": "UI page", "priority": "high", "status": "failing",
+                "verification_steps": [
+                    "[devtools] /profile | EXPECT: user data from API | REJECT: empty state"
+                ],
+                "dependencies": [1],
+                "ui": True,
+                "ui_entry": "/profile"
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code == 0, f"Expected exit 0: {stdout}"
+    assert "E2E testing may be incomplete" not in stdout, f"Unexpected dep warning: {stdout}"
+
+
+def test_deprecated_ui_feature_no_dep_warning():
+    """Deprecated UI feature should NOT produce dependency warning."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "features": [
+            {
+                "id": 1, "category": "backend", "title": "User API",
+                "description": "REST API", "priority": "high", "status": "failing",
+                "verification_steps": ["Step 1"],
+                "dependencies": []
+            },
+            {
+                "id": 2, "category": "frontend", "title": "Old Page",
+                "description": "UI page", "priority": "high", "status": "failing",
+                "verification_steps": ["[devtools] /old | EXPECT: something | REJECT: nothing"],
+                "dependencies": [1],
+                "ui": True,
+                "deprecated": True,
+                "deprecated_reason": "Replaced"
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert "E2E testing may be incomplete" not in stdout, f"Deprecated feature should not warn: {stdout}"
+
+
+# --- Simple verification_steps warning tests ---
+
+def test_simple_verification_step_warning():
+    """Short verification_step without chaining should produce a warning."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "Simple Feature",
+                "description": "A feature", "priority": "high", "status": "failing",
+                "verification_steps": ["API returns 200"],
+                "dependencies": []
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code == 0, f"Expected exit 0 (warning, not error): {stdout}"
+    assert "simple assertion" in stdout.lower(), f"Expected simple assertion warning: {stdout}"
+
+
+def test_rich_verification_step_no_warning():
+    """Rich verification_step with chaining should NOT produce the simple assertion warning."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "Rich Feature",
+                "description": "A feature", "priority": "high", "status": "failing",
+                "verification_steps": [
+                    "Given a registered user, when POST /api/login with valid credentials, then response 200 with JWT token; and GET /api/profile with token returns user data"
+                ],
+                "dependencies": []
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code == 0, f"Expected exit 0: {stdout}"
+    assert "simple assertion" not in stdout.lower(), f"Unexpected simple assertion warning: {stdout}"
+
+
+def test_short_step_with_chaining_no_warning():
+    """Short step with chaining keywords should not warn."""
+    data = {
+        "project": "test-project",
+        "created": "2025-01-01",
+        "features": [
+            {
+                "id": 1, "category": "core", "title": "A",
+                "description": "A", "priority": "high", "status": "failing",
+                "verification_steps": ["Given X, when Y, then Z"],
+                "dependencies": []
+            }
+        ]
+    }
+    code, stdout, _ = run_validator(data)
+    assert code == 0
+    assert "simple assertion" not in stdout.lower()
+
+
 if __name__ == "__main__":
     tests = [
         test_valid_feature_list,
@@ -1225,6 +1373,12 @@ if __name__ == "__main__":
         test_supersedes_not_integer_fails,
         test_no_wave_fields_backward_compat,
         test_deprecated_excluded_from_summary_counts,
+        test_ui_feature_with_failing_dep_warning,
+        test_ui_feature_with_passing_dep_no_warning,
+        test_deprecated_ui_feature_no_dep_warning,
+        test_simple_verification_step_warning,
+        test_rich_verification_step_no_warning,
+        test_short_step_with_chaining_no_warning,
     ]
     passed = 0
     failed = 0

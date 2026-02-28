@@ -308,6 +308,7 @@ def validate(path: str) -> tuple[list[str], list[str]]:
 
     # Second pass: validate all dependencies and supersedes reference existing IDs
     all_ids = {f.get("id") for f in features if isinstance(f, dict)}
+    id_to_feature = {f.get("id"): f for f in features if isinstance(f, dict)}
     for feat in features:
         if not isinstance(feat, dict):
             continue
@@ -318,6 +319,29 @@ def validate(path: str) -> tuple[list[str], list[str]]:
         sup = feat.get("supersedes")
         if isinstance(sup, int) and sup not in all_ids:
             errors.append(f"Feature id={fid}: supersedes id={sup} does not exist")
+
+        # Warn if UI feature depends on features that are still failing
+        if feat.get("ui") is True and not feat.get("deprecated", False):
+            for dep in feat.get("dependencies", []):
+                dep_feat = id_to_feature.get(dep)
+                if dep_feat and dep_feat.get("status") == "failing" and not dep_feat.get("deprecated", False):
+                    warnings.append(
+                        f"Feature id={fid}: UI feature depends on feature id={dep} "
+                        f"which is still 'failing' — E2E testing may be incomplete"
+                    )
+
+        # Warn if verification_steps look like simple assertions
+        vsteps = feat.get("verification_steps", [])
+        if isinstance(vsteps, list) and not feat.get("deprecated", False):
+            chaining_words = ["→", "then", "and ", "verify", "given", "when", "expect:", "reject:"]
+            for vi, vstep in enumerate(vsteps):
+                if isinstance(vstep, str) and len(vstep) < 40:
+                    has_chaining = any(w in vstep.lower() for w in chaining_words)
+                    if not has_chaining:
+                        warnings.append(
+                            f"Feature id={fid}: verification_steps[{vi}] appears to be a simple "
+                            f"assertion rather than a behavioral scenario: '{vstep}'"
+                        )
 
     # Validate required_configs.required_by references existing feature IDs
     if required_configs and isinstance(required_configs, list):

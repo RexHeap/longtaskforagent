@@ -224,6 +224,83 @@ def validate(path: str, feature_list_path: str = None, feature_id: int = None) -
         if not vp_content.strip():
             errors.append(f"{case_label}: verification points section is empty")
 
+    # Quality warnings for shallow test cases
+    ui_case_ids = set()
+    has_negative_path = False
+    vague_phrases = re.compile(
+        r"\b(correctly|properly|works|displays correctly|looks correct|is valid|should work|正确显示|工作正常|显示正确)\b",
+        re.IGNORECASE,
+    )
+
+    for case in cases:
+        cid = case.get("case_id") or ""
+        sections = case.get("sections", {})
+        steps_content = sections.get("测试步骤") or sections.get("Test Steps") or ""
+
+        # Determine if this is a UI category case
+        is_ui_case = bool(CASE_ID_PATTERN.match(cid)) and cid.split("-")[1] == "UI"
+        if is_ui_case:
+            ui_case_ids.add(cid)
+
+        # Count step rows in table (lines containing | that aren't header/separator)
+        step_rows = [
+            line for line in steps_content.split("\n")
+            if "|" in line and "---" not in line and "Step" not in line
+            and "操作" not in line and "step" not in line.lower().split("|")[0]
+        ]
+
+        # Warn: UI test case with fewer than 3 steps
+        if is_ui_case and len(step_rows) < 3:
+            warnings.append(
+                f"[QUALITY] {cid}: UI test case has only {len(step_rows)} step(s) "
+                f"— Chrome DevTools MCP E2E scenarios should have >= 5 steps"
+            )
+
+        # Warn: UI test case missing three-layer detection
+        if is_ui_case:
+            all_content = case.get("raw", "")
+            has_layer1 = "evaluate_script" in all_content or "error_detector" in all_content or "Layer 1" in all_content or "错误检测" in all_content
+            has_layer2 = "EXPECT" in all_content and "REJECT" in all_content
+            has_layer3 = "list_console_messages" in all_content or "console" in all_content.lower() or "Layer 3" in all_content or "控制台" in all_content
+            if not has_layer1:
+                warnings.append(
+                    f"[QUALITY] {cid}: UI test case missing Layer 1 detection "
+                    f"(evaluate_script / error_detector)"
+                )
+            if not has_layer2:
+                warnings.append(
+                    f"[QUALITY] {cid}: UI test case missing Layer 2 detection "
+                    f"(EXPECT/REJECT clauses)"
+                )
+            if not has_layer3:
+                warnings.append(
+                    f"[QUALITY] {cid}: UI test case missing Layer 3 detection "
+                    f"(list_console_messages / console error gate)"
+                )
+
+        # Warn: vague expected results
+        if steps_content:
+            for line in steps_content.split("\n"):
+                if "|" in line and vague_phrases.search(line):
+                    warnings.append(
+                        f"[QUALITY] {cid}: test step has vague expected result — "
+                        f"use specific, assertable criteria instead of '{vague_phrases.search(line).group()}'"
+                    )
+                    break  # One warning per case is enough
+
+        # Track negative path presence
+        objective = sections.get("测试目标") or sections.get("Test Objective") or ""
+        all_text = (objective + " " + cid).lower()
+        if any(w in all_text for w in ["error", "invalid", "fail", "reject", "deny", "异常", "失败", "拒绝", "错误"]):
+            has_negative_path = True
+
+    # Warn: no negative/error path test case in the entire document
+    if cases and not has_negative_path:
+        warnings.append(
+            "[QUALITY] No test case appears to test a negative/error path "
+            "— add at least one case for invalid input, error state, or access denial"
+        )
+
     # If --feature-list and --feature provided, check verification_step coverage
     if feature_list_path and feature_id is not None:
         try:

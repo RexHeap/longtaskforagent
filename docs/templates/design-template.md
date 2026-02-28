@@ -202,6 +202,14 @@ graph LR
     D --> F
 ```
 
+#### Backend→Frontend Dependencies (mandatory for full-stack projects)
+The dependency graph MUST explicitly show edges from backend API features to frontend UI features that consume them. This ensures:
+- Worker develops backend APIs before frontend pages (dependency satisfaction check in Worker Step 1)
+- UI E2E testing via Chrome DevTools MCP has a live backend to test against
+- Per-feature ST cases can verify real data flow, not mocked responses
+
+Example: if "User REST API" is Feature A and "User Profile Page" is Feature C, the graph must show `A --> C`.
+
 ### 11.4 Risk & Mitigation
 
 | Risk | Impact | Likelihood | Mitigation |

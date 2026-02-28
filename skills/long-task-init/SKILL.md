@@ -110,6 +110,16 @@ You MUST create a TodoWrite task for each step and complete them in order:
    - Each FR-xxx → one or more features with `id`, `category`, `title`, `description`, `priority`, `status` (always `"failing"`), `verification_steps`, `dependencies`
    - `verification_steps` should trace to SRS acceptance criteria (Given/When/Then)
    - For UI features: set `"ui": true`, optionally `"ui_entry": "/path"`; include `[devtools]`-prefixed verification steps
+   - **Verification steps quality rules** (drives downstream ST case and TDD quality):
+     - Each step MUST be a behavioral scenario with Given/When/Then structure, not a simple assertion
+     - BAD: `"Login page displays correctly"` → no action, no assertion
+     - GOOD: `"[devtools] Navigate /login → EXPECT: email input, password input, 'Sign In' button; fill valid creds → click Sign In → EXPECT: redirect to /dashboard, user name in header; REJECT: console errors, broken images"`
+     - BAD: `"API returns 200 on valid input"` → this is an assertion, not a scenario
+     - GOOD: `"Given a registered user, when POST /api/orders with valid payload, then response 201 with order ID; and GET /api/orders/{id} returns the created order with correct fields"`
+     - For `"ui": true` features: every `[devtools]` step MUST describe a multi-step interaction chain (navigate → interact → verify → interact → verify)
+     - For features with backend dependencies: at least one step MUST verify real data flow across the dependency boundary
+     - **Minimum complexity**: each feature SHOULD have ≥ 1 verification_step with 3+ chained actions
+   - **Backend-before-frontend dependency rule**: Frontend features (`"ui": true`) MUST list their backend API dependency features in `dependencies[]`. This ensures the Worker's dependency satisfaction check naturally develops backend APIs before frontend pages that consume them.
    - Aim for 10-200+ features; each independently verifiable and completable in one session
    - **Priority ordering**: follow the design document's Task Decomposition table (section 11.2) — P0/P1/P2/P3 maps to high/high/medium/low
    - **Dependency chain**: follow the design document's Dependency Chain diagram (section 11.3) to populate each feature's `dependencies[]`

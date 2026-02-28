@@ -372,7 +372,10 @@ long-task-agent/
 │   │       ├── systematic-debugging.md # Four-phase debugging process
 │   │       ├── subagent-development.md # Subagent-driven development mode
 │   │       └── worktree-isolation.md  # Git worktree isolation & branch finishing
-│   ├── long-task-st-case/SKILL.md     # ST test case generation (ISO/IEC/IEEE 29119)
+│   ├── long-task-st-case/             # ST test case generation (ISO/IEC/IEEE 29119)
+│   │   ├── SKILL.md
+│   │   └── prompts/
+│   │       └── e2e-scenario-prompt.md # Chrome DevTools MCP E2E scenario derivation
 │   ├── long-task-st/                  # Phase 3: System Testing (IEEE 829)
 │   │   ├── SKILL.md
 │   │   └── references/

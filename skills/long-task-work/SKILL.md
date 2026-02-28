@@ -23,6 +23,11 @@ You MUST create a TodoWrite task for each step and complete them in order:
 - Read design doc **Section 1** (`docs/plans/*-design.md`) — project overview and architecture snapshot for global context
 - Run `git log --oneline -10` — recent commit context
 - Pick next `"status": "failing"` feature by priority + dependency order — **skip features with `"deprecated": true`**
+- **Dependency satisfaction check**: After selecting a candidate feature, verify that ALL feature IDs in its `dependencies[]` have `"status": "passing"` in `feature-list.json`. If any dependency is still `"failing"`:
+  - Log: "Feature #{id} ({title}) skipped — unsatisfied deps: #{dep1}, #{dep2}"
+  - Pick the next eligible `"failing"` feature (by priority + dependency order) whose dependencies are all satisfied
+  - If NO features have all dependencies satisfied → warn user via `AskUserQuestion`: "All remaining features have unsatisfied dependencies. Circular or over-constrained dependency graph detected." → let user choose which feature to force-start (override dependency check)
+  - Record skipped features and reason in `task-progress.md`
 - If target feature has `"ui": true` and UCD document exists (`docs/plans/*-ucd.md`), read the UCD style guide — reference style tokens, component prompts, and page prompts to ensure frontend implementation matches the approved visual style
 
 **Document Lookup Protocol (used by Steps 5, 6, and 11):**
@@ -91,6 +96,14 @@ python scripts/check_configs.py feature-list.json --feature <id> --dotenv .env
 python scripts/check_devtools.py feature-list.json --feature <id>
 ```
 `<id>` = same feature ID. If Chrome DevTools MCP not available → prompt user and **block until resolved**.
+
+**Backend API readiness check** (mandatory for UI features with backend dependencies):
+- For each feature ID in `dependencies[]`:
+  1. Read the dependency feature's `verification_steps` to identify API endpoints or service URLs
+  2. Verify the dependency's service is responding (quick HTTP health check via `evaluate_script` in browser or curl)
+  3. If unreachable → **block**: "Backend dependency #{dep_id} API is not responding. Ensure `start.sh` started backend services successfully."
+- **Skip this sub-check** if: the feature has no backend dependencies, or dependencies are pure library/utility features (no API endpoints in their verification_steps)
+- **Why**: Chrome DevTools MCP E2E testing requires a live backend. Tool availability alone is insufficient.
 
 ### 5. Plan
 Write a step-by-step implementation plan for the selected feature.
@@ -222,6 +235,8 @@ Create runnable examples in `examples/` demonstrating the completed feature.
 | "Environment is down, skip ST cases" | BLOCKED, not skipped. Fix environment or ask user. |
 | "I need to change the verification_steps" | Use `/long-task:increment` — Worker cannot modify them. |
 | "This deprecated feature still needs work" | Skip it. Deprecated features are excluded. |
+| "Backend isn't ready but I'll mock it for now" | Dependency check exists for a reason. Develop backend features first. |
+| "I'll skip the dependency check this once" | Never skip. Reorder features so deps are satisfied. |
 
 ## On Error
 
