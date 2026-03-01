@@ -218,6 +218,12 @@ python scripts/validate_st_cases.py docs/test-cases/feature-{id}-{slug}.md --fea
 
 Since implementation code already exists (TDD and Quality Gates are complete), execute each test case to verify acceptance:
 
+**HARD REQUIREMENT: Must execute test cases one by one as defined in `docs/test-cases/feature-{id}-{slug}.md`**
+- Each test case must be executed individually and results recorded
+- No test case may be skipped
+- Do not merge or simplify the test case execution process
+- **UI test cases MUST use Chrome DevTools MCP for verification**
+
 1. **Start services** per Service Management above (port-guard hook ensures clean ports)
 2. For **non-UI test cases**: verify by running relevant test commands or manual checks against the running system
 3. For **UI test cases**: execute via Chrome DevTools MCP following the step tables

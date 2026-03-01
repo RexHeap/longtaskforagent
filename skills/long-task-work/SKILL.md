@@ -136,7 +136,7 @@ Context to carry forward:
 ### 10. ST Acceptance Test Cases
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-feature-st` and follow it exactly.
 
-Execute black-box acceptance testing for the feature **after** TDD and quality gates pass. The skill independently manages its own environment lifecycle (start.sh → test → cleanup.sh) and generates ISO/IEC/IEEE 29119 compliant test case documents.
+Execute black-box acceptance testing for the feature **after** TDD and quality gates pass. The skill generates ISO/IEC/IEEE 29119 compliant test case documents.
 
 Context to carry forward:
 - Current feature object from feature-list.json
@@ -150,7 +150,6 @@ Context to carry forward:
 Output: `docs/test-cases/feature-{id}-{slug}.md`
 
 **Hard Gate:**
-- `long-task-feature-st` calls `start.sh` itself — it does not depend on Step 2 having run
 - Any execution failure (environment or test case) must be reported to user via `AskUserQuestion`
 - **No bypass allowed** — cannot skip ST for any reason
 

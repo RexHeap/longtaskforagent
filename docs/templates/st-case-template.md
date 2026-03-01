@@ -151,10 +151,10 @@ Example UI test step:
 
 ## Execution Rules
 
-1. **Environment prerequisite**: `start.sh` / `start.ps1` must have succeeded (Worker Step 2 Bootstrap). If services are not running, runtime test steps are BLOCKED.
+1. **Environment prerequisite**: Services must be running. If services are not running, runtime test steps are BLOCKED.
 2. **Failure is a Hard Gate**: Any test case failure (step result mismatch, verification point unmet, post-check failure) blocks the feature from being marked `"passing"`. Report to user via `AskUserQuestion`.
 3. **No bypass allowed**: Cannot skip ST execution for any reason ("simple feature", "env temporarily unavailable", "case might be wrong"). All failures must be recorded in `task-progress.md`.
-4. **Environment cleanup**: `cleanup.sh` / `cleanup.ps1` runs at Worker session end (Step 14 Continue).
+4. **Environment cleanup**: Services are stopped after testing completes.
 
 ## Derivation Rules
 
