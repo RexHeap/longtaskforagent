@@ -4,6 +4,8 @@
 
 You are a test engineer generating per-feature ST cases that will be **executed via Chrome DevTools MCP tools** during TDD. Each UI test step must map to a concrete MCP tool call. The goal is executable E2E scenarios — not paper checklists.
 
+> **IMPORTANT**: UI test cases CANNOT be skipped for any reason. Chrome DevTools MCP is the **mandatory** execution vehicle for UI features. There is no alternative or workaround for UI verification.
+
 ## MCP Tool → Test Step Mapping
 
 Every UI test step must specify which Chrome DevTools MCP tool executes it:
@@ -135,3 +137,4 @@ Before finalizing each UI test case, verify:
 - [ ] At least one negative/error path test case exists for this feature
 - [ ] Preconditions are concrete (specific data, auth state) — not just "系统正常运行"
 - [ ] Expected results are specific and assertable — no "显示正确" or "工作正常"
+- [ ] **UI test case CANNOT be skipped** — Chrome DevTools MCP is mandatory for UI verification

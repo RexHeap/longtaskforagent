@@ -221,6 +221,7 @@ Present the ST report summary and Go/No-Go recommendation to the user via `AskUs
 - **RTM completeness** — every SRS requirement must appear in the RTM; gaps are findings
 - **NFR thresholds are hard gates** — measured value must meet SRS threshold, not "close enough"
 - **Defect severity is non-negotiable** — Critical/Major defects block release; no exceptions
+- **ALL bugs must be fixed** — Any bug found in ST testing (frontend, backend, integration) MUST be fixed before release. There is no "not my code" exemption.
 - **Re-test after fix** — never assume a fix works; re-run affected test categories
 - **Exploratory testing is mandatory** — scripted tests cannot find everything
 - **ST report before verdict** — document first, then decide; never skip the report

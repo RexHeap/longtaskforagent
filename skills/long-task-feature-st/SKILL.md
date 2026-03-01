@@ -220,13 +220,14 @@ Since implementation code already exists (TDD and Quality Gates are complete), e
 
 **HARD REQUIREMENT: Must execute test cases one by one as defined in `docs/test-cases/feature-{id}-{slug}.md`**
 - Each test case must be executed individually and results recorded
+- **UI test cases CANNOT be skipped for any reason** — UI verification is mandatory
 - No test case may be skipped
 - Do not merge or simplify the test case execution process
 - **UI test cases MUST use Chrome DevTools MCP for verification**
 
 1. **Start services** per Service Management above (port-guard hook ensures clean ports)
 2. For **non-UI test cases**: verify by running relevant test commands or manual checks against the running system
-3. For **UI test cases**: execute via Chrome DevTools MCP following the step tables
+3. For **UI test cases**: execute via Chrome DevTools MCP following the step tables — see `prompts/e2e-scenario-prompt.md` for MCP tool mapping
 4. Update the traceability matrix `结果` column to `PASS` or `FAIL` for each case
 5. **Stop services** per Service Management cleanup above
 
@@ -258,11 +259,20 @@ Always start from a known-clean state. Do not assume services are already runnin
 ### Failure Is Not Bypassable
 
 - **Any test case execution failure** blocks the feature from being marked `"passing"`
+- **ALL bugs found in ST testing MUST be fixed** — regardless of whether they are:
+  - Frontend bugs (UI rendering, interaction, state)
+  - Backend bugs (API errors, data persistence, logic)
+  - Integration bugs (frontend-backend communication)
 - Must report to user via `AskUserQuestion`:
   - Failed case ID(s), failed step number, actual vs expected
+  - Bug category (frontend/backend/integration)
   - Options: fix code and re-execute / modify test case via `/long-task:increment` / terminate
 - **No bypass allowed** for any reason:
   - "Simple feature" — still needs test cases
+  - "UI tests are complex" — **UI test cases CANNOT be skipped; use Chrome DevTools MCP**
+  - "Browser testing is too complex" — **UI test cases MUST use Chrome DevTools MCP for verification**
+  - "This is a frontend bug, not my code" — **ALL bugs must be fixed**
+  - "This is a backend bug, let someone else fix it" — **ALL bugs must be fixed**
   - "Environment temporarily unavailable" — BLOCKED, not skipped
   - "Test case might be wrong" — use `/long-task:increment` to modify, don't skip
 - All failures MUST be recorded in `task-progress.md`
@@ -276,6 +286,8 @@ Always start from a known-clean state. Do not assume services are already runnin
 - **Traceability mandatory**: Every test case traces to a requirement; every verification_step traces to a test case
 - **UI consolidation**: For UI features, this skill consolidates functional, UCD compliance, and accessibility testing into unified test cases
 - **Template flexibility**: Users can override the default ISO/IEC/IEEE 29119 template with custom templates and style examples
+- **UI tests are mandatory**: For features with `"ui": true`, UI category test cases are NON-SKIPPABLE — they MUST use Chrome DevTools MCP for browser-based verification. There is no alternative or workaround.
+- **ALL bugs must be fixed**: Any bug discovered during ST testing — whether frontend, backend, or integration — MUST be fixed before the feature can be marked as passing. There is no "not my code" exemption.
 
 ## Integration
 

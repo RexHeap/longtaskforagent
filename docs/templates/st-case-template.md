@@ -127,34 +127,70 @@ Examples:
 - `ST-UI-005-002` — Second UI test case for feature #5
 - `ST-SEC-012-001` — First security test case for feature #12
 
-## UI Test Case Requirements
+## UI Test Case Requirements (MANDATORY — Cannot Be Skipped)
 
-For `"ui": true` features, UI category test cases MUST include:
+For `"ui": true` features, UI category test cases **MUST** be generated and **CANNOT be skipped**. These test cases verify browser-based UI behavior via Chrome DevTools MCP.
+
+### Chrome DevTools MCP Requirement
+
+**UI test cases MUST use Chrome DevTools MCP tools** for verification. The test steps should be written so they can be directly translated to MCP tool calls:
+
+| MCP Tool | Usage in Test Steps |
+|----------|---------------------|
+| `navigate_page(url)` | Navigation to target URL |
+| `wait_for(text)` | Wait for page load completion |
+| `take_snapshot()` | Capture page state for verification |
+| `click(uid)` | Click interactive elements |
+| `fill(uid, value)` | Input text or select options |
+| `press_key(key)` | Keyboard interactions |
+| `evaluate_script(error_detector)` | Layer 1: JavaScript error detection |
+| `list_console_messages(["error"])` | Layer 3: Console error verification |
+| `take_screenshot()` | Visual verification capture |
+
+### Required Elements for UI Test Cases
 
 1. **Navigation path**: The URL or route to navigate to (from `ui_entry` or specific route)
-2. **EXPECT clause**: Elements, text, or states that MUST be present after each step
-3. **REJECT clause**: Conditions that MUST NOT be present (forces error-seeking)
-4. **Console error gate**: Post-step check — `list_console_messages(types=["error"])` must return 0
-5. **Accessibility checkpoint**: At least one WCAG check per UI test case (keyboard, contrast, ARIA)
-6. **UCD token reference**: Which style tokens (colors, typography, spacing) apply to verified elements
+2. **Three-Layer Detection** (all three layers are mandatory):
+   - **Layer 1**: `evaluate_script(error_detector)` — automated JavaScript error detection after page load and after each interaction
+   - **Layer 2**: EXPECT/REJECT clauses in `take_snapshot()` — explicit element/state verification
+   - **Layer 3**: `list_console_messages(["error"])` — console error gate at end of test case
+3. **Console error gate**: Post-step check — `list_console_messages(types=["error"])` must return 0
+4. **Accessibility checkpoint**: At least one WCAG check per UI test case (keyboard, contrast, ARIA)
+5. **UCD token reference**: Which style tokens (colors, typography, spacing) apply to verified elements
+6. **Minimum 5 steps**: Every UI test case MUST have at least 5 test steps
 
-Example UI test step:
+### Example UI Test Step (with MCP mapping):
 
 ```markdown
 | Step | 操作 | 预期结果 |
 | ---- | ---- | -------- |
-| 1 | 导航至 /login | EXPECT: 显示邮箱输入框(type=email)、密码输入框(type=password)、登录按钮 |
-| 2 | — | REJECT: 任何无 label 的输入框、禁用的提交按钮（无校验消息时）、'TODO' 占位文字 |
-| 3 | 输入有效邮箱和密码 | EXPECT: 输入框显示输入内容，登录按钮保持可用 |
-| 4 | 点击登录按钮 | EXPECT: 跳转至 /dashboard，控制台无 error |
+| 1 | navigate_page(url='/login') | 页面开始加载 |
+| 2 | wait_for(['Sign In']) → evaluate_script(error_detector) | 页面加载完成，Layer 1: count = 0 |
+| 3 | take_snapshot() | EXPECT: 邮箱输入框(type=email)、密码输入框(type=password)、登录按钮; REJECT: 任何无 label 的输入框 |
+| 4 | fill(uid, 'test@example.com') → fill(uid, 'password123') → click(uid) | EXPECT: 输入框显示内容，登录按钮可用 |
+| 5 | wait_for(['/dashboard']) → evaluate_script(error_detector) → list_console_messages(["error"]) | 跳转至 dashboard，Layer 1: count = 0，Layer 3: 控制台无 error |
 ```
+
+> **IMPORTANT**: UI test cases CANNOT be skipped with "browser testing is too complex" or similar excuses. Chrome DevTools MCP provides the browser automation capability — use it. If Chrome DevTools MCP is not available, the feature is BLOCKED until it is resolved, not skipped.
 
 ## Execution Rules
 
 1. **Environment prerequisite**: Services must be running. If services are not running, runtime test steps are BLOCKED.
 2. **Failure is a Hard Gate**: Any test case failure (step result mismatch, verification point unmet, post-check failure) blocks the feature from being marked `"passing"`. Report to user via `AskUserQuestion`.
-3. **No bypass allowed**: Cannot skip ST execution for any reason ("simple feature", "env temporarily unavailable", "case might be wrong"). All failures must be recorded in `task-progress.md`.
-4. **Environment cleanup**: Services are stopped after testing completes.
+3. **ALL bugs must be fixed**: Any bug discovered during ST testing — whether frontend, backend, or integration — MUST be fixed before the feature can be marked as passing. There is no "not my code" exemption:
+   - Frontend bug (UI rendering, interaction, state) → fix it
+   - Backend bug (API errors, data persistence, logic) → fix it
+   - Integration bug (frontend-backend communication) → fix it
+4. **No bypass allowed**: Cannot skip ST execution for any reason:
+   - "Simple feature" — still needs test cases
+   - **"UI tests are too complex" — UI test cases MUST use Chrome DevTools MCP, cannot be skipped**
+   - "Browser testing is too complex" — UI test cases CANNOT be skipped
+   - "This is a frontend bug" — **ALL bugs must be fixed**
+   - "This is a backend bug" — **ALL bugs must be fixed**
+   - "Env temporarily unavailable" — BLOCKED, not skipped
+   - "Case might be wrong" — use `/long-task:increment` to modify, don't skip
+   All failures must be recorded in `task-progress.md`.
+5. **Environment cleanup**: Services are stopped after testing completes.
 
 ## Derivation Rules
 
@@ -164,7 +200,8 @@ When generating test cases from a feature's `verification_steps`:
 2. Steps prefixed with `[devtools]` produce `ui` category test cases
 3. Every feature gets at least one `functional` and one `boundary` test case
 4. If the feature handles user input → add `security` test cases
-5. If the feature has `"ui": true` → add `accessibility` test cases
-6. If the feature traces to an NFR-xxx with performance metrics → add `performance` test cases
-7. Test case steps must be concrete and executable (no vague "verify it works")
-8. Expected results must be specific and assertable (no "should look correct")
+5. If the feature has `"ui": true` → add **both** `ui` and `accessibility` test cases
+6. **If the feature has `"ui": true`, UI category test cases are MANDATORY and CANNOT be skipped** — these test cases must use Chrome DevTools MCP for browser-based verification
+7. If the feature traces to an NFR-xxx with performance metrics → add `performance` test cases
+8. Test case steps must be concrete and executable (no vague "verify it works")
+9. Expected results must be specific and assertable (no "should look correct")
