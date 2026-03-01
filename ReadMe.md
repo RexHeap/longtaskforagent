@@ -5,8 +5,6 @@
 Most AI coding assistants lose context after one conversation. Long-Task Agent solves this by implementing a six-phase architecture with persistent state bridging — enabling Claude Code to build complex projects across unlimited sessions with the discipline of a professional engineering team.
 ![Hero Banner](images/1.png)
 
----
-
 ## Why Long-Task Agent?
 
 | Problem | How Long-Task Agent Solves It |
@@ -20,7 +18,6 @@ Most AI coding assistants lose context after one conversation. Long-Task Agent s
 | "Works on my machine" syndrome | System Testing phase (IEEE 829) with regression, integration, E2E, and NFR verification |
 
 ![Problem vs Solution](images\2.png)
----
 
 ## Core Philosophy
 
@@ -60,8 +57,6 @@ Every feature passes through a gauntlet of automated quality gates — no except
 
 Each worker session focuses on exactly one feature. This prevents context exhaustion, ensures clean commits, and keeps every feature independently verifiable.
 ![Quality Gates](images\3.png)
-
----
 
 ## Six-Phase Architecture
 
@@ -122,8 +117,6 @@ Orient → Bootstrap → Config Gate → DevTools Gate → Plan
 - Updates SRS, Design, UCD in place (git tracks history)
 - Appends new features with wave metadata for traceability
   ![Worker Cycle](images/5.png)
-
----
 
 ## 12-Skill Superpowers Architecture
 
@@ -227,8 +220,6 @@ python long-task-agent/scripts/init_project.py my-project --path ./my-project --
 
 
 ![Quick Start](images/6.png)
-
----
 
 ## Multi-Language Support
 
