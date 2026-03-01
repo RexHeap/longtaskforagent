@@ -3,11 +3,7 @@
 **A Claude Code skill plugin that turns single-session AI coding into a rigorous, multi-session software engineering workflow.**
 
 Most AI coding assistants lose context after one conversation. Long-Task Agent solves this by implementing a six-phase architecture with persistent state bridging — enabling Claude Code to build complex projects across unlimited sessions with the discipline of a professional engineering team.
-
-<!-- ILLUSTRATION: Hero Banner
-![Hero Banner](docs/images/hero-banner.png)
-> **Text-to-image prompt**: A wide panoramic digital illustration in a clean, modern tech style. A long horizontal pipeline flowing left to right, divided into six glowing phases labeled "Requirements → UCD → Design → Init → Worker → System Testing". Each phase is represented by a distinct geometric icon (clipboard, palette, blueprint, gear, hammer, checkmark shield). The pipeline sits above a translucent layer of JSON files, markdown documents, and git commits representing persistent state. Background is a subtle dark gradient with soft blue and purple accents. Minimalist, professional, suitable for a GitHub README hero image. 16:9 aspect ratio, 1920×540px.
--->
+![Hero Banner](images/1.png)
 
 ---
 
@@ -23,11 +19,7 @@ Most AI coding assistants lose context after one conversation. Long-Task Agent s
 | No way to add features to an existing project safely | Increment skill performs impact analysis, updates SRS/Design/UCD in place, tracks changes with waves |
 | "Works on my machine" syndrome | System Testing phase (IEEE 829) with regression, integration, E2E, and NFR verification |
 
-<!-- ILLUSTRATION: Problem vs Solution
-![Problem vs Solution](docs/images/problem-solution.png)
-> **Text-to-image prompt**: A split-screen comparison illustration. LEFT side (labeled "Without Long-Task Agent"): chaotic scene with tangled code lines, a broken chain of conversation bubbles fading away, red X marks on untested code, and a confused robot. RIGHT side (labeled "With Long-Task Agent"): orderly pipeline with connected phases, green checkmarks, test coverage badges, documents flowing between sessions via a golden bridge. Clean vector art style, tech-professional color palette (deep navy, electric blue, emerald green, coral red for problems). 16:9 aspect ratio, 1200×675px.
--->
-
+![Problem vs Solution](images\2.png)
 ---
 
 ## Core Philosophy
@@ -38,7 +30,7 @@ Every project starts with structured requirements elicitation — not coding. Th
 
 ### 2. Persistent State Bridges Sessions
 
-Seven persistent artifacts ensure zero knowledge loss between sessions:
+Ten+ persistent artifacts ensure zero knowledge loss between sessions:
 
 | Artifact | Purpose |
 |----------|---------|
@@ -47,6 +39,10 @@ Seven persistent artifacts ensure zero knowledge loss between sessions:
 | `docs/plans/*-srs.md` | Approved Software Requirements Specification |
 | `docs/plans/*-design.md` | Approved technical design document |
 | `docs/plans/*-ucd.md` | Approved UCD style guide (UI projects) |
+| `long-task-guide.md` | Worker session guide with env activation + tool commands |
+| `docs/test-cases/feature-*.md` | Per-feature ST test case documents (ISO/IEC/IEEE 29119) |
+| `docs/plans/*-st-plan.md` | System testing plan with RTM |
+| `docs/plans/*-st-report.md` | System testing report with Go/No-Go verdict |
 | `RELEASE_NOTES.md` | Living changelog in Keep a Changelog format |
 | Git history | Full change history with descriptive commits |
 
@@ -63,28 +59,14 @@ Every feature passes through a gauntlet of automated quality gates — no except
 ### 4. One Feature Per Cycle
 
 Each worker session focuses on exactly one feature. This prevents context exhaustion, ensures clean commits, and keeps every feature independently verifiable.
-
-<!-- ILLUSTRATION: Quality Gates Pipeline
-![Quality Gates](docs/images/quality-gates.png)
-> **Text-to-image prompt**: A vertical funnel/pipeline diagram showing a feature flowing through quality gates. From top to bottom: "TDD Red" (red test tube icon), "TDD Green" (green test tube), "Coverage Gate" (shield with "90%" badge), "TDD Refactor" (wrench icon), "Mutation Gate" (DNA helix with "80%" badge), "Compliance Review" (magnifying glass over document), and finally "Feature Passing ✓" (golden star). Each gate has a side arrow labeled "Fix & Retry" pointing back up. Clean infographic style, white background, color-coded stages. Portrait orientation, 800×1200px.
--->
+![Quality Gates](images\3.png)
 
 ---
 
 ## Six-Phase Architecture
 
-```
-Requirements (SRS) → UCD Style Guide → Design → Initializer → Worker Cycles → System Testing
-     Phase 0a          Phase 0b        Phase 0c    Phase 1       Phase 2         Phase 3
-                                                                    ↑
-                                                          Increment (Phase 1.5)
-                                                     (add features to live project)
-```
 
-<!-- ILLUSTRATION: Six-Phase Architecture Diagram
-![Architecture](docs/images/architecture.png)
-> **Text-to-image prompt**: A horizontal flowchart showing six connected phases of software development, drawn in an isometric 3D style. Phase 0a "Requirements" shows a person interviewing stakeholders with a clipboard. Phase 0b "UCD" shows a color palette and typography specimens. Phase 0c "Design" shows architectural blueprints and Mermaid diagrams. Phase 1 "Init" shows scaffolding and file generation. Phase 2 "Worker" shows a cyclical loop (TDD → Quality → Review → next feature) with a counter showing "Feature 3/15". Phase 3 "System Testing" shows a comprehensive test dashboard with green/red indicators. An arrow labeled "Increment" connects from below back to Phase 1, showing iterative development. Between each phase, glowing document icons (SRS, UCD, Design Doc, feature-list.json) flow as handoff artifacts. Soft gradient background, professional tech illustration. 16:9, 1600×900px.
--->
+![Architecture](images/4.png)
 
 ### Phase 0a: Requirements Elicitation
 
@@ -122,12 +104,14 @@ Each cycle follows a strict discipline:
 Orient → Bootstrap → Config Gate → DevTools Gate → Plan
   → TDD Red → TDD Green → Coverage Gate
     → TDD Refactor → Mutation Gate
-      → Compliance Review → Add Examples → Persist → Next Feature
+      → Feature ST (Black-Box) → Compliance Review
+        → Add Examples → Persist → Next Feature
 ```
 
 ### Phase 3: System Testing
 
-- IEEE 829-aligned test planning with Requirements Traceability Matrix
+- Per-feature ST (ISO/IEC/IEEE 29119) — black-box acceptance testing via Chrome DevTools MCP
+- IEEE 829-aligned system-level test planning with Requirements Traceability Matrix
 - Regression, integration, E2E, NFR verification, exploratory testing
 - Go/No-Go verdict — defects loop back to Worker for fixes
 
@@ -137,15 +121,11 @@ Orient → Bootstrap → Config Gate → DevTools Gate → Plan
 - Impact analysis against existing features
 - Updates SRS, Design, UCD in place (git tracks history)
 - Appends new features with wave metadata for traceability
-
-<!-- ILLUSTRATION: Worker Cycle Detail
-![Worker Cycle](docs/images/worker-cycle.png)
-> **Text-to-image prompt**: A circular workflow diagram showing the Worker cycle in detail. The cycle starts at "Orient" (compass icon) at the top, then flows clockwise through: "Bootstrap" (rocket), "Config Gate" (key), "Plan" (map), "TDD Red" (red circle with failing test), "TDD Green" (green circle with passing test), "Coverage Gate" (bar chart showing 92%), "Refactor" (recycling arrows), "Mutation Gate" (DNA strand with score), "Review" (checklist), "Examples" (book), "Persist" (floppy disk + git icon). In the center of the circle: "ONE FEATURE" in bold. An arrow from "Persist" leads to either "Next Feature" (loops back to Orient) or "System Testing" (exits the cycle). Clean, modern infographic with consistent icon style. Square format, 1000×1000px.
--->
+  ![Worker Cycle](images/5.png)
 
 ---
 
-## 11-Skill Superpowers Architecture
+## 12-Skill Superpowers Architecture
 
 Long-Task Agent uses an **on-demand skill loading** pattern — only the bootstrap router is loaded at session start; phase skills are loaded as needed, keeping context lean.
 
@@ -156,11 +136,14 @@ using-long-task (bootstrap router — always loaded)
    │                              (auto-skip if no UI)                        │
    │                                                                          ↓
    ├─→ long-task-increment (if increment-request.json exists)          long-task-work
-   │                                                                     │  │  │
-   │                                                              ┌──────┘  │  └──────┐
-   │                                                              ↓         ↓         ↓
-   │                                                         long-task  long-task  long-task
-   │                                                           -tdd     -quality   -review
+   │                                                                     │  │  │  │
+   │                                                              ┌───────┘  │  └──────┴─────┐
+   │                                                              ↓          ↓                ↓
+   │                                                         long-task  long-task       long-task
+   │                                                           -tdd     -quality       -feature-st
+   │                                                              │           │
+   │                                                              └───────────┴──────→ long-task
+   │                                                                           -review
    │
    └─→ long-task-st (when all features pass)
 ```
@@ -175,6 +158,7 @@ using-long-task (bootstrap router — always loaded)
 | `long-task-work` | Worker orchestrator (one feature per cycle) |
 | `long-task-tdd` | TDD Red→Green→Refactor discipline |
 | `long-task-quality` | Coverage gate + mutation gate |
+| `long-task-feature-st` | Per-feature black-box acceptance testing (Chrome DevTools MCP + ISO/IEC/IEEE 29119) |
 | `long-task-review` | Spec, design, and UCD compliance review |
 | `long-task-increment` | Post-launch feature additions with impact analysis |
 | `long-task-st` | IEEE 829 system testing with Go/No-Go verdict |
@@ -241,10 +225,8 @@ python long-task-agent/scripts/init_project.py my-project --path ./my-project --
   --line-cov 85 --branch-cov 75 --mutation-score 70
 ```
 
-<!-- ILLUSTRATION: Quick Start Flow
-![Quick Start](docs/images/quick-start.png)
-> **Text-to-image prompt**: A step-by-step tutorial illustration showing four numbered steps arranged vertically. Step 1 "Install": a terminal window with a git clone command and a download arrow. Step 2 "Configure": a gear icon connecting to a hooks.json file. Step 3 "Start Session": a Claude Code terminal with the router auto-detecting project state, showing a decision tree with glowing path. Step 4 "Build": multiple session windows cascading, each showing a feature being completed with a green checkmark. Flat design, numbered circles (1-4) on the left margin, light background. Portrait, 800×1400px.
--->
+
+![Quick Start](images/6.png)
 
 ---
 
@@ -280,7 +262,10 @@ The plugin includes a suite of validation scripts to prevent common failures:
 | `check_devtools.py` | Verifies Chrome DevTools MCP availability for UI features |
 | `check_st_readiness.py` | Confirms all features pass before system testing |
 | `validate_increment_request.py` | Validates increment request signal file |
+| `validate_st_cases.py` | Validates ST test case document (ISO/IEC/IEEE 29119) |
 | `get_tool_commands.py` | Maps tech stack to CLI commands |
+| `analyze-tokens.py` | Analyzes UCD design tokens from generated images |
+| `auto_loop.py` | Automated workflow runner for multi-feature sessions |
 
 ---
 
@@ -293,7 +278,7 @@ The plugin includes a suite of validation scripts to prevent common failures:
 
 | Capability | Typical AI Coding | Long-Task Agent |
 |------------|------------------|-----------------|
-| Multi-session persistence | Manual copy-paste | Automatic via 7 persistent artifacts |
+| Multi-session persistence | Manual copy-paste | Automatic via 10+ persistent artifacts |
 | Requirements process | "Just build it" | ISO 29148-aligned SRS with structured elicitation |
 | Design process | Ad-hoc | 2-3 approaches with trade-offs, section-by-section approval |
 | TDD discipline | Optional, often skipped | Mandatory Red→Green→Refactor for every feature |
@@ -310,7 +295,7 @@ The plugin includes a suite of validation scripts to prevent common failures:
 
 ```
 long-task-agent/
-├── skills/                          # 11 skills (on-demand loaded)
+├── skills/                          # 12 skills (on-demand loaded)
 │   ├── using-long-task/             # Bootstrap router
 │   ├── long-task-requirements/      # Phase 0a: Requirements & SRS
 │   ├── long-task-ucd/               # Phase 0b: UCD style guide
@@ -319,9 +304,10 @@ long-task-agent/
 │   ├── long-task-work/              # Phase 2: Worker orchestrator
 │   ├── long-task-tdd/               # TDD discipline
 │   ├── long-task-quality/           # Coverage + mutation gates
+│   ├── long-task-feature-st/        # Per-feature black-box acceptance testing
 │   ├── long-task-review/            # Compliance review
 │   ├── long-task-increment/         # Incremental development
-│   └── long-task-st/               # System testing
+│   └── long-task-st/                # System testing
 ├── scripts/                         # Validation & utility scripts
 ├── tests/                           # Test suite for all scripts
 ├── hooks/                           # SessionStart hook config
