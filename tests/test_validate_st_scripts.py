@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Unit tests for validate_start_cleanup.py
+Unit tests for validate_st_scripts.py
 """
 
 import os
@@ -8,7 +8,7 @@ import subprocess
 import sys
 import tempfile
 
-SCRIPT_PATH = os.path.join(os.path.dirname(__file__), "..", "scripts", "validate_start_cleanup.py")
+SCRIPT_PATH = os.path.join(os.path.dirname(__file__), "..", "scripts", "validate_st_scripts.py")
 
 
 def write_temp(content, suffix=".sh"):

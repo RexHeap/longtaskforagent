@@ -376,14 +376,14 @@ def test_stdout_mentions_llm_todo():
         shutil.rmtree(tmp)
 
 
-def test_copies_validate_start_cleanup_script():
-    """init_project.py should copy validate_start_cleanup.py to project scripts/."""
+def test_copies_validate_st_scripts_script():
+    """init_project.py should copy validate_st_scripts.py to project scripts/."""
     tmp = tempfile.mkdtemp()
     try:
         run_init("test-project", tmp)
-        script_path = os.path.join(tmp, "scripts", "validate_start_cleanup.py")
+        script_path = os.path.join(tmp, "scripts", "validate_st_scripts.py")
         assert os.path.exists(script_path), \
-            "validate_start_cleanup.py should be copied to project scripts/"
+            "validate_st_scripts.py should be copied to project scripts/"
     finally:
         shutil.rmtree(tmp)
 
