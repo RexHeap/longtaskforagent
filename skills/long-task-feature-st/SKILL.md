@@ -1,13 +1,13 @@
 ---
-name: long-task-st-case
-description: "Use after quality gates pass in a long-task project - generates and executes ISO/IEC/IEEE 29119 compliant acceptance test case documents per feature"
+name: long-task-feature-st
+description: "Use after quality gates pass in a long-task project — independently manages test environment lifecycle (start/cleanup), executes black-box acceptance testing per feature via Chrome DevTools MCP, generates ISO/IEC/IEEE 29119 compliant test case documents"
 ---
 
-# ST Test Case Generation — Per Feature
+# Feature-Level Black-Box Acceptance Testing
 
-Generate structured, standards-compliant acceptance test case documents for a feature **after** TDD implementation and quality gates pass. Test cases validate the completed implementation against requirements and design.
+Execute black-box acceptance testing for a completed feature **after** TDD implementation and quality gates pass. This skill independently manages its own environment lifecycle (start → test → cleanup) and generates ISO/IEC/IEEE 29119 compliant test case documents.
 
-**Announce at start:** "I'm using the long-task-st-case skill to generate test cases for this feature."
+**Announce at start:** "I'm using the long-task-feature-st skill to run black-box acceptance testing for this feature."
 
 ## Standard
 
@@ -22,6 +22,64 @@ Users may override the template and style via `feature-list.json` root fields:
 - After **every** feature's Quality Gates step (Worker Step 9), before Review (Worker Step 11)
 - No exceptions — even "simple" features need acceptance test case documentation
 - Invoked by `long-task-work` as a sub-skill (not directly by router)
+
+## Black-Box Testing Philosophy
+
+TDD (long-task-tdd) has already verified the implementation from the inside:
+unit tests exercise code paths; coverage and mutation gates verify completeness.
+
+This skill verifies from the **outside** — as a user or external system would:
+- Inputs go in through the real interface (HTTP endpoints, UI, CLI args)
+- Outputs observed through the real interface (HTTP responses, rendered UI, stdout)
+- Internal implementation is NOT consulted during test design or execution
+- Chrome DevTools MCP is the primary execution environment for UI features
+
+**Rule:** If a test case requires reading source code to determine the expected result, it is not a black-box test — rewrite it using only the SRS specification.
+
+## Environment Lifecycle
+
+This skill owns its own start/cleanup lifecycle — it does not rely on Worker Step 2 having already run. This enables isolated, repeatable execution.
+
+### Start (before first test case)
+
+1. **Start services**: run `start.sh` (bash) or `start.ps1` (PowerShell)
+   - If start script exits non-zero: report to user via `AskUserQuestion`; do NOT proceed
+   - Start scripts are idempotent — safe to call even if services already running
+2. **Verify health**: confirm app is responding (navigate_page + wait_for, or health endpoint check)
+3. **Browser pre-cleanup** (for `"ui": true` features):
+   - `list_pages()` → record baseline page count
+   - Close extra pages: `close_page(pageId)` for each page beyond the first
+   - `select_page(pageId)` → activate the single remaining page
+
+### Per-UI-Test-Case Isolation
+
+**Before each UI test case:**
+1. `list_pages()` → verify exactly 1 page is open
+2. Close any extra pages left from prior tests: `close_page(pageId)` for each beyond the first
+3. `select_page(pageId)` → ensure base page is active
+
+**After each UI test case:**
+1. `list_pages()` → find pages opened during the test
+2. `close_page(pageId)` for each page beyond the first (index > 0)
+3. `list_pages()` again → confirm exactly 1 page remains
+
+**Edge cases:**
+- `close_page()` failure: log and continue; do not abort test
+- Multi-tab tests: skip per-test cleanup; close extras only after the scenario ends
+- Never close ALL pages — MCP requires at least 1 page to remain open
+
+### Cleanup (after all test cases complete)
+
+1. **Browser cleanup** (MCP, for `"ui": true` features):
+   - `list_pages()` → close all extra pages via `close_page(pageId)`
+   - Log: "Browser cleanup complete. {n} pages closed. 1 page remaining."
+2. **Stop services**: run `cleanup.sh` (bash) or `cleanup.ps1` (PowerShell)
+   - If cleanup script exits non-zero: record in `task-progress.md`; instruct user to run manually
+   - Service cleanup order (handled by cleanup.sh): frontend → backend → databases/caches
+
+**Responsibility boundary:**
+- MCP tools (`list_pages` / `close_page`): manage browser page state — done by **this skill**
+- Shell scripts (`cleanup.sh`): manage service processes — delegated to the shell script
 
 ## Checklist
 
@@ -38,9 +96,8 @@ Read all input artifacts for the target feature:
 - **UCD sections** (only if `"ui": true`) — relevant component prompts and page prompts from `docs/plans/*-ucd.md`
 - **Root context** — `constraints[]`, `assumptions[]` from `feature-list.json` root
 - **Related NFRs** — check SRS for NFR-xxx requirements that trace to this feature
-- **Implementation code** — read the files created/modified during TDD (from git diff or plan document file list)
+- **Interface contracts** — API endpoints, CLI commands, UI entry points that form the observable surface of this feature
 - **Test results summary** — from TDD and Quality Gates (coverage %, mutation score)
-- **Existing unit tests** — read the test files written during TDD Red to understand what's already covered at unit level
 
 ### 2. Load Template
 
@@ -57,11 +114,11 @@ Read all input artifacts for the target feature:
 - Only example → infer structure from example, use example's style
 - Neither → use the built-in default template (ISO/IEC/IEEE 29119-3)
 
-### 2b. Load E2E Scenario Prompt (for `"ui": true` features)
+### 2b. Load Chrome DevTools Execution Protocol (for `"ui": true` features)
 
 If the target feature has `"ui": true`, read `prompts/e2e-scenario-prompt.md`. This provides mandatory rules for generating Chrome DevTools MCP-executable E2E test scenarios. Apply these rules during Step 3 for all UI and A11Y category test cases.
 
-**Why**: Without this prompt, UI test cases tend to be simple page-load checks. The prompt ensures each test step maps to a concrete MCP tool call (navigate_page, click, fill, take_snapshot, evaluate_script, list_console_messages) and follows the three-layer detection model.
+**Why**: Without this prompt, UI test cases tend to be simple page-load checks. The prompt ensures each test step maps to a concrete MCP tool call (navigate_page, click, fill, take_snapshot, evaluate_script, list_console_messages) and follows the three-layer detection model. Chrome DevTools MCP is the **primary** testing vehicle for UI features in this skill.
 
 ### 3. Derive Test Cases
 
@@ -103,7 +160,9 @@ Examples: `ST-FUNC-005-001`, `ST-UI-005-002`, `ST-SEC-012-001`
 - Preconditions MUST list real, verifiable states
 - Verification points MUST be observable and automatable where possible
 
-**Acceptance-level focus:** Since implementation code and unit tests now exist, test cases should focus on **acceptance-level verification** — confirming the implementation matches requirements from a user/system perspective. Avoid duplicating unit test assertions. Focus on behavioral scenarios, integration paths, and end-to-end workflows that unit tests cannot cover.
+**Acceptance-level focus:** Test cases confirm the implementation matches requirements from a user/system perspective — not duplicating unit test assertions. Focus on behavioral scenarios, integration paths, and end-to-end workflows.
+
+**Black-box constraint:** Expected results must be derivable solely from the SRS (verification_steps, Given/When/Then, NFR thresholds) and the observable interface. If the expected result cannot be determined without reading implementation code, raise it as a specification gap via `AskUserQuestion`.
 
 ### 4. UI Test Case Requirements (only if `"ui": true`)
 
@@ -139,8 +198,16 @@ For UI features, test cases consolidate previously separate concerns:
 - Each test step's "操作" column must be specific enough to map to a single Chrome DevTools MCP tool call
 - BAD: "检查登录页面" — which tool? what to check?
 - GOOD: "navigate_page(url='/login') → wait_for(['Sign In']) → take_snapshot() → 验证 EXPECT: 邮箱输入框, 密码输入框, 登录按钮"
-- The test step table becomes a **script** that TDD can mechanically translate into Chrome DevTools MCP calls during Red phase
+- The test step table becomes a **script** that can be mechanically translated into Chrome DevTools MCP calls
 - See `prompts/e2e-scenario-prompt.md` for the full MCP tool → test step mapping table
+
+**g) Browser Page Lifecycle (mandatory for all UI test case execution):**
+
+Multiple UI test cases run in one session — browser state accumulates. Apply the Environment Lifecycle protocol (see above) to prevent cross-test state pollution:
+- **Before each test case**: verify `list_pages()` returns exactly 1; close extras if not
+- **After each test case**: close any pages opened during the test; verify count returns to 1
+- **Preconditions section** of each UI test case document MUST state: "Exactly 1 browser page open"
+- If a test case opens new pages (e.g., new tab), include an explicit `close_page(pageId)` step as part of the test case — this cleanup IS part of the step table
 
 ### 5. Write Test Case Document
 
@@ -172,9 +239,11 @@ python scripts/validate_st_cases.py docs/test-cases/feature-{id}-{slug}.md --fea
 
 Since implementation code already exists (TDD and Quality Gates are complete), execute each test case to verify acceptance:
 
-1. For **non-UI test cases**: verify by running the relevant test commands or manual checks against the running system
-2. For **UI test cases**: execute via Chrome DevTools MCP tools following the step tables (navigate_page, click, fill, take_snapshot, evaluate_script, list_console_messages)
-3. Update the traceability matrix `结果` column to `PASS` or `FAIL` for each case
+1. **Apply Environment Lifecycle**: services started (start.sh), browser pre-cleaned (list_pages/close_page)
+2. For **non-UI test cases**: verify by running the relevant test commands or manual checks against the running system
+3. For **UI test cases**: execute via Chrome DevTools MCP following the step tables; apply per-test-case isolation (list_pages/close_page) before and after each test
+4. Update the traceability matrix `结果` column to `PASS` or `FAIL` for each case
+5. **Apply Cleanup**: browser cleanup (list_pages/close_page all extras) → cleanup.sh to stop services
 
 **If any test case FAILS:**
 - Report to user via `AskUserQuestion` with: failed case ID, step details, actual vs expected
@@ -193,39 +262,40 @@ def test_valid_order_creation():
 
 ## Execution Rules (Hard Gates)
 
-### Environment Prerequisite
+### Environment Gate
 
-ST test case execution depends on the runtime environment provided by `start.sh` / `start.ps1` (started in Worker Step 2 Bootstrap).
+This skill calls `start.sh` / `start.ps1` at its own start. Do not assume services are already running.
 
-- If Bootstrap failed or services are not running: runtime test steps (UI interaction, API calls, DB verification) are **BLOCKED**
-- BLOCKED status means: **cannot proceed to TDD for those test cases**
-- Must report to user via `AskUserQuestion` with details:
-  - Which services are down
-  - Which test cases are blocked
-  - Options: fix environment / start services manually / terminate this cycle
+- If start script exits non-zero: **BLOCKED** — report to user via `AskUserQuestion` with service details and options (fix/start manually/terminate)
+- After start: verify app is responding before running any test cases
 
 ### Failure Is Not Bypassable
 
-- **Any test case execution failure** (step result ≠ expected, verification point unmet, post-check failure) blocks the feature from being marked `"passing"`
+- **Any test case execution failure** blocks the feature from being marked `"passing"`
 - Must report to user via `AskUserQuestion`:
-  - Failed case ID(s)
-  - Failed step number and details (actual vs expected)
-  - Options: fix code and re-execute / modify test case via `/long-task:increment` / terminate this cycle
+  - Failed case ID(s), failed step number, actual vs expected
+  - Options: fix code and re-execute / modify test case via `/long-task:increment` / terminate
 - **No bypass allowed** for any reason:
   - "Simple feature" — still needs test cases
   - "Environment temporarily unavailable" — BLOCKED, not skipped
   - "Test case might be wrong" — use `/long-task:increment` to modify, don't skip
 - All failures MUST be recorded in `task-progress.md`
 
-### Environment Cleanup
-
-Worker handles cleanup in Step 14 (Continue) via `cleanup.sh` / `cleanup.ps1`. This skill does not manage cleanup directly.
-
 ## Critical Rules
 
+- **Self-managed lifecycle**: Always call `start.sh` before testing and `cleanup.sh` after. Do not rely on external state from Worker Step 2
+- **Browser page isolation**: Each UI test case must start with exactly 1 page open. Apply `list_pages`/`close_page` protocol before and after every UI test to prevent state pollution
 - **Requirements-driven**: Test cases derive from SRS/Design, validating implementation against requirements — not duplicating unit test assertions
+- **Black-box only**: Expected results must be derivable from SRS and the observable interface alone — no reading implementation code
 - **Complete after Quality Gates**: All test cases must be written, validated, and executed after TDD and quality gates pass
 - **Immutable after generation**: Test case documents are written and executed in this step and not modified during Review. Changes require `/long-task:increment`
 - **Traceability mandatory**: Every test case traces to a requirement; every verification_step traces to a test case
 - **UI consolidation**: For UI features, this skill consolidates functional, UCD compliance, and accessibility testing into unified test cases
 - **Template flexibility**: Users can override the default ISO/IEC/IEEE 29119 template with custom templates and style examples
+
+## Integration
+
+**Called by:** `long-task-work` (Step 10)
+**Requires:** Quality Gates passed (long-task-quality Step 9 complete)
+**Produces:** `docs/test-cases/feature-{id}-{slug}.md` with executed results
+**Chains to:** `long-task-review` (Worker Step 11)

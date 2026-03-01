@@ -144,9 +144,9 @@ Context to carry forward:
 - **Test wrapper scripts**: `test.sh` / `mutate.sh` availability — Quality skill prefers these over raw commands
 
 ### 10. ST Acceptance Test Cases
-**REQUIRED SUB-SKILL:** Invoke `long-task:long-task-st-case` and follow it exactly.
+**REQUIRED SUB-SKILL:** Invoke `long-task:long-task-feature-st` and follow it exactly.
 
-Generate and execute ISO/IEC/IEEE 29119 compliant acceptance test case documents for the feature **after** TDD and quality gates pass. Test cases validate the completed implementation against requirements and design.
+Execute black-box acceptance testing for the feature **after** TDD and quality gates pass. The skill independently manages its own environment lifecycle (start.sh → test → cleanup.sh) and generates ISO/IEC/IEEE 29119 compliant test case documents.
 
 Context to carry forward:
 - Current feature object from feature-list.json
@@ -159,9 +159,8 @@ Context to carry forward:
 
 Output: `docs/test-cases/feature-{id}-{slug}.md`
 
-**Hard Gate — Environment & Execution:**
-- ST test case execution depends on `start.sh` / `start.ps1` succeeding in Step 2 (Bootstrap)
-- If services are not running, runtime test steps (UI interaction, API calls) are **BLOCKED** — not skipped
+**Hard Gate:**
+- `long-task-feature-st` calls `start.sh` itself — it does not depend on Step 2 having run
 - Any execution failure (environment or test case) must be reported to user via `AskUserQuestion`
 - **No bypass allowed** — cannot skip ST for any reason
 
@@ -224,7 +223,7 @@ Create runnable examples in `examples/` demonstrating the completed feature.
 | Rationalization | Correct Action |
 |---|---|
 | "I'll mock that config later" | Run Config Gate. Real configs needed. |
-| "This feature is trivial, skip test cases" | Invoke long-task-st-case. Every feature. |
+| "This feature is trivial, skip test cases" | Invoke long-task-feature-st. Every feature. |
 | "This feature is trivial, skip TDD" | Invoke long-task-tdd. Every feature. |
 | "Tests pass, mark it done" | Invoke long-task-quality first. |
 | "Coverage looks close enough" | Thresholds are hard gates. Run the tool. |
@@ -257,7 +256,7 @@ Follow the systematic debugging process — **never guess-and-fix**:
 **Invokes (in strict order):**
 1. `long-task:long-task-tdd` (Steps 6-8) — TDD Red-Green-Refactor
 2. `long-task:long-task-quality` (Step 9) — Coverage + Mutation
-3. `long-task:long-task-st-case` (Step 10) — ISO/IEC/IEEE 29119 Acceptance Test Case Generation & Execution
+3. `long-task:long-task-feature-st` (Step 10) — Black-Box Feature Acceptance Testing (ISO/IEC/IEEE 29119, self-managed lifecycle)
 4. `long-task:long-task-review` (Step 11) — Spec & Design Compliance Review
 **Reads/Writes:** feature-list.json, task-progress.md (including `## Current State`), RELEASE_NOTES.md
 **Read on-demand (via Read tool, NOT Skill tool):** `references/plan-writing.md`, `references/systematic-debugging.md`

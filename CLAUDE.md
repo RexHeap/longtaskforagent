@@ -136,7 +136,7 @@ The skill system uses on-demand loading via the `Skill` tool. Only the bootstrap
 |-------|---------|
 | `long-task-tdd` | TDD Red-Green-Refactor |
 | `long-task-quality` | Coverage Gate + Mutation Gate |
-| `long-task-st-case` | ISO/IEC/IEEE 29119 Acceptance Test Case Generation & Execution (per-feature, after Quality Gates) |
+| `long-task-feature-st` | Black-Box Feature Acceptance Testing — self-managed environment lifecycle, Chrome DevTools MCP + ISO/IEC/IEEE 29119 (per-feature, after Quality Gates) |
 | `long-task-review` | Spec & Design Compliance Review |
 
 #### Skill Call Graph
@@ -152,7 +152,7 @@ using-long-task (router)
    ├─→ long-task-work (if active features remain failing)
    │      ├─→ long-task-tdd (Steps 6-8)
    │      ├─→ long-task-quality (Step 9)
-   │      ├─→ long-task-st-case (Step 10, acceptance verification)
+   │      ├─→ long-task-feature-st (Step 10, black-box acceptance testing)
    │      └─→ long-task-review (Step 11, includes UCD compliance for ui:true features)
    │
    └─→ long-task-st (if ALL active features passing)
@@ -207,7 +207,7 @@ using-long-task (router)
    - Orient → Bootstrap → Config Gate → DevTools Gate → Plan
    - **TDD** (`long-task-tdd`): Red → Green → Refactor (driven by verification_steps + SRS)
    - **Quality** (`long-task-quality`): Coverage Gate → Mutation Gate
-   - **ST Acceptance** (`long-task-st-case`): ISO/IEC/IEEE 29119 acceptance test case generation & execution per feature
+   - **ST Acceptance** (`long-task-feature-st`): Black-box acceptance testing — self-managed start/cleanup, Chrome DevTools MCP UI execution + ISO/IEC/IEEE 29119 per feature
    - **Review** (`long-task-review`): Spec & Design Compliance + Test Case Completeness (T1-T3)
    - Add Examples → Persist → Continue (chains to ST when all features pass)
 
@@ -372,10 +372,10 @@ long-task-agent/
 │   │       ├── systematic-debugging.md # Four-phase debugging process
 │   │       ├── subagent-development.md # Subagent-driven development mode
 │   │       └── worktree-isolation.md  # Git worktree isolation & branch finishing
-│   ├── long-task-st-case/             # ST test case generation (ISO/IEC/IEEE 29119)
+│   ├── long-task-feature-st/          # Per-feature black-box acceptance testing (self-managed lifecycle, Chrome DevTools MCP + ISO/IEC/IEEE 29119)
 │   │   ├── SKILL.md
 │   │   └── prompts/
-│   │       └── e2e-scenario-prompt.md # Chrome DevTools MCP E2E scenario derivation
+│   │       └── e2e-scenario-prompt.md # Chrome DevTools MCP E2E scenario derivation + page lifecycle protocol
 │   ├── long-task-st/                  # Phase 3: System Testing (IEEE 829)
 │   │   ├── SKILL.md
 │   │   └── references/

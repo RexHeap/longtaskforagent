@@ -179,4 +179,4 @@ If coverage or mutation tools are not yet configured for this project's tech sta
 **Called by:** long-task-work (Step 9)
 **Requires:** TDD cycle completed (long-task-tdd passed — tests exist and pass)
 **Produces:** Fresh verification evidence (test output, coverage %, mutation score)
-**Chains to:** long-task-st-case (via Work Step 10)
+**Chains to:** long-task-feature-st (via Work Step 10)
