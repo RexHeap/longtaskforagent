@@ -56,6 +56,7 @@ Every feature passes through a gauntlet of automated quality gates — no except
 ### 4. One Feature Per Cycle
 
 Each worker session focuses on exactly one feature. This prevents context exhaustion, ensures clean commits, and keeps every feature independently verifiable.
+
 ![Quality Gates](images\3.png)
 
 ## Six-Phase Architecture
