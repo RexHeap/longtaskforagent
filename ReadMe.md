@@ -17,7 +17,7 @@ Most AI coding assistants lose context after one conversation. Long-Task Agent s
 | No way to add features to an existing project safely | Increment skill performs impact analysis, updates SRS/Design/UCD in place, tracks changes with waves |
 | "Works on my machine" syndrome | System Testing phase (IEEE 829) with regression, integration, E2E, and NFR verification |
 
-![Problem vs Solution](images\2.png)
+![Problem vs Solution](images/2.png)
 
 ## Core Philosophy
 
@@ -57,7 +57,7 @@ Every feature passes through a gauntlet of automated quality gates — no except
 
 Each worker session focuses on exactly one feature. This prevents context exhaustion, ensures clean commits, and keeps every feature independently verifiable.
 
-![Quality Gates](images\3.png)
+![Quality Gates](images/3.png)
 
 ## Six-Phase Architecture
 
