@@ -82,20 +82,7 @@ python scripts/check_configs.py feature-list.json --feature <id> --dotenv .env
 5. Add `.env` to `.gitignore` if not already present (contains secrets).
 6. **Block until all configs pass.**
 
-### 4. DevTools Gate (only if `"ui": true`)
-```bash
-python scripts/check_devtools.py feature-list.json --feature <id>
-```
-`<id>` = same feature ID. If Chrome DevTools MCP not available → prompt user and **block until resolved**.
-
-**Backend API readiness check** (mandatory for UI features with backend dependencies):
-- For each feature ID in `dependencies[]`:
-  1. Read the dependency feature's `verification_steps` to identify API endpoints or service URLs
-  2. Verify the dependency's service is responding (quick HTTP health check via `evaluate_script` in browser or curl)
-- **Skip this sub-check** if: the feature has no backend dependencies, or dependencies are pure library/utility features (no API endpoints in their verification_steps)
-- **Why**: Chrome DevTools MCP E2E testing requires a live backend. Tool availability alone is insufficient.
-
-### 5. Plan
+### 4. Plan
 Write a step-by-step implementation plan for the selected feature.
 Save to `docs/plans/YYYY-MM-DD-<feature-name>.md`.
 See `references/plan-writing.md` for plan structure and task granularity.
@@ -113,7 +100,7 @@ See `references/plan-writing.md` for plan structure and task granularity.
 - The plan MUST reference the UCD component prompt for each UI component being implemented
 - Any visual deviation from UCD → explain why and get user approval
 
-### 6-8. TDD Cycle (Red → Green → Refactor)
+### 5-7. TDD Cycle (Red → Green → Refactor)
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-tdd` and follow it exactly.
 
 Context to carry forward:
@@ -124,7 +111,7 @@ Context to carry forward:
 - Full `{design_section}` from Document Lookup Protocol — architectural constraints and interface contracts
 - **Test commands**: from `python scripts/get_tool_commands.py feature-list.json` — use these directly (no wrapper scripts)
 
-### 9. Quality Gates
+### 8. Quality Gates
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-quality` and follow it exactly.
 
 Context to carry forward:
@@ -133,7 +120,7 @@ Context to carry forward:
 - `tech_stack` tool names for coverage/mutation commands
 - **Test commands**: from `python scripts/get_tool_commands.py feature-list.json` — use directly
 
-### 10. ST Acceptance Test Cases
+### 9. ST Acceptance Test Cases
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-feature-st` and follow it exactly.
 
 Execute black-box acceptance testing for the feature **after** TDD and quality gates pass. The skill generates ISO/IEC/IEEE 29119 compliant test case documents.
@@ -153,7 +140,7 @@ Output: `docs/test-cases/feature-{id}-{slug}.md`
 - Any execution failure (environment or test case) must be reported to user via `AskUserQuestion`
 - **No bypass allowed** — cannot skip ST for any reason
 
-### 11. Spec & Design Compliance Review
+### 10. Spec & Design Compliance Review
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-review` and follow it exactly.
 
 Context to carry forward:
@@ -166,13 +153,13 @@ Context to carry forward:
 - Git diff since before implementation began
 - Test results summary
 
-### 12. Add Examples
+### 11. Add Examples
 Create runnable examples in `examples/` demonstrating the completed feature.
 - Match example granularity to feature scope
 - Skip only for pure infrastructure features
 - Include in git commit
 
-### 13. Persist
+### 12. Persist
 - Git commit (include implementation, tests, examples, **test case document**)
 - Update `RELEASE_NOTES.md` (Keep a Changelog format)
 - Update `task-progress.md`:
@@ -186,7 +173,7 @@ Create runnable examples in `examples/` demonstrating the completed feature.
   ```
 - Git commit again (progress files)
 
-### 14. Continue
+### 13. Continue
 - If failing non-deprecated features remain and context allows → proceed to next feature (back to Step 1)
 - If **no failing non-deprecated features remain** → all active features are passing. **Invoke `long-task:long-task-st`** to begin system testing.
 - If context is exhausted → end session (ensure task-progress.md is updated)
