@@ -78,7 +78,7 @@ digraph phase_detection {
 ### Discipline Skills (invoked by long-task-work as sub-skills — do NOT invoke directly)
 | Skill | Purpose |
 |-------|---------|
-| `long-task:long-task-st-case` | ISO/IEC/IEEE 29119 Test Case Generation (per-feature, before TDD) |
+| `long-task:long-task-st-case` | ISO/IEC/IEEE 29119 Acceptance Test Case Generation & Execution (per-feature, after Quality Gates) |
 | `long-task:long-task-tdd` | TDD Red-Green-Refactor |
 | `long-task:long-task-quality` | Coverage Gate + Mutation Gate |
 | `long-task:long-task-review` | Spec & Design Compliance Review |
@@ -124,5 +124,5 @@ These thoughts mean STOP — you're rationalizing:
 ## Skill Priority
 
 1. **Phase skill first** — determines the entire session workflow
-2. **Discipline skills second** — invoked by Worker in strict order (st-case → tdd → quality → review)
+2. **Discipline skills second** — invoked by Worker in strict order (tdd → quality → st-case → review)
 3. **On error** — follow systematic-debugging approach in `skills/long-task-work/references/systematic-debugging.md` before any fix

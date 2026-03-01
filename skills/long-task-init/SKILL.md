@@ -119,11 +119,16 @@ You MUST create a TodoWrite task for each step and complete them in order:
      - For `"ui": true` features: every `[devtools]` step MUST describe a multi-step interaction chain (navigate → interact → verify → interact → verify)
      - For features with backend dependencies: at least one step MUST verify real data flow across the dependency boundary
      - **Minimum complexity**: each feature SHOULD have ≥ 1 verification_step with 3+ chained actions
-   - **Backend-before-frontend dependency rule**: Frontend features (`"ui": true`) MUST list their backend API dependency features in `dependencies[]`. This ensures the Worker's dependency satisfaction check naturally develops backend APIs before frontend pages that consume them.
+   - **Backend-frontend pairing rule**: Frontend features (`"ui": true`) MUST list their backend API dependency features in `dependencies[]`. Additionally, features MUST be ordered in the `features[]` array using **paired grouping**: after each backend feature, place its corresponding frontend feature(s) immediately next in the array. This ensures the Worker develops Backend A → Frontend A → Backend B → Frontend B, rather than all backends then all frontends.
    - Aim for 10-200+ features; each independently verifiable and completable in one session
    - **Priority ordering**: follow the design document's Task Decomposition table (section 11.2) — P0/P1/P2/P3 maps to high/high/medium/low
    - **Dependency chain**: follow the design document's Dependency Chain diagram (section 11.3) to populate each feature's `dependencies[]`
    - **Milestone mapping**: group features by the design document's milestones for logical ordering
+   - **Paired ordering within priorities**: Within each priority level, order features so that each backend feature is immediately followed by its frontend counterpart(s). Framework/infrastructure features (P0) come first without pairing. Example ordering:
+     - P0: framework/infrastructure features (no pairing needed)
+     - P1: [Backend Auth API, Frontend Auth Pages, Backend Orders API, Frontend Orders Pages, ...]
+     - P2: [Backend Reports API, Frontend Reports Dashboard, ...]
+     - The dependency mechanism ensures Frontend A cannot start until Backend A passes. The array ordering ensures Frontend A is the next candidate after Backend A.
 10. **Populate `required_configs`** — from the **SRS document** (IFR-xxx interface requirements) and design doc:
    - API keys, service URLs → type `env`
    - Config files, certificates → type `file`

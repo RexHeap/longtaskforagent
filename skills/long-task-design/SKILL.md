@@ -206,9 +206,10 @@ The development plan section bridges the design document to the Init phase. It M
    - P2: Extended — important but not launch-blocking
    - P3: Nice-to-have — defer if timeline is tight
 3. **Dependency chain** — Mermaid graph showing which features block others
-4. **Risk register** — technical and schedule risks with mitigation
+4. **Paired feature ordering** — When the project has both backend and frontend features, organize the task decomposition table so that each backend feature is paired with its corresponding frontend feature. This produces a natural development flow: Backend A → Frontend A → Backend B → Frontend B. The Init phase uses this pairing to order features in `feature-list.json`.
+5. **Risk register** — technical and schedule risks with mitigation
 
-The Init phase uses this plan to populate `feature-list.json` with correct priority ordering and dependency chains.
+The Init phase uses this plan to populate `feature-list.json` with correct priority ordering, paired grouping, and dependency chains.
 
 ## Integration
 

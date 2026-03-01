@@ -5,7 +5,7 @@ description: "Use when feature-list.json exists - orchestrate features through t
 
 # Worker — One Feature Per Cycle
 
-Execute multi-session software projects by implementing one feature per cycle. Each cycle follows a strict pipeline: Orient → Gate → Plan → ST Test Cases → TDD → Quality → Review → Persist.
+Execute multi-session software projects by implementing one feature per cycle. Each cycle follows a strict pipeline: Orient → Gate → Plan → TDD → Quality → ST Acceptance → Review → Persist.
 
 **Announce at start:** "I'm using the long-task-work skill. Let me orient myself."
 
@@ -22,7 +22,7 @@ You MUST create a TodoWrite task for each step and complete them in order:
 - Read `long-task-guide.md` — project-specific workflow guidance
 - Read design doc **Section 1** (`docs/plans/*-design.md`) — project overview and architecture snapshot for global context
 - Run `git log --oneline -10` — recent commit context
-- Pick next `"status": "failing"` feature by priority + dependency order — **skip features with `"deprecated": true`**
+- Pick next `"status": "failing"` feature by priority, then by array position in `features[]` (first eligible wins) — **skip features with `"deprecated": true`**
 - **Dependency satisfaction check**: After selecting a candidate feature, verify that ALL feature IDs in its `dependencies[]` have `"status": "passing"` in `feature-list.json`. If any dependency is still `"failing"`:
   - Log: "Feature #{id} ({title}) skipped — unsatisfied deps: #{dep1}, #{dep2}"
   - Pick the next eligible `"failing"` feature (by priority + dependency order) whose dependencies are all satisfied
@@ -30,7 +30,7 @@ You MUST create a TodoWrite task for each step and complete them in order:
   - Record skipped features and reason in `task-progress.md`
 - If target feature has `"ui": true` and UCD document exists (`docs/plans/*-ucd.md`), read the UCD style guide — reference style tokens, component prompts, and page prompts to ensure frontend implementation matches the approved visual style
 
-**Document Lookup Protocol (used by Steps 5, 6, and 11):**
+**Document Lookup Protocol (used by Steps 5, 10, and 11):**
 
 When you need the design section or SRS requirement for a feature, do NOT grep for the feature title. Instead:
 
@@ -38,7 +38,7 @@ When you need the design section or SRS requirement for a feature, do NOT grep f
    - Read the design document's **Section 4 heading area** (use Read tool with offset/limit to scan section 4 headers — look for lines matching `### 4.N Feature:`)
    - Identify which `### 4.N` subsection corresponds to the target feature by matching the feature title or FR-ID
    - Read the **entire subsection** from `### 4.N` through the line before `### 4.(N+1)` (or end of section 4) — this includes Overview, Class Diagram, Sequence Diagram, Flow Diagram, and Design Decisions
-   - Store this full text as `{design_section}` for use in Plan (Step 5) and Review (Step 10)
+   - Store this full text as `{design_section}` for use in Plan (Step 5), ST Acceptance (Step 10), and Review (Step 11)
 
 2. **SRS document** (`docs/plans/*-srs.md`):
    - Read the SRS **Section 4 (Functional Requirements)** heading area to find the `### FR-xxx` subsection matching the target feature
@@ -123,10 +123,30 @@ See `references/plan-writing.md` for plan structure and task granularity.
 - The plan MUST reference the UCD component prompt for each UI component being implemented
 - Any visual deviation from UCD → explain why and get user approval
 
-### 6. ST Test Cases
+### 6-8. TDD Cycle (Red → Green → Refactor)
+**REQUIRED SUB-SKILL:** Invoke `long-task:long-task-tdd` and follow it exactly.
+
+Context to carry forward:
+- Current feature object from feature-list.json
+- `quality_gates` and `tech_stack` from feature-list.json
+- Plan file path from Step 5
+- Full `{srs_section}` from Document Lookup Protocol — TDD Red uses this as primary specification input alongside `verification_steps`
+- Full `{design_section}` from Document Lookup Protocol — architectural constraints and interface contracts
+- **Test wrapper scripts**: `test.sh` / `mutate.sh` availability — TDD and Quality sub-skills prefer these over raw commands
+
+### 9. Quality Gates
+**REQUIRED SUB-SKILL:** Invoke `long-task:long-task-quality` and follow it exactly.
+
+Context to carry forward:
+- Feature ID and verification_steps
+- `quality_gates` thresholds from feature-list.json
+- `tech_stack` tool names for coverage/mutation commands
+- **Test wrapper scripts**: `test.sh` / `mutate.sh` availability — Quality skill prefers these over raw commands
+
+### 10. ST Acceptance Test Cases
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-st-case` and follow it exactly.
 
-Generate ISO/IEC/IEEE 29119 compliant test case documents for the feature **before** TDD begins. Test cases are derived from requirements and design — not from code.
+Generate and execute ISO/IEC/IEEE 29119 compliant acceptance test case documents for the feature **after** TDD and quality gates pass. Test cases validate the completed implementation against requirements and design.
 
 Context to carry forward:
 - Current feature object from feature-list.json
@@ -134,6 +154,8 @@ Context to carry forward:
 - Plan file path from Step 5
 - UCD sections (if `"ui": true`)
 - `quality_gates` and `tech_stack` from feature-list.json
+- **Implementation code** — files created/modified during TDD (from git diff or plan document file list)
+- **Test results summary** — from TDD and Quality Gates (coverage %, mutation score)
 
 Output: `docs/test-cases/feature-{id}-{slug}.md`
 
@@ -143,25 +165,6 @@ Output: `docs/test-cases/feature-{id}-{slug}.md`
 - Any execution failure (environment or test case) must be reported to user via `AskUserQuestion`
 - **No bypass allowed** — cannot skip ST for any reason
 
-### 7-9. TDD Cycle (Red → Green → Refactor)
-**REQUIRED SUB-SKILL:** Invoke `long-task:long-task-tdd` and follow it exactly.
-
-Context to carry forward:
-- Current feature object from feature-list.json
-- `quality_gates` and `tech_stack` from feature-list.json
-- Plan file path from Step 5
-- **ST test case document** from Step 6 (`docs/test-cases/feature-{id}-{slug}.md`) — TDD Red reads this as test specification input
-- **Test wrapper scripts**: `test.sh` / `mutate.sh` availability — TDD and Quality sub-skills prefer these over raw commands
-
-### 10. Quality Gates
-**REQUIRED SUB-SKILL:** Invoke `long-task:long-task-quality` and follow it exactly.
-
-Context to carry forward:
-- Feature ID and verification_steps
-- `quality_gates` thresholds from feature-list.json
-- `tech_stack` tool names for coverage/mutation commands
-- **Test wrapper scripts**: `test.sh` / `mutate.sh` availability — Quality skill prefers these over raw commands
-
 ### 11. Spec & Design Compliance Review
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-review` and follow it exactly.
 
@@ -170,7 +173,7 @@ Context to carry forward:
 - Full `{design_section}` text extracted via Document Lookup Protocol (the entire §4.N subsection, NOT a grep snippet)
 - Full `{srs_section}` text (the entire FR-xxx subsection from SRS)
 - Plan document (`docs/plans/YYYY-MM-DD-<feature-name>.md`) from Step 5
-- **ST test case document** (`docs/test-cases/feature-{id}-{slug}.md`) from Step 6
+- **ST test case document** (`docs/test-cases/feature-{id}-{slug}.md`) from Step 10
 - UCD style guide sections (`docs/plans/*-ucd.md`) — if feature has `"ui": true` and UCD exists
 - Git diff since before implementation began
 - Test results summary
@@ -252,9 +255,9 @@ Follow the systematic debugging process — **never guess-and-fix**:
 
 **Called by:** using-long-task (when feature-list.json exists) or long-task-init (Step 16)
 **Invokes (in strict order):**
-1. `long-task:long-task-st-case` (Step 6) — ISO/IEC/IEEE 29119 Test Case Generation
-2. `long-task:long-task-tdd` (Steps 7-9) — TDD Red-Green-Refactor
-3. `long-task:long-task-quality` (Step 10) — Coverage + Mutation
+1. `long-task:long-task-tdd` (Steps 6-8) — TDD Red-Green-Refactor
+2. `long-task:long-task-quality` (Step 9) — Coverage + Mutation
+3. `long-task:long-task-st-case` (Step 10) — ISO/IEC/IEEE 29119 Acceptance Test Case Generation & Execution
 4. `long-task:long-task-review` (Step 11) — Spec & Design Compliance Review
 **Reads/Writes:** feature-list.json, task-progress.md (including `## Current State`), RELEASE_NOTES.md
 **Read on-demand (via Read tool, NOT Skill tool):** `references/plan-writing.md`, `references/systematic-debugging.md`

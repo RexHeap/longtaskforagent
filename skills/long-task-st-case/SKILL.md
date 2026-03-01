@@ -1,11 +1,11 @@
 ---
 name: long-task-st-case
-description: "Use after plan step in a long-task project - generates ISO/IEC/IEEE 29119 compliant test case documents per feature before TDD"
+description: "Use after quality gates pass in a long-task project - generates and executes ISO/IEC/IEEE 29119 compliant acceptance test case documents per feature"
 ---
 
 # ST Test Case Generation — Per Feature
 
-Generate structured, standards-compliant test case documents for a feature **before** TDD implementation begins. Test cases are derived from requirements and design — not from code.
+Generate structured, standards-compliant acceptance test case documents for a feature **after** TDD implementation and quality gates pass. Test cases validate the completed implementation against requirements and design.
 
 **Announce at start:** "I'm using the long-task-st-case skill to generate test cases for this feature."
 
@@ -19,8 +19,8 @@ Users may override the template and style via `feature-list.json` root fields:
 
 ## When to Run
 
-- After **every** feature's Plan step (Worker Step 5), before TDD (Worker Step 7)
-- No exceptions — even "simple" features need test case documentation
+- After **every** feature's Quality Gates step (Worker Step 9), before Review (Worker Step 11)
+- No exceptions — even "simple" features need acceptance test case documentation
 - Invoked by `long-task-work` as a sub-skill (not directly by router)
 
 ## Checklist
@@ -38,6 +38,9 @@ Read all input artifacts for the target feature:
 - **UCD sections** (only if `"ui": true`) — relevant component prompts and page prompts from `docs/plans/*-ucd.md`
 - **Root context** — `constraints[]`, `assumptions[]` from `feature-list.json` root
 - **Related NFRs** — check SRS for NFR-xxx requirements that trace to this feature
+- **Implementation code** — read the files created/modified during TDD (from git diff or plan document file list)
+- **Test results summary** — from TDD and Quality Gates (coverage %, mutation score)
+- **Existing unit tests** — read the test files written during TDD Red to understand what's already covered at unit level
 
 ### 2. Load Template
 
@@ -100,6 +103,8 @@ Examples: `ST-FUNC-005-001`, `ST-UI-005-002`, `ST-SEC-012-001`
 - Preconditions MUST list real, verifiable states
 - Verification points MUST be observable and automatable where possible
 
+**Acceptance-level focus:** Since implementation code and unit tests now exist, test cases should focus on **acceptance-level verification** — confirming the implementation matches requirements from a user/system perspective. Avoid duplicating unit test assertions. Focus on behavioral scenarios, integration paths, and end-to-end workflows that unit tests cannot cover.
+
 ### 4. UI Test Case Requirements (only if `"ui": true`)
 
 For UI features, test cases consolidate previously separate concerns:
@@ -150,7 +155,7 @@ Output file: `docs/test-cases/feature-{id}-{slug}.md`
 3. **Test case blocks** — one per case, all required sections
 4. **Traceability matrix** — Case ID ↔ Requirement ↔ verification_step ↔ Automated test ↔ Result
 
-The traceability matrix `结果` column starts as `PENDING`. It will be updated to `PASS`/`FAIL` during TDD execution.
+The traceability matrix `结果` column starts as `PENDING`. Execute each test case in Step 7 below and update to `PASS`/`FAIL` during this step.
 
 ### 6. Validate
 
@@ -160,22 +165,31 @@ Run the validation script:
 python scripts/validate_st_cases.py docs/test-cases/feature-{id}-{slug}.md --feature-list feature-list.json --feature {id}
 ```
 
-- **Exit 0**: proceed to TDD
+- **Exit 0**: proceed to Execute Test Cases (Step 7)
 - **Exit 1**: fix errors and re-validate (do NOT proceed with errors)
 
-### 7. Handoff to TDD
+### 7. Execute Test Cases
 
-The test case document is now the specification for TDD Red:
+Since implementation code already exists (TDD and Quality Gates are complete), execute each test case to verify acceptance:
 
-- TDD Red reads `docs/test-cases/feature-{id}-{slug}.md`
-- Each automated test SHOULD reference its corresponding ST case ID via a comment:
-  ```python
-  # ST-FUNC-005-001
-  def test_valid_order_creation():
-      ...
-  ```
-- The test case's steps and expected results inform what assertions to write
-- This is **additional input** alongside `verification_steps` (test cases are a superset)
+1. For **non-UI test cases**: verify by running the relevant test commands or manual checks against the running system
+2. For **UI test cases**: execute via Chrome DevTools MCP tools following the step tables (navigate_page, click, fill, take_snapshot, evaluate_script, list_console_messages)
+3. Update the traceability matrix `结果` column to `PASS` or `FAIL` for each case
+
+**If any test case FAILS:**
+- Report to user via `AskUserQuestion` with: failed case ID, step details, actual vs expected
+- Options: fix code and re-execute / modify test case via `/long-task:increment` / terminate cycle
+- A failure here blocks the feature from proceeding to Review
+
+**If all test cases PASS:**
+- Proceed to Review (Worker Step 11)
+
+Each automated test SHOULD reference its corresponding ST case ID via a comment:
+```python
+# ST-FUNC-005-001
+def test_valid_order_creation():
+    ...
+```
 
 ## Execution Rules (Hard Gates)
 
@@ -209,9 +223,9 @@ Worker handles cleanup in Step 14 (Continue) via `cleanup.sh` / `cleanup.ps1`. T
 
 ## Critical Rules
 
-- **Requirements-driven**: Test cases derive from SRS/Design, never from code
-- **Complete before TDD**: All test cases must be written and validated before any implementation begins
-- **Immutable during Worker**: Test case documents are written in this step and not modified during TDD/Quality/Review. Changes require `/long-task:increment`
+- **Requirements-driven**: Test cases derive from SRS/Design, validating implementation against requirements — not duplicating unit test assertions
+- **Complete after Quality Gates**: All test cases must be written, validated, and executed after TDD and quality gates pass
+- **Immutable after generation**: Test case documents are written and executed in this step and not modified during Review. Changes require `/long-task:increment`
 - **Traceability mandatory**: Every test case traces to a requirement; every verification_step traces to a test case
 - **UI consolidation**: For UI features, this skill consolidates functional, UCD compliance, and accessibility testing into unified test cases
 - **Template flexibility**: Users can override the default ISO/IEC/IEEE 29119 template with custom templates and style examples

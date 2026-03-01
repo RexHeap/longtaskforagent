@@ -47,7 +47,7 @@ Task(
   UCD style guide (only for ui:true features, omit if not applicable):
   {ucd_content}
 
-  ST test case document (from Worker Step 6):
+  ST test case document (from Worker Step 10):
   {st_case_content}
 
   Git diff:
@@ -98,7 +98,7 @@ Task(
 | U3 | Spacing and layout (padding, margin, border radius, shadow) follow UCD spacing tokens |
 | U4 | Component structure and visual hierarchy match UCD component prompts for the implemented components |
 
-### Test Case Completeness Checklist (T1-T3) — requires ST test case document from Worker Step 6
+### Test Case Completeness Checklist (T1-T3) — requires ST test case document from Worker Step 10
 
 | # | Check |
 |---|-------|
@@ -154,7 +154,7 @@ After 3 failed rounds, escalate via `AskUserQuestion` with:
 - SRS requirement section (full FR-xxx subsection from `docs/plans/*-srs.md`)
 - Design document section (full §4.N subsection from `docs/plans/*-design.md` — NOT a grep snippet)
 - Plan document (`docs/plans/YYYY-MM-DD-<feature-name>.md`)
-- ST test case document (`docs/test-cases/feature-{id}-{slug}.md`) — from Worker Step 6
+- ST test case document (`docs/test-cases/feature-{id}-{slug}.md`) — from Worker Step 10
 - UCD style guide (`docs/plans/*-ucd.md`) — only for `"ui": true` features
 - Git diff, test results
 **Produces:** Review verdict (PASS/FAIL with findings)

@@ -58,7 +58,7 @@ Determine which test categories apply based on project characteristics:
 | Exploratory | Always | Never |
 
 #### 2b. Requirements Traceability Matrix (RTM)
-Map EVERY requirement from SRS to ST test approach. Reference per-feature test case documents from Worker Step 6:
+Map EVERY requirement from SRS to ST test approach. Reference per-feature test case documents from Worker Step 10:
 
 ```markdown
 | Req ID | Requirement | Feature ST Status | System ST Category | Test Approach | Priority |

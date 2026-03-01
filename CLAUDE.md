@@ -134,9 +134,9 @@ The skill system uses on-demand loading via the `Skill` tool. Only the bootstrap
 
 | Skill | Purpose |
 |-------|---------|
-| `long-task-st-case` | ISO/IEC/IEEE 29119 Test Case Generation (per-feature, before TDD) |
 | `long-task-tdd` | TDD Red-Green-Refactor |
 | `long-task-quality` | Coverage Gate + Mutation Gate |
+| `long-task-st-case` | ISO/IEC/IEEE 29119 Acceptance Test Case Generation & Execution (per-feature, after Quality Gates) |
 | `long-task-review` | Spec & Design Compliance Review |
 
 #### Skill Call Graph
@@ -150,9 +150,9 @@ using-long-task (router)
    │          └─→ long-task-work (new failing features detected)
    │
    ├─→ long-task-work (if active features remain failing)
-   │      ├─→ long-task-st-case (Step 6)
-   │      ├─→ long-task-tdd (Steps 7-9)
-   │      ├─→ long-task-quality (Step 10)
+   │      ├─→ long-task-tdd (Steps 6-8)
+   │      ├─→ long-task-quality (Step 9)
+   │      ├─→ long-task-st-case (Step 10, acceptance verification)
    │      └─→ long-task-review (Step 11, includes UCD compliance for ui:true features)
    │
    └─→ long-task-st (if ALL active features passing)
@@ -205,9 +205,9 @@ using-long-task (router)
 
 2. **Worker Session** (`long-task-work` orchestrator):
    - Orient → Bootstrap → Config Gate → DevTools Gate → Plan
-   - **ST Test Cases** (`long-task-st-case`): ISO/IEC/IEEE 29119 test case generation per feature
-   - **TDD** (`long-task-tdd`): Red → Green → Refactor (reads ST test cases as input)
+   - **TDD** (`long-task-tdd`): Red → Green → Refactor (driven by verification_steps + SRS)
    - **Quality** (`long-task-quality`): Coverage Gate → Mutation Gate
+   - **ST Acceptance** (`long-task-st-case`): ISO/IEC/IEEE 29119 acceptance test case generation & execution per feature
    - **Review** (`long-task-review`): Spec & Design Compliance + Test Case Completeness (T1-T3)
    - Add Examples → Persist → Continue (chains to ST when all features pass)
 
@@ -236,7 +236,7 @@ using-long-task (router)
 - **System testing before release**: When all features pass, run ST phase (regression, integration, E2E, NFR, exploratory); no release without Go verdict
 - **Incremental changes via increment skill only**: Never manually edit feature-list.json to add/modify/deprecate features; use `/long-task:increment` for audited, tracked changes
 - **verification_steps immutable in Worker**: Only the increment skill can update verification_steps; Worker must use `/long-task:increment` for requirement changes
-- **ST test cases before TDD**: Generate ISO/IEC/IEEE 29119 test cases per feature before TDD Red; test cases are requirements-driven, immutable during Worker
+- **ST acceptance test cases after Quality Gates**: Generate and execute ISO/IEC/IEEE 29119 acceptance test cases per feature after TDD and Quality Gates; test cases validate implementation against requirements
 - **Deprecated features excluded**: Worker skips deprecated features; ST readiness ignores them; routing counts only active features
 
 ### Generated Persistent Artifacts
