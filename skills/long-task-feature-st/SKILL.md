@@ -36,28 +36,37 @@ This skill verifies from the **outside** — as a user or external system would:
 
 **Rule:** If a test case requires reading source code to determine the expected result, it is not a black-box test — rewrite it using only the SRS specification.
 
-## Environment Lifecycle
+## Service Management
 
-This skill owns its own start/cleanup lifecycle — it does not rely on Worker Step 2 having already run. This enables isolated, repeatable execution.
+Manage services directly — no wrapper scripts. The `.claude/hooks/pre_bash_port_guard.py` hook automatically kills conflicting processes before any server-start command.
 
 ### Start (before first test case)
 
-1. **Check service status**: Are backend/frontend already running?
-   - Verify via health endpoint or port check
-2. **If not running**: Run `st-start.sh` (bash) or `st-start.ps1` (PowerShell)
-   - If start script exits non-zero: report to user via `AskUserQuestion`; do NOT proceed
-   - Start scripts are idempotent — safe to call even if services already running
-3. **Verify health**: confirm app is responding (navigate_page + wait_for, or health endpoint check)
-4. **Record PIDs**: Parse the stdout table from st-start.sh and record service PIDs in `task-progress.md`
+1. **Check if services are running**: Verify the health endpoint (HTTP GET or port check)
+2. **If not running**: Start services directly using commands from `long-task-guide.md`:
+   - The port-guard hook fires automatically and clears any conflicting ports first
+   - Example: `uvicorn main:app --port 8000 &` (Python) or `npm run dev &` (Node)
+   - Wait for health endpoint to respond (use `wait_for` MCP tool for UI, or `curl` for API)
+3. **If start fails**: Diagnose root cause (check logs, verify environment activation, check `.env`)
+   - If unresolvable: report to user via `AskUserQuestion`; do NOT proceed
+4. **Record service info**: Note ports and process info in `task-progress.md`
 
 ### Cleanup (after all test cases complete) — MANDATORY
 
-1. **Stop services**: Run `st-clear.sh` (bash) or `st-clear.ps1` (PowerShell)
-   - Handles service teardown and Chrome browser kill
-   - If cleanup script exits non-zero: record in `task-progress.md`; instruct user to run manually
-2. **Record cleanup result**: Parse the stdout table from st-clear.sh and record cleanup status in `task-progress.md`
+1. **Stop services**: Kill the processes started above (by PID recorded in task-progress.md, or by port)
+   - By PID: `kill <pid>` (Unix) or `taskkill /F /PID <pid>` (Windows)
+   - By port: use `python scripts/port_guard_hook_template.py` locally, or find PID via `netstat -ano | grep <port>` (Windows) / `lsof -i :<port>` (Unix)
+2. **Verify cleanup**: confirm ports are released (health endpoint no longer responds)
+3. **Record cleanup result**: Note cleanup status in `task-progress.md`
 
-**Why mandatory**: Leaving services running can cause port conflicts in subsequent ST sessions or other development work.
+**Why mandatory**: Leaving services running causes port conflicts in subsequent ST cycles.
+
+### Fix-and-Retest Protocol
+
+When a test case fails and code is fixed:
+1. Kill the currently running service (by PID or port)
+2. Start fresh (port-guard hook clears any stale processes automatically)
+3. Re-execute the failed test cases from the beginning of the affected scenario
 
 ## Checklist
 
@@ -209,11 +218,11 @@ python scripts/validate_st_cases.py docs/test-cases/feature-{id}-{slug}.md --fea
 
 Since implementation code already exists (TDD and Quality Gates are complete), execute each test case to verify acceptance:
 
-1. **Apply Environment Lifecycle**: services started (st-start.sh)
-2. For **non-UI test cases**: verify by running the relevant test commands or manual checks against the running system
+1. **Start services** per Service Management above (port-guard hook ensures clean ports)
+2. For **non-UI test cases**: verify by running relevant test commands or manual checks against the running system
 3. For **UI test cases**: execute via Chrome DevTools MCP following the step tables
 4. Update the traceability matrix `结果` column to `PASS` or `FAIL` for each case
-5. **Apply Cleanup**: run st-clear.sh — stops services and kills Chrome browser
+5. **Stop services** per Service Management cleanup above
 
 **If any test case FAILS:**
 - Report to user via `AskUserQuestion` with: failed case ID, step details, actual vs expected
@@ -234,9 +243,10 @@ def test_valid_order_creation():
 
 ### Environment Gate
 
-This skill calls `st-start.sh` / `st-start.ps1` at its own start. Do not assume services are already running.
+Always start from a known-clean state. Do not assume services are already running.
 
-- If start script exits non-zero: **BLOCKED** — report to user via `AskUserQuestion` with service details and options (fix/start manually/terminate)
+- Start services per Service Management above; verify health endpoint before running any test cases
+- If service fails to start after diagnosis: **BLOCKED** — report to user via `AskUserQuestion` with service details and options (fix/start manually/terminate)
 - After start: verify app is responding before running any test cases
 
 ### Failure Is Not Bypassable

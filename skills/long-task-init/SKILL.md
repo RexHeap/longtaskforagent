@@ -33,7 +33,7 @@ You MUST create a TodoWrite task for each step and complete them in order:
    - `<language>` — one of `python|java|typescript|c|cpp` from the design doc tech stack
    - Use `--line-cov`, `--branch-cov`, `--mutation-score` to override thresholds (defaults: 90/80/80)
    - Creates: `feature-list.json`, `CLAUDE.md` (appended), `task-progress.md`, `RELEASE_NOTES.md`, `examples/`, `docs/plans/`
-   - Auto-copies helper scripts (`validate_features.py`, `check_configs.py`, `check_devtools.py`, `validate_guide.py`, `get_tool_commands.py`) into project `scripts/`
+   - Auto-copies helper scripts (`validate_features.py`, `check_configs.py`, `check_devtools.py`, `validate_guide.py`, `get_tool_commands.py`, `validate_st_cases.py`) into project `scripts/`
 3. **Verify `tech_stack` and `quality_gates`** in `feature-list.json`:
    - Confirm `language`, `test_framework`, `coverage_tool`, `mutation_tool` match the design doc
    - Adjust `quality_gates` thresholds if needed (defaults: line 90%, branch 80%, mutation 80%)
@@ -50,6 +50,12 @@ You MUST create a TodoWrite task for each step and complete them in order:
    - Include ONLY the project's language-specific coverage/mutation commands (get from `python scripts/get_tool_commands.py feature-list.json`)
    - Include Chrome DevTools MCP testing section ONLY if the project has UI features (`"ui": true`)
    - **Must include all required sections**: Orient, Bootstrap, Config Gate, TDD Red, TDD Green, Coverage Gate, TDD Refactor, Mutation Gate, Verification Enforcement, Code Review, Examples, Persist, Critical Rules
+   - **Must include `Environment Commands` section** with:
+     - Environment activation command (e.g., `source .venv/bin/activate`, `conda activate myenv`, `nvm use 20`)
+     - Direct test execution command (e.g., `pytest --cov=src tests/`)
+     - Direct mutation testing command (e.g., `mutmut run`)
+     - Direct coverage report command
+     - These replace the now-removed test.sh/mutate.sh wrappers — Claude runs these directly
    - Validate:
      ```bash
      python scripts/validate_guide.py long-task-guide.md --feature-list feature-list.json
@@ -66,47 +72,47 @@ You MUST create a TodoWrite task for each step and complete them in order:
    - **Must be cross-platform** — `init.sh` for Unix/macOS, `init.ps1` for Windows
    - **Must include**: error handling, version checks, clear success/failure output
    - Actual dependency installation commands (not commented stubs)
-   - Service startup commands if needed
    - Must be immediately executable after `git clone`
-6. **Generate `st-start.sh` / `st-start.ps1` and `st-clear.sh` / `st-clear.ps1`** — Create runtime service lifecycle scripts:
-   - Read `references/start-cleanup-recipes.md` (in the long-task-init skill directory) for per-service templates and best practices
-   - **Detect all runtime services** from design doc (dev servers, databases, caches, queues, message brokers)
-   - **Detect build/compile requirements** from tech stack (TypeScript→tsc, Java→mvn/gradle, C/C++→cmake/make, Go→go build, Rust→cargo build)
-   - **Determine startup order**: build/compile → databases/caches → backend → frontend
-   - **Must include**: build step (if compiled language; explicit skip comment for interpreted), proxy detection (HTTP_PROXY/HTTPS_PROXY/NO_PROXY with localhost always added), health checks per service (port or HTTP polling), retry logic (up to 3 attempts with backoff), PID management (`.run/` directory), graceful failure handling (record to `task-progress.md`, print manual commands, exit non-zero)
-   - **Build failure = hard stop** — if compilation fails, no services should start; report the build error clearly
-   - **Must be idempotent** — re-running when services already running should detect and skip
-   - **Must be cross-platform** — `st-start.sh`/`st-clear.sh` for Unix/macOS, `st-start.ps1`/`st-clear.ps1` for Windows
-   - Add `.run/` to `.gitignore` (PID files and service logs — not committed)
-   - If project is CLI/library only (no runtime services), generate minimal scripts that print "No services to start" and exit 0
-   - If project has `"ui": true` features, start script MUST ensure the frontend dev server is running and health-checked — this is the prerequisite for Chrome DevTools MCP testing
-   - Validate:
+   - **Must include at the end**: psutil installation for ST port-guard hooks:
      ```bash
-     python scripts/validate_st_scripts.py st-start.sh st-clear.sh
+     # Install psutil for ST port-guard hooks (cross-platform process management)
+     if command -v pip &>/dev/null; then pip install psutil --quiet
+     elif command -v pip3 &>/dev/null; then pip3 install psutil --quiet
+     else echo "[WARN] pip not found — ST port-guard hook will use stdlib fallback"; fi
      ```
-7. **Generate `test.sh` / `test.ps1` and `mutate.sh` / `mutate.ps1`** — Create test runner and mutation testing wrapper scripts:
-   - Read `references/test-mutation-recipes.md` (in the long-task-init skill directory) for per-tech-stack templates and best practices
-   - **test.sh / test.ps1**: Wrapper for running unit tests and coverage
-     - Modes: `./test.sh` (full test suite), `./test.sh --coverage` (with coverage report)
-     - Must: load `.env`, activate environment (venv/conda/nvm/sdkman), check tool availability (`command -v` / `Get-Command`), parse output for structured results
-     - Exit codes: `0` = all tests pass (coverage above threshold if `--coverage`), `1` = test failures or coverage below threshold, `2` = tool not found / environment error
-   - **mutate.sh / mutate.ps1**: Wrapper for running mutation testing
-     - Modes: `./mutate.sh --incremental <files>` (changed files only), `./mutate.sh --full` (entire codebase)
-     - Must: load `.env`, activate environment, check mutation tool availability, parse output for mutation score
-     - Exit codes: `0` = mutation score above threshold, `1` = score below threshold, `2` = tool not found / environment error
-   - **Must be cross-platform** — `test.sh`/`mutate.sh` for Unix/macOS, `test.ps1`/`mutate.ps1` for Windows
-   - **Must be idempotent** — safe to re-run without side effects
-   - **Graceful failure**: if tool is missing or environment broken, print clear diagnostic and manual fix instructions; record to `task-progress.md`; never silently skip
-   - If project has no tests configured (CLI/library only), generate minimal scripts that print "No tests configured" and exit 0
-   - Validate:
-     ```bash
-     python scripts/validate_test_mutation.py test.sh mutate.sh
-     ```
-8. **Populate SRS fields in `feature-list.json`** — from the **SRS document**:
+   - For Python projects: also add `psutil` to `requirements.txt` or `pyproject.toml`
+6. **Generate `.claude/st-config.json`** — Declare service ports for the plugin-level port-guard hook:
+
+   **Why**: The long-task-agent plugin registers a PreToolUse/Bash hook (`hooks/port_guard.py`) that fires automatically before every server-start command. It reads `.claude/st-config.json` to know which ports belong to this project.
+
+   Extract port information from:
+   - Design doc: service port declarations in API design or architecture sections
+   - `.env.example`: extract `*_PORT=` variables
+   - `package.json` scripts: extract `--port` arguments
+   - `application.yml` / `application.properties`: extract `server.port`
+
+   Generate `.claude/st-config.json`:
+   ```json
+   {
+     "ports": [<all discovered port numbers as integers>],
+     "port_range": null,
+     "process_patterns": [<project-specific process names, e.g., "uvicorn", "myapp">],
+     "health_check": {
+       "url": "http://localhost:<primary_port>/health",
+       "timeout": 30
+     },
+     "exclude_pids": []
+   }
+   ```
+   If no ports can be determined, use `"ports": []` — the hook falls back to runtime auto-discovery.
+
+   **Note**: No hook scripts or settings.json changes needed — the PreToolUse, SessionStart, and SessionEnd hooks are already registered at the plugin level via the long-task-agent `hooks/hooks.json`.
+
+7. **Populate SRS fields in `feature-list.json`** — from the **SRS document**:
    - `constraints[]` — copy CON-xxx items from SRS "Constraints" section; each a concise string
    - `assumptions[]` — copy ASM-xxx items from SRS "Assumptions & Dependencies" section; each a concise string
    - NFR-xxx rows → create `category: "non-functional"` features with measurable `verification_steps`; coverage/mutation gates do not apply to NFR features
-9. **Decompose requirements into features** — from the **SRS document** and **design document's Development Plan** (section 11), populate `feature-list.json` `features[]`:
+8. **Decompose requirements into features** — from the **SRS document** and **design document's Development Plan** (section 11), populate `feature-list.json` `features[]`:
    - Each FR-xxx → one or more features with `id`, `category`, `title`, `description`, `priority`, `status` (always `"failing"`), `verification_steps`, `dependencies`
    - `verification_steps` should trace to SRS acceptance criteria (Given/When/Then)
    - For UI features: set `"ui": true`, optionally `"ui_entry": "/path"`; include `[devtools]`-prefixed verification steps
@@ -129,29 +135,43 @@ You MUST create a TodoWrite task for each step and complete them in order:
      - P1: [Backend Auth API, Frontend Auth Pages, Backend Orders API, Frontend Orders Pages, ...]
      - P2: [Backend Reports API, Frontend Reports Dashboard, ...]
      - The dependency mechanism ensures Frontend A cannot start until Backend A passes. The array ordering ensures Frontend A is the next candidate after Backend A.
-10. **Populate `required_configs`** — from the **SRS document** (IFR-xxx interface requirements) and design doc:
+9. **Populate `required_configs`** — from the **SRS document** (IFR-xxx interface requirements) and design doc:
    - API keys, service URLs → type `env`
    - Config files, certificates → type `file`
    - Link each to features via `required_by`; provide `check_hint` with setup instructions
-11. **Generate `.env.example`** — from `required_configs`:
-   - For each `env`-type config, write a commented template line:
-     ```
-     # <name> — <description>
-     # Hint: <check_hint>
-     # Required by features: <required_by ids>
-     <KEY>=
-     ```
-   - Add `.env` to `.gitignore` (`.env.example` is safe to commit; `.env` contains secrets)
-   - This template helps users know which values to fill in; the Worker Config Gate will prompt for missing values and store them in `.env`
-12. **Validate**:
+10. **Generate `.env.example`** — from `required_configs`:
+    - For each `env`-type config, write a commented template line:
+      ```
+      # <name> — <description>
+      # Hint: <check_hint>
+      # Required by features: <required_by ids>
+      <KEY>=
+      ```
+    - Add `.env` to `.gitignore` (`.env.example` is safe to commit; `.env` contains secrets)
+    - This template helps users know which values to fill in; the Worker Config Gate will prompt for missing values and store them in `.env`
+11. **Validate**:
     ```bash
     python scripts/validate_features.py feature-list.json
     ```
-13. **Scaffold project skeleton** (dirs, configs, dependency manifests) — based on **design doc** architecture
-14. **Git init + initial commit**
-15. **Run init script**, verify environment works. Then run `st-start.sh`, verify all services respond to health checks. Then run `test.sh`, verify tests execute. Then run `mutate.sh --full`, verify mutation testing works. Then run `st-clear.sh`, verify ports are released and PID files cleaned
-16. **Update `task-progress.md`** — update `## Current State` with initial progress (0/N features passing), then append Session 0 entry (include SRS + design doc references)
-17. **Begin first Worker cycle** — **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-work`
+12. **Scaffold project skeleton** (dirs, configs, dependency manifests) — based on **design doc** architecture
+13. **Git init + initial commit**
+14. **Run init script and verify environment**:
+    - Run `init.sh` (or `init.ps1`), verify environment setup completes without errors
+    - Verify test execution works: activate env → run test command from `long-task-guide.md` → confirm tests execute (may all fail at this point — that's expected)
+    - Verify mutation testing command is available: activate env → run mutation tool version check
+    - If any check fails: diagnose root cause, fix the script or configuration, re-run
+    - Do NOT manually start services here — services are started by Claude directly during ST testing; the plugin-level port-guard hook fires automatically to ensure clean ports
+15. **Update `task-progress.md`** — update `## Current State` with initial progress (0/N features passing), then append Session 0 entry (include SRS + design doc references)
+16. **Begin first Worker cycle** — **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-work`
+
+## Port Config Maintenance (Worker cycles)
+
+When a Worker cycle introduces a **new backend service or changes a service port**, update `.claude/st-config.json`:
+- Add the new port to `ports[]`
+- Add the process name to `process_patterns[]` if project-specific
+- Include in the git commit for that feature
+
+The plugin-level port-guard hook reads this file at runtime — no hook scripts need to be regenerated.
 
 ## Feature List Schema
 
@@ -213,12 +233,9 @@ Each feature:
 | `task-progress.md` | Session-by-session progress log |
 | `RELEASE_NOTES.md` | Living release notes (Keep a Changelog format) |
 | `examples/` | Runnable examples directory |
-| `init.sh` / `init.ps1` | Environment bootstrap (LLM-generated) |
-| `st-start.sh` / `st-start.ps1` | Runtime service startup: build → DB → backend → frontend; proxy-aware, health-checked, self-healing (LLM-generated) |
-| `st-clear.sh` / `st-clear.ps1` | Reverse-order service teardown; PID cleanup; port release verification (LLM-generated) |
-| `test.sh` / `test.ps1` | Test runner wrapper: env activation, tool check, coverage mode, structured output (LLM-generated) |
-| `mutate.sh` / `mutate.ps1` | Mutation testing wrapper: env activation, tool check, incremental/full modes, structured output (LLM-generated) |
-| `long-task-guide.md` | Worker session guide (LLM-generated, validated) |
+| `init.sh` / `init.ps1` | Environment bootstrap (LLM-generated); includes psutil install for plugin port-guard hook |
+| `.claude/st-config.json` | Port declarations for plugin port-guard hook (LLM-generated, Worker-maintained) |
+| `long-task-guide.md` | Worker session guide with env activation + direct test commands (LLM-generated, validated) |
 | `.env.example` | Template for required env configs (safe to commit) |
 
 ## Integration

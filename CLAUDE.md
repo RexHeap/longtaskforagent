@@ -33,18 +33,6 @@ python long-task-agent/scripts/validate_guide.py long-task-guide.md
 python long-task-agent/scripts/validate_guide.py long-task-guide.md --feature-list feature-list.json
 ```
 
-### Validate start/cleanup scripts
-```bash
-python long-task-agent/scripts/validate_st_scripts.py st-start.sh st-clear.sh
-python long-task-agent/scripts/validate_st_scripts.py st-start.sh st-clear.sh --powershell st-start.ps1 st-clear.ps1
-```
-
-### Validate test/mutation scripts
-```bash
-python long-task-agent/scripts/validate_test_mutation.py test.sh mutate.sh
-python long-task-agent/scripts/validate_test_mutation.py test.sh mutate.sh --powershell test.ps1 mutate.ps1
-```
-
 ### Check required configurations
 ```bash
 python long-task-agent/scripts/check_configs.py feature-list.json
@@ -95,8 +83,6 @@ python -m pytest tests/test_check_st_readiness.py
 python -m pytest tests/test_get_tool_commands.py
 python -m pytest tests/test_validate_increment_request.py
 python -m pytest tests/test_validate_st_cases.py
-python -m pytest tests/test_validate_start_cleanup.py
-python -m pytest tests/test_validate_test_mutation.py
 ```
 
 > **Path note**: the `python long-task-agent/scripts/...` paths above are consumer-facing (run from the target project root after plugin install). When developing in this repo, replace `long-task-agent/` with `./` or omit it entirely.
@@ -252,12 +238,9 @@ using-long-task (router)
 | `task-progress.md` | Init | `## Current State` header (updated by Worker each session) + session log |
 | `RELEASE_NOTES.md` | Init | Living release notes (Keep a Changelog format) |
 | `examples/` | Worker | Runnable examples demonstrating completed features |
-| `init.sh` / `init.ps1` | Init | Environment bootstrap (LLM-generated) |
-| `start.sh` / `start.ps1` | Init | Runtime service startup: build → DB → backend → frontend; proxy-aware, health-checked, self-healing (LLM-generated) |
-| `cleanup.sh` / `cleanup.ps1` | Init | Reverse-order service teardown; PID cleanup; port release verification (LLM-generated) |
-| `test.sh` / `test.ps1` | Init | Test runner wrapper: env activation, tool check, coverage mode, structured output (LLM-generated) |
-| `mutate.sh` / `mutate.ps1` | Init | Mutation testing wrapper: env activation, tool check, incremental/full modes, structured output (LLM-generated) |
-| `long-task-guide.md` | Init | Worker session guide (LLM-generated, validated) |
+| `init.sh` / `init.ps1` | Init | Environment bootstrap (LLM-generated); includes psutil install for plugin port-guard hook |
+| `.claude/st-config.json` | Init | Declares known service ports for plugin port-guard hook (updated by Worker when new services added) |
+| `long-task-guide.md` | Init | Worker session guide: includes env activation commands + direct test/coverage/mutation commands (LLM-generated, validated) |
 | `.env.example` | Init | Template for required env configs (safe to commit; `.env` has secrets) |
 | `docs/plans/*-st-plan.md` | ST | System testing plan with Requirements Traceability Matrix |
 | `docs/plans/*-st-report.md` | ST | System testing report with Go/No-Go verdict |
@@ -362,9 +345,7 @@ long-task-agent/
 │   ├── long-task-init/                # Phase 1: Initialization (reads SRS + UCD + design)
 │   │   ├── SKILL.md
 │   │   └── references/
-│   │       ├── init-script-recipes.md # Environment bootstrap templates (conda, venv, nvm, etc.)
-│   │       ├── start-cleanup-recipes.md # Service startup/teardown templates (proxy, health checks, per-tech-stack)
-│   │       └── test-mutation-recipes.md # Test runner & mutation testing templates (per-tech-stack, self-repair)
+│   │       └── init-script-recipes.md # Environment bootstrap templates (conda, venv, nvm, etc.)
 │   ├── long-task-work/               # Phase 2: Worker orchestrator
 │   │   ├── SKILL.md
 │   │   └── references/
@@ -411,9 +392,11 @@ long-task-agent/
 │   ├── increment.md                   # /long-task:increment
 │   └── status.md                      # /long-task:status
 ├── hooks/
-│   ├── hooks.json                     # SessionStart hook config
-│   ├── session-start                  # Inject using-long-task + phase detection
-│   └── run-hook.cmd                   # Cross-platform polyglot wrapper
+│   ├── hooks.json                     # Plugin-level hook config (SessionStart + PreToolUse/Bash + SessionEnd)
+│   ├── session-start                  # Inject using-long-task + phase detection (bash)
+│   ├── run-hook.cmd                   # Cross-platform polyglot wrapper for bash hooks
+│   ├── port_guard.py                  # PreToolUse/Bash hook: auto-clears ports before server-start commands
+│   └── session_cleanup.py             # SessionStart/End hook: snapshot → differential cleanup
 ├── scripts/
 │   ├── init_project.py                # Project scaffolding
 │   ├── get_tool_commands.py           # Tech stack → CLI commands lookup
@@ -423,9 +406,7 @@ long-task-agent/
 │   ├── check_devtools.py              # Chrome DevTools MCP checking
 │   ├── check_st_readiness.py          # System testing readiness checking
 │   ├── validate_increment_request.py  # Increment request signal validation
-│   ├── validate_st_cases.py          # ST test case document validation
-│   ├── validate_start_cleanup.py     # Start/cleanup script structural validation
-│   └── validate_test_mutation.py     # Test/mutation script structural validation
+│   └── validate_st_cases.py          # ST test case document validation
 ├── tests/
 │   ├── test_validate_features.py
 │   ├── test_init_project.py
@@ -435,9 +416,7 @@ long-task-agent/
 │   ├── test_check_devtools.py
 │   ├── test_check_st_readiness.py
 │   ├── test_validate_increment_request.py
-│   ├── test_validate_st_cases.py
-│   ├── test_validate_start_cleanup.py
-│   └── test_validate_test_mutation.py
+│   └── test_validate_st_cases.py
 ```
 
 ## See Also
@@ -450,7 +429,6 @@ long-task-agent/
 - [skills/long-task-work/references/subagent-development.md](skills/long-task-work/references/subagent-development.md) - Subagent-driven development
 - [skills/long-task-work/references/worktree-isolation.md](skills/long-task-work/references/worktree-isolation.md) - Worktree isolation & branch finishing
 - [skills/long-task-tdd/references/ui-error-detection.md](skills/long-task-tdd/references/ui-error-detection.md) - UI error detection specification
-- [skills/long-task-init/references/start-cleanup-recipes.md](skills/long-task-init/references/start-cleanup-recipes.md) - Start/cleanup script recipes (proxy, health checks, per-tech-stack)
 - [skills/long-task-st/references/st-recipes.md](skills/long-task-st/references/st-recipes.md) - System testing recipes per language
 
 

@@ -56,14 +56,8 @@ When you need the design section or SRS requirement for a feature, do NOT grep f
 - **Development environment readiness**: Check if environment is set up
   - If `init.sh` / `init.ps1` exists and environment is not ready: run it once
   - Record decision in `task-progress.md` if script was executed
-- **Script validation**: If `test.sh` and `mutate.sh` exist, validate structural completeness:
-  ```bash
-  python scripts/validate_test_mutation.py test.sh mutate.sh
-  ```
-  If validation fails → warn user and attempt regeneration (re-read `references/test-mutation-recipes.md` and regenerate) or manual fix before proceeding.
-- Smoke-test previously passing features (quick verify — use `./test.sh` if available)
-
-**Note**: Do NOT run `st-start.sh` here — it's for ST testing runtime, not development environment. ST runtime services are started by `long-task-feature-st` or `long-task-st` skills when needed.
+- **Confirm test commands available**: Run `python scripts/get_tool_commands.py feature-list.json` and verify the test/coverage/mutation commands are correct for the tech stack; use these commands directly throughout the cycle (no wrapper scripts)
+- Smoke-test previously passing features (activate environment per `long-task-guide.md` → run test command directly)
 
 ### 3. Config Gate
 ```bash
@@ -129,7 +123,7 @@ Context to carry forward:
 - Plan file path from Step 5
 - Full `{srs_section}` from Document Lookup Protocol — TDD Red uses this as primary specification input alongside `verification_steps`
 - Full `{design_section}` from Document Lookup Protocol — architectural constraints and interface contracts
-- **Test wrapper scripts**: `test.sh` / `mutate.sh` availability — TDD and Quality sub-skills prefer these over raw commands
+- **Test commands**: from `python scripts/get_tool_commands.py feature-list.json` — use these directly (no wrapper scripts)
 
 ### 9. Quality Gates
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-quality` and follow it exactly.
@@ -138,7 +132,7 @@ Context to carry forward:
 - Feature ID and verification_steps
 - `quality_gates` thresholds from feature-list.json
 - `tech_stack` tool names for coverage/mutation commands
-- **Test wrapper scripts**: `test.sh` / `mutate.sh` availability — Quality skill prefers these over raw commands
+- **Test commands**: from `python scripts/get_tool_commands.py feature-list.json` — use directly
 
 ### 10. ST Acceptance Test Cases
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-feature-st` and follow it exactly.
@@ -199,7 +193,7 @@ Create runnable examples in `examples/` demonstrating the completed feature.
 - If **no failing non-deprecated features remain** → all active features are passing. **Invoke `long-task:long-task-st`** to begin system testing.
 - If context is exhausted → end session (ensure task-progress.md is updated)
 
-**Note**: Do NOT run `st-clear.sh` here — cleanup is only needed after ST testing completes. ST cleanup is managed by `long-task-feature-st` or `long-task-st` skills.
+**Note**: Stop any services you started directly during this cycle before ending the session. Services started during ST acceptance testing (Step 10) are stopped by `long-task-feature-st`.
 
 ## Critical Rules
 
@@ -230,6 +224,7 @@ Create runnable examples in `examples/` demonstrating the completed feature.
 | "Mutation score is probably OK" | Run mutation tests and read the report. |
 | "The UI looks correct to me" | Run automated detection + EXPECT/REJECT. |
 | "ST test case failed but the code is fine" | Report to user. No bypass. Fix code or use `/long-task:increment` to modify test case. |
+| "Port is busy, let me kill manually" | The port-guard hook handles this automatically. Just re-run the command. |
 | "Environment is down, skip ST cases" | BLOCKED, not skipped. Fix environment or ask user. |
 | "I need to change the verification_steps" | Use `/long-task:increment` — Worker cannot modify them. |
 | "This deprecated feature still needs work" | Skip it. Deprecated features are excluded. |

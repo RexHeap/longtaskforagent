@@ -103,9 +103,9 @@ Would the test **fail** for each? If NO for most → rewrite.
 
 - **UI Pre-condition (verify before first [devtools] step):**
   Before any Chrome DevTools MCP testing, verify the application is reachable:
-  1. Confirm `start.sh` ran successfully in Worker Step 2 (Bootstrap)
+  1. Start the dev server if not running (e.g., `npm run dev &` or `uvicorn main:app --port 8000 &`) — the port-guard hook ensures clean ports automatically
   2. Use `navigate_page` to the feature's `ui_entry` URL (or default localhost URL)
-  3. If connection refused or page error (ERR_CONNECTION_REFUSED, etc.) → the app is not running. DO NOT proceed with UI tests. Ask user to start services manually. Never skip UI verification.
+  3. If connection refused or page error (ERR_CONNECTION_REFUSED, etc.) → the app is not running. DO NOT proceed with UI tests. Diagnose and fix the startup issue. Never skip UI verification.
 - Every `[devtools]` step must use EXPECT/REJECT format:
   ```
   [devtools] <page-path> | EXPECT: <positive criteria> | REJECT: <negative criteria>
@@ -119,7 +119,7 @@ See `references/ui-error-detection.md` for the full detection script and integra
 
 Run the test suite. **All tests must FAIL.** If any test passes → it tests nothing useful, rewrite it.
 
-**Running tests**: Prefer `./test.sh` if available (handles env activation, tool checks, exit codes); fall back to raw command from `python scripts/get_tool_commands.py feature-list.json`. If `test.sh` exits with code 2 (tool/env error): diagnose root cause, attempt one fix, retry once, escalate to user if still failing. **Never skip.**
+**Running tests**: Activate environment per `long-task-guide.md` → run test command from `python scripts/get_tool_commands.py feature-list.json` directly. If tool is missing or environment not activated: diagnose root cause, run `init.sh` if needed, escalate to user if still failing. **Never skip.**
 
 ## Step 2: TDD Green — Minimal Implementation
 
@@ -139,7 +139,7 @@ For subagent mode, dispatch with `skills/long-task-tdd/prompts/implementer-promp
 
 Clean up while keeping tests green:
 - Extract duplication, improve naming, simplify
-- Run tests after EVERY change (use `./test.sh` if available)
+- Run tests after EVERY change (activate environment → run test command directly)
 - No new functionality in this step
 
 ## Testing Anti-Patterns (Top 5)

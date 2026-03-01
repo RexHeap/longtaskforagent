@@ -28,10 +28,11 @@ python scripts/check_st_readiness.py feature-list.json
 - All features have `"status": "passing"` — if any failing, invoke `long-task:long-task-work` instead
 - SRS document exists (`docs/plans/*-srs.md`); Design document exists (`docs/plans/*-design.md`)
 - Load `.env` if it exists
-- **Start ST runtime services**: Run `st-start.sh` / `st-start.ps1` if services are not already running
+- **Start ST runtime services**: Start services directly using commands from `long-task-guide.md`
   - Skip if project is CLI/library only
-  - STOP if start fails — record in `task-progress.md`, ask user to start manually
-  - **Record PIDs**: Parse the stdout table from st-start.sh and record service PIDs in `task-progress.md`
+  - The port-guard hook fires automatically before any server-start command, clearing conflicting ports
+  - Verify health endpoint responds before proceeding; if start fails, record in `task-progress.md` and report to user via `AskUserQuestion`
+  - **Record info**: Note ports and process PIDs in `task-progress.md`
 - Read `feature-list.json` — note `tech_stack`, `quality_gates`, `constraints[]`, `assumptions[]`
 - Read SRS — extract all FR-xxx, NFR-xxx, IFR-xxx, CON-xxx requirements; read Stakeholders, User Personas, and Glossary sections
 - Read Design doc — extract architecture, API design, testing strategy (§9), third-party dependencies (§8)
@@ -192,9 +193,10 @@ Generate `docs/plans/YYYY-MM-DD-st-report.md` with these sections:
 - Update `RELEASE_NOTES.md` — add ST completion entry
 - Update `task-progress.md` with ST session entry
 - Validate: `python scripts/validate_features.py feature-list.json`
-- **Cleanup (MANDATORY)**: Run `st-clear.sh` / `st-clear.ps1` to release resources
-  - **Record cleanup result**: Parse the stdout table from st-clear.sh and record cleanup status in `task-progress.md`
-  - If cleanup exits non-zero: record failure and instruct user to run manually
+- **Cleanup (MANDATORY)**: Stop services started in Step 1
+  - Kill by PID (recorded in `task-progress.md`) or by port (`netstat -ano | findstr <port>` on Windows, `lsof -i :<port>` on Unix)
+  - Verify ports are released (health endpoint no longer responds)
+  - **Record cleanup result**: Note cleanup status in `task-progress.md`
 
 ### 12. Verdict
 
