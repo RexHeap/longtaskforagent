@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
-Validate LLM-generated start/cleanup scripts for structural completeness.
+Validate LLM-generated ST runtime scripts for structural completeness.
 
-Checks that start.sh/start.ps1 and cleanup.sh/cleanup.ps1 contain all required
+Checks that st-start.sh/st-start.ps1 and st-clear.sh/st-clear.ps1 contain all required
 operational patterns: proxy detection, build steps, health checks, PID management,
 retry logic, and graceful failure handling.
 
 Does NOT check functional correctness — only that required patterns are present.
 
 Usage:
-    python validate_start_cleanup.py <start-script> <cleanup-script>
-    python validate_start_cleanup.py <start-script> <cleanup-script> --powershell <start.ps1> <cleanup.ps1>
+    python validate_st_scripts.py <st-start-script> <st-clear-script>
+    python validate_st_scripts.py <st-start-script> <st-clear-script> --powershell <st-start.ps1> <st-clear.ps1>
 
 Exit codes:
     0 — all required patterns present

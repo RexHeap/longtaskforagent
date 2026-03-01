@@ -277,7 +277,7 @@ def main():
         "check_devtools.py",
         "validate_guide.py",
         "get_tool_commands.py",
-        "validate_start_cleanup.py",
+        "validate_st_scripts.py",
         "validate_st_cases.py",
         "validate_test_mutation.py",
     ]

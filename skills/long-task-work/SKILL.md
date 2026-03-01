@@ -53,20 +53,17 @@ When you need the design section or SRS requirement for a feature, do NOT grep f
 **Why this matters:** Grep returns isolated matching lines without surrounding context. Design sections contain class diagrams, sequence diagrams, flow diagrams, and design rationale that span dozens of lines — all of which are needed for correct implementation and compliance review.
 
 ### 2. Bootstrap
-- Run `init.sh` / `init.ps1` — ensure environment is ready
-- Run `start.sh` / `start.ps1` — build project and start all runtime services (build → DB → backend → frontend)
-  - If `start.sh` does not exist: skip (project may be CLI/library only)
-  - If `start.sh` exits non-zero: DO NOT proceed. Read the failure output.
-    - **Build failure**: compilation error → read error output, attempt fix, re-run. If unfixable after 3 attempts, record in `task-progress.md` and ask user.
-    - **Service failure**: record failure in `task-progress.md`. Ask user to start services manually and confirm before continuing.
-    - **Never skip a failed startup.**
-  - **Staleness check**: If `required_configs` references a service URL/connection string (e.g., REDIS_URL, DATABASE_URL) but `start.sh` has no corresponding startup block, warn: "start.sh may be stale — run `/long-task:increment` to update scripts"
-- If `test.sh` and `mutate.sh` exist, validate structural completeness:
+- **Development environment readiness**: Check if environment is set up
+  - If `init.sh` / `init.ps1` exists and environment is not ready: run it once
+  - Record decision in `task-progress.md` if script was executed
+- **Script validation**: If `test.sh` and `mutate.sh` exist, validate structural completeness:
   ```bash
   python scripts/validate_test_mutation.py test.sh mutate.sh
   ```
   If validation fails → warn user and attempt regeneration (re-read `references/test-mutation-recipes.md` and regenerate) or manual fix before proceeding.
 - Smoke-test previously passing features (quick verify — use `./test.sh` if available)
+
+**Note**: Do NOT run `st-start.sh` here — it's for ST testing runtime, not development environment. ST runtime services are started by `long-task-feature-st` or `long-task-st` skills when needed.
 
 ### 3. Config Gate
 ```bash
@@ -101,7 +98,7 @@ python scripts/check_devtools.py feature-list.json --feature <id>
 - For each feature ID in `dependencies[]`:
   1. Read the dependency feature's `verification_steps` to identify API endpoints or service URLs
   2. Verify the dependency's service is responding (quick HTTP health check via `evaluate_script` in browser or curl)
-  3. If unreachable → **block**: "Backend dependency #{dep_id} API is not responding. Ensure `start.sh` started backend services successfully."
+  3. If unreachable → **block**: "Backend dependency #{dep_id} API is not responding. Ensure `st-start.sh` started backend services successfully."
 - **Skip this sub-check** if: the feature has no backend dependencies, or dependencies are pure library/utility features (no API endpoints in their verification_steps)
 - **Why**: Chrome DevTools MCP E2E testing requires a live backend. Tool availability alone is insufficient.
 
@@ -201,9 +198,8 @@ Create runnable examples in `examples/` demonstrating the completed feature.
 - If failing non-deprecated features remain and context allows → proceed to next feature (back to Step 1)
 - If **no failing non-deprecated features remain** → all active features are passing. **Invoke `long-task:long-task-st`** to begin system testing.
 - If context is exhausted → end session (ensure task-progress.md is updated)
-- **Before ending any session** (context exhausted or transitioning to ST):
-  - Run `cleanup.sh` / `cleanup.ps1` if it exists — tear down runtime services to release ports and processes
-  - If cleanup exits non-zero: record in `task-progress.md`; instruct user to run `cleanup.sh` manually
+
+**Note**: Do NOT run `st-clear.sh` here — cleanup is only needed after ST testing completes. ST cleanup is managed by `long-task-feature-st` or `long-task-st` skills.
 
 ## Critical Rules
 

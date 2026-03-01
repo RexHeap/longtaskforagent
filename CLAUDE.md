@@ -35,8 +35,8 @@ python long-task-agent/scripts/validate_guide.py long-task-guide.md --feature-li
 
 ### Validate start/cleanup scripts
 ```bash
-python long-task-agent/scripts/validate_start_cleanup.py start.sh cleanup.sh
-python long-task-agent/scripts/validate_start_cleanup.py start.sh cleanup.sh --powershell start.ps1 cleanup.ps1
+python long-task-agent/scripts/validate_st_scripts.py st-start.sh st-clear.sh
+python long-task-agent/scripts/validate_st_scripts.py st-start.sh st-clear.sh --powershell st-start.ps1 st-clear.ps1
 ```
 
 ### Validate test/mutation scripts

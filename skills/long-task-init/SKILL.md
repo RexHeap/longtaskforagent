@@ -68,7 +68,7 @@ You MUST create a TodoWrite task for each step and complete them in order:
    - Actual dependency installation commands (not commented stubs)
    - Service startup commands if needed
    - Must be immediately executable after `git clone`
-6. **Generate `start.sh` / `start.ps1` and `cleanup.sh` / `cleanup.ps1`** — Create runtime service lifecycle scripts:
+6. **Generate `st-start.sh` / `st-start.ps1` and `st-clear.sh` / `st-clear.ps1`** — Create runtime service lifecycle scripts:
    - Read `references/start-cleanup-recipes.md` (in the long-task-init skill directory) for per-service templates and best practices
    - **Detect all runtime services** from design doc (dev servers, databases, caches, queues, message brokers)
    - **Detect build/compile requirements** from tech stack (TypeScript→tsc, Java→mvn/gradle, C/C++→cmake/make, Go→go build, Rust→cargo build)
@@ -76,13 +76,13 @@ You MUST create a TodoWrite task for each step and complete them in order:
    - **Must include**: build step (if compiled language; explicit skip comment for interpreted), proxy detection (HTTP_PROXY/HTTPS_PROXY/NO_PROXY with localhost always added), health checks per service (port or HTTP polling), retry logic (up to 3 attempts with backoff), PID management (`.run/` directory), graceful failure handling (record to `task-progress.md`, print manual commands, exit non-zero)
    - **Build failure = hard stop** — if compilation fails, no services should start; report the build error clearly
    - **Must be idempotent** — re-running when services already running should detect and skip
-   - **Must be cross-platform** — `start.sh`/`cleanup.sh` for Unix/macOS, `start.ps1`/`cleanup.ps1` for Windows
+   - **Must be cross-platform** — `st-start.sh`/`st-clear.sh` for Unix/macOS, `st-start.ps1`/`st-clear.ps1` for Windows
    - Add `.run/` to `.gitignore` (PID files and service logs — not committed)
    - If project is CLI/library only (no runtime services), generate minimal scripts that print "No services to start" and exit 0
    - If project has `"ui": true` features, start script MUST ensure the frontend dev server is running and health-checked — this is the prerequisite for Chrome DevTools MCP testing
    - Validate:
      ```bash
-     python scripts/validate_start_cleanup.py start.sh cleanup.sh
+     python scripts/validate_st_scripts.py st-start.sh st-clear.sh
      ```
 7. **Generate `test.sh` / `test.ps1` and `mutate.sh` / `mutate.ps1`** — Create test runner and mutation testing wrapper scripts:
    - Read `references/test-mutation-recipes.md` (in the long-task-init skill directory) for per-tech-stack templates and best practices
@@ -149,7 +149,7 @@ You MUST create a TodoWrite task for each step and complete them in order:
     ```
 13. **Scaffold project skeleton** (dirs, configs, dependency manifests) — based on **design doc** architecture
 14. **Git init + initial commit**
-15. **Run init script**, verify environment works. Then run `start.sh`, verify all services respond to health checks. Then run `test.sh`, verify tests execute. Then run `mutate.sh --full`, verify mutation testing works. Then run `cleanup.sh`, verify ports are released and PID files cleaned
+15. **Run init script**, verify environment works. Then run `st-start.sh`, verify all services respond to health checks. Then run `test.sh`, verify tests execute. Then run `mutate.sh --full`, verify mutation testing works. Then run `st-clear.sh`, verify ports are released and PID files cleaned
 16. **Update `task-progress.md`** — update `## Current State` with initial progress (0/N features passing), then append Session 0 entry (include SRS + design doc references)
 17. **Begin first Worker cycle** — **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-work`
 
@@ -214,8 +214,8 @@ Each feature:
 | `RELEASE_NOTES.md` | Living release notes (Keep a Changelog format) |
 | `examples/` | Runnable examples directory |
 | `init.sh` / `init.ps1` | Environment bootstrap (LLM-generated) |
-| `start.sh` / `start.ps1` | Runtime service startup: build → DB → backend → frontend; proxy-aware, health-checked, self-healing (LLM-generated) |
-| `cleanup.sh` / `cleanup.ps1` | Reverse-order service teardown; PID cleanup; port release verification (LLM-generated) |
+| `st-start.sh` / `st-start.ps1` | Runtime service startup: build → DB → backend → frontend; proxy-aware, health-checked, self-healing (LLM-generated) |
+| `st-clear.sh` / `st-clear.ps1` | Reverse-order service teardown; PID cleanup; port release verification (LLM-generated) |
 | `test.sh` / `test.ps1` | Test runner wrapper: env activation, tool check, coverage mode, structured output (LLM-generated) |
 | `mutate.sh` / `mutate.ps1` | Mutation testing wrapper: env activation, tool check, incremental/full modes, structured output (LLM-generated) |
 | `long-task-guide.md` | Worker session guide (LLM-generated, validated) |

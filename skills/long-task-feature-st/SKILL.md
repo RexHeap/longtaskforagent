@@ -42,16 +42,22 @@ This skill owns its own start/cleanup lifecycle — it does not rely on Worker S
 
 ### Start (before first test case)
 
-1. **Start services**: run `start.sh` (bash) or `start.ps1` (PowerShell)
+1. **Check service status**: Are backend/frontend already running?
+   - Verify via health endpoint or port check
+2. **If not running**: Run `st-start.sh` (bash) or `st-start.ps1` (PowerShell)
    - If start script exits non-zero: report to user via `AskUserQuestion`; do NOT proceed
    - Start scripts are idempotent — safe to call even if services already running
-2. **Verify health**: confirm app is responding (navigate_page + wait_for, or health endpoint check)
+3. **Verify health**: confirm app is responding (navigate_page + wait_for, or health endpoint check)
+4. **Record PIDs**: Parse the stdout table from st-start.sh and record service PIDs in `task-progress.md`
 
-### Cleanup (after all test cases complete)
+### Cleanup (after all test cases complete) — MANDATORY
 
-1. **Stop services**: run `cleanup.sh` (bash) or `cleanup.ps1` (PowerShell) — handles service teardown and Chrome browser kill
+1. **Stop services**: Run `st-clear.sh` (bash) or `st-clear.ps1` (PowerShell)
+   - Handles service teardown and Chrome browser kill
    - If cleanup script exits non-zero: record in `task-progress.md`; instruct user to run manually
-   - Service cleanup order (handled by cleanup.sh): frontend → backend → databases/caches → Chrome browser kill
+2. **Record cleanup result**: Parse the stdout table from st-clear.sh and record cleanup status in `task-progress.md`
+
+**Why mandatory**: Leaving services running can cause port conflicts in subsequent ST sessions or other development work.
 
 ## Checklist
 
@@ -203,11 +209,11 @@ python scripts/validate_st_cases.py docs/test-cases/feature-{id}-{slug}.md --fea
 
 Since implementation code already exists (TDD and Quality Gates are complete), execute each test case to verify acceptance:
 
-1. **Apply Environment Lifecycle**: services started (start.sh)
+1. **Apply Environment Lifecycle**: services started (st-start.sh)
 2. For **non-UI test cases**: verify by running the relevant test commands or manual checks against the running system
 3. For **UI test cases**: execute via Chrome DevTools MCP following the step tables
 4. Update the traceability matrix `结果` column to `PASS` or `FAIL` for each case
-5. **Apply Cleanup**: run cleanup.sh — stops services and kills Chrome browser
+5. **Apply Cleanup**: run st-clear.sh — stops services and kills Chrome browser
 
 **If any test case FAILS:**
 - Report to user via `AskUserQuestion` with: failed case ID, step details, actual vs expected
@@ -228,7 +234,7 @@ def test_valid_order_creation():
 
 ### Environment Gate
 
-This skill calls `start.sh` / `start.ps1` at its own start. Do not assume services are already running.
+This skill calls `st-start.sh` / `st-start.ps1` at its own start. Do not assume services are already running.
 
 - If start script exits non-zero: **BLOCKED** — report to user via `AskUserQuestion` with service details and options (fix/start manually/terminate)
 - After start: verify app is responding before running any test cases
@@ -247,7 +253,7 @@ This skill calls `start.sh` / `start.ps1` at its own start. Do not assume servic
 
 ## Critical Rules
 
-- **Self-managed lifecycle**: Always call `start.sh` before testing and `cleanup.sh` after. Do not rely on external state from Worker Step 2
+- **Self-managed lifecycle**: Always call `st-start.sh` before testing and `st-clear.sh` after. Do not rely on external state from Worker Step 2
 - **Requirements-driven**: Test cases derive from SRS/Design, validating implementation against requirements — not duplicating unit test assertions
 - **Black-box only**: Expected results must be derivable from SRS and the observable interface alone — no reading implementation code
 - **Complete after Quality Gates**: All test cases must be written, validated, and executed after TDD and quality gates pass

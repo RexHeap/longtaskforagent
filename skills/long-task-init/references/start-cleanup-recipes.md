@@ -1,13 +1,17 @@
-# Start / Cleanup Script Recipes
+# ST-Start / ST-Clear Script Recipes
 
-Templates and best practices for generating `start.sh` / `start.ps1` (service startup) and `cleanup.sh` / `cleanup.ps1` (service teardown) scripts. Choose recipes matching the project's tech stack and architecture from the design document.
+Templates and best practices for generating `st-start.sh` / `st-start.ps1` (ST runtime service startup) and `st-clear.sh` / `st-clear.ps1` (ST runtime service teardown) scripts. Choose recipes matching the project's tech stack and architecture from the design document.
 
-**Relationship to init scripts**: `init.sh` installs runtimes, creates environments, and installs dependencies. `start.sh` builds the project, starts services, and verifies readiness. `cleanup.sh` stops services and releases resources. All three are LLM-generated, project-specific, and recipe-driven.
+**Relationship to init scripts**: `init.sh` installs runtimes, creates environments, and installs dependencies for **development environment**. `st-start.sh` builds the project, starts services, and verifies readiness for **ST testing runtime**. `st-clear.sh` stops services and releases resources after **ST testing completes**. All three are LLM-generated, project-specific, and recipe-driven.
+
+**Key distinction**:
+- `init.sh` = Development environment setup (Session level)
+- `st-start.sh` / `st-clear.sh` = ST testing runtime (Feature ST / System ST level)
 
 ## General Rules — Start Scripts
 
 1. **Idempotent** — re-running when services are already running should detect this and skip (check PID file or health endpoint); never start duplicate instances
-2. **Cross-platform** — generate both `start.sh` (bash) and `start.ps1` (PowerShell)
+2. **Cross-platform** — generate both `st-start.sh` (bash) and `st-start.ps1` (PowerShell)
 3. **Fail-fast** — use `set -euo pipefail` (bash) / `$ErrorActionPreference = "Stop"` (PowerShell)
 4. **Self-healing** — retry failed starts up to 3 times with exponential backoff; detect and report port conflicts
 5. **Proxy-aware** — detect and forward HTTP_PROXY, HTTPS_PROXY, NO_PROXY; always add localhost/127.0.0.1 to NO_PROXY
@@ -23,14 +27,92 @@ Templates and best practices for generating `start.sh` / `start.ps1` (service st
 4. **Port release verification** — verify ports are free after shutdown; report any still-occupied ports
 5. **Temp file cleanup** — remove lock files, temp dirs, build caches created by start script
 6. **Idempotent** — safe to run when services are already stopped; never error on "nothing to stop"
-7. **Cross-platform** — generate both `cleanup.sh` (bash) and `cleanup.ps1` (PowerShell)
+7. **Cross-platform** — generate both `st-clear.sh` (bash) and `st-clear.ps1` (PowerShell)
 8. **Browser process cleanup** — if project has UI features (`"ui": true`), kill Chrome/Chromium process after services stop; use cross-platform detection (`taskkill` on Windows, `pkill` on Linux/macOS)
+
+---
+
+## Output Format — PID Visibility (IMPORTANT)
+
+Scripts must output structured information to stdout for Claude Code to parse and record in `task-progress.md`.
+
+### st-start.sh Output Format
+
+After all services are started, print a summary table:
+
+```bash
+echo ""
+echo "=== ST Runtime Services Started ==="
+echo "| Service   | PID  | Port | Status  |"
+echo "|-----------|------|------|---------|"
+# For each service:
+echo "| postgres  | $PG_PID  | 5432 | running |"
+echo "| backend   | $BACKEND_PID  | 8000 | running |"
+echo "| frontend  | $FRONTEND_PID  | 5173 | running |"
+echo ""
+echo "Summary: 3 services started."
+echo "PIDs: $PG_PID, $BACKEND_PID, $FRONTEND_PID"
+```
+
+### st-start.ps1 Output Format
+
+```powershell
+Write-Host ""
+Write-Host "=== ST Runtime Services Started ==="
+Write-Host "| Service   | PID  | Port | Status  |"
+Write-Host "|-----------|------|------|---------|"
+# For each service:
+Write-Host "| postgres  | $PgPid  | 5432 | running |"
+Write-Host "| backend   | $BackendPid  | 8000 | running |"
+Write-Host "| frontend  | $FrontendPid  | 5173 | running |"
+Write-Host ""
+Write-Host "Summary: 3 services started."
+Write-Host "PIDs: $PgPid, $BackendPid, $FrontendPid"
+```
+
+### st-clear.sh Output Format
+
+After all services are stopped, print a cleanup confirmation:
+
+```bash
+echo ""
+echo "=== ST Runtime Services Cleared ==="
+echo "| Service   | PID  | Action     | Result  |"
+echo "|-----------|------|------------|---------|"
+# For each service:
+echo "| frontend  | $FRONTEND_PID  | SIGTERM    | stopped |"
+echo "| backend   | $BACKEND_PID  | SIGTERM    | stopped |"
+echo "| postgres  | $PG_PID  | SIGTERM    | stopped |"
+echo "| chrome    | -    | force-kill | cleaned |"
+echo ""
+echo "Summary: All services stopped."
+echo "Ports released: 5173, 8000, 5432"
+```
+
+### st-clear.ps1 Output Format
+
+```powershell
+Write-Host ""
+Write-Host "=== ST Runtime Services Cleared ==="
+Write-Host "| Service   | PID  | Action     | Result  |"
+Write-Host "|-----------|------|------------|---------|"
+# For each service:
+Write-Host "| frontend  | $FrontendPid  | SIGTERM    | stopped |"
+Write-Host "| backend   | $BackendPid  | SIGTERM    | stopped |"
+Write-Host "| postgres  | $PgPid  | SIGTERM    | stopped |"
+Write-Host "| chrome    | -    | force-kill | cleaned |"
+Write-Host ""
+Write-Host "Summary: All services stopped."
+Write-Host "Ports released: 5173, 8000, 5432"
+```
+
+**Why this matters**: Claude Code reads stdout to extract PID information and records it in `task-progress.md` for tracking and debugging purposes.
 
 ---
 
 ## Standard Startup Order (6 Phases)
 
-Every `start.sh` follows this phase sequence. Skip inapplicable phases but preserve order:
+Every `st-start.sh` follows this phase sequence. Skip inapplicable phases but preserve order:
 
 ```
 Phase 1: Environment     — load .env, detect/configure proxy, check prerequisites
@@ -45,7 +127,7 @@ Phase 6: Health & Report — poll all services, print readiness summary
 
 ## Script Skeletons
 
-### start.sh (bash)
+### st-start.sh (bash)
 
 ```bash
 #!/usr/bin/env bash
@@ -83,7 +165,7 @@ echo "Backend:  http://localhost:<port>"
 echo "Frontend: http://localhost:<port>"
 ```
 
-### start.ps1 (PowerShell)
+### st-start.ps1 (PowerShell)
 
 ```powershell
 $ErrorActionPreference = "Stop"
@@ -117,7 +199,7 @@ Write-Host ""
 Write-Host "=== Services Ready ==="
 ```
 
-### cleanup.sh (bash)
+### st-clear.sh (bash)
 
 ```bash
 #!/usr/bin/env bash
@@ -157,7 +239,7 @@ echo ""
 echo "=== Cleanup Complete ==="
 ```
 
-### cleanup.ps1 (PowerShell)
+### st-clear.ps1 (PowerShell)
 
 ```powershell
 $ErrorActionPreference = "Stop"
@@ -293,7 +375,7 @@ for pid_file in "$LOG_DIR"/*.pid; do
 done
 
 if [ "$ALL_RUNNING" = true ] && [ -n "$(ls "$LOG_DIR"/*.pid 2>/dev/null)" ]; then
-    echo "All services already running. Use cleanup.sh first to restart."
+    echo "All services already running. Use st-clear.sh first to restart."
     exit 0
 fi
 ```
@@ -407,7 +489,7 @@ check_port_free() {
         occupier=$(lsof -ti tcp:"$port" 2>/dev/null || true)
         if [ -n "$occupier" ]; then
             echo "  Occupied by PID: $occupier"
-            echo "  To free: kill $occupier  (or run cleanup.sh first)"
+            echo "  To free: kill $occupier  (or run st-clear.sh first)"
         fi
         return 1
     fi
@@ -552,7 +634,7 @@ record_startup_failure() {
     timestamp=$(date +"%Y-%m-%d %H:%M:%S")
     echo ""
     echo "=== STARTUP FAILED: $component ==="
-    echo "Please start $component manually and re-run start.sh"
+    echo "Please start $component manually and re-run st-start.sh"
     echo ""
     # Append to task-progress.md if it exists
     if [ -f "task-progress.md" ]; then
@@ -567,7 +649,7 @@ function Record-StartupFailure($Component) {
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     Write-Host ""
     Write-Host "=== STARTUP FAILED: $Component ==="
-    Write-Host "Please start $Component manually and re-run start.ps1"
+    Write-Host "Please start $Component manually and re-run st-start.ps1"
     Write-Host ""
     $progressFile = Join-Path $PSScriptRoot "task-progress.md"
     if (Test-Path $progressFile) {
