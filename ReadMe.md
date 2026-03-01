@@ -1,3 +1,45 @@
+# Quick Start
+
+### 1. 安装
+
+在 Claude Code 中安装本 skill：
+
+```bash
+# 方式一：直接安装到 Claude Code
+claude install suriyel/longtaskforagent
+
+# 方式二：手动克隆到 skills 目录
+git clone https://github.com/suriyel/longtaskforagent.git
+```
+
+### 2. 快速示例
+
+开启 Claude Code 后，只需告诉它你想做什么：
+
+```
+> 我想做一个天气查询小程序
+```
+
+系统会自动进入 **Requirements 阶段**，通过结构化提问帮你完善需求，最终生成规范的 SRS 文档。后续流程完全自动化：
+
+```
+Requirements → UCD (如有UI) → Design → Init → Worker cycles → System Testing
+```
+
+或者使用快捷命令直接跳转到对应阶段：
+
+```
+/long-task:requirements  — 开始需求 elicitation
+/long-task:ucd           — 生成 UCD 风格指南
+/long-task:design        — 开始设计阶段
+/long-task:init          — 设计审批后初始化项目
+/long-task:work          — 开始功能开发
+/long-task:st            — 运行系统测试
+/long-task:increment     — 增量开发（添加新功能）
+```
+
+---
+
 # Long-Task Agent
 
 **A Claude Code skill plugin that turns single-session AI coding into a rigorous, multi-session software engineering workflow.**
@@ -158,69 +200,6 @@ using-long-task (bootstrap router — always loaded)
 | `long-task-st` | IEEE 829 system testing with Go/No-Go verdict |
 
 ---
-
-## Quick Start
-
-### 1. Install
-
-Clone this repository into your Claude Code skills directory:
-
-```bash
-# Clone into your project or a shared skills location
-git clone https://github.com/anthropics/long-task-agent.git
-```
-
-### 2. Configure Hooks
-
-The plugin uses a `SessionStart` hook to inject the router skill into every session. Copy or symlink the hooks configuration:
-
-```bash
-# The hooks/ directory contains:
-# - hooks.json         → SessionStart hook config
-# - session-start      → Phase detection script
-# - run-hook.cmd       → Cross-platform wrapper
-```
-
-### 3. Start a New Project
-
-Simply start a Claude Code session in your project directory. The bootstrap router auto-detects your project state and invokes the correct phase:
-
-```
-# No existing artifacts → starts Requirements phase
-# SRS exists → starts UCD phase (or skips to Design if no UI)
-# Design exists → starts Initialization phase
-# feature-list.json exists → starts Worker or System Testing
-```
-
-Or use shortcut commands for explicit phase control:
-
-```
-/long-task:requirements  — Start requirements elicitation
-/long-task:ucd           — Start UCD style guide generation
-/long-task:design        — Start design phase
-/long-task:init          — Initialize project after design approval
-/long-task:work          — Start a Worker cycle
-/long-task:st            — Run system testing
-/long-task:increment     — Start incremental development
-/long-task:status        — Check project progress
-```
-
-### 4. Scaffold a Project (Alternative: CLI)
-
-```bash
-# Basic initialization
-python long-task-agent/scripts/init_project.py my-project --path ./my-project
-
-# With language preset (auto-fills test/coverage/mutation tools)
-python long-task-agent/scripts/init_project.py my-project --path ./my-project --lang python
-
-# With custom quality thresholds
-python long-task-agent/scripts/init_project.py my-project --path ./my-project --lang java \
-  --line-cov 85 --branch-cov 75 --mutation-score 70
-```
-
-
-![Quick Start](images/6.png)
 
 ## Multi-Language Support
 
