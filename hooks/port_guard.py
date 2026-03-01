@@ -18,7 +18,7 @@ Layer 3: psutil / stdlib runtime scan    (all current LISTEN sockets)
 --- TRIGGER CONDITIONS ---
 Triggers on: uvicorn, gunicorn, flask run, npm run dev/start/serve, node,
              ts-node, vite, next dev/start, java -jar, cargo run, go run,
-             st-start, start.sh / start.ps1
+             start.sh / start.ps1
 Excludes:    pytest, jest, mvn test, gradle test, cargo test, go test,
              vitest, mocha, ctest, mutmut, pitest, stryker (unit-test commands)
 
@@ -64,7 +64,7 @@ _SERVER_PATTERNS: list[str] = [
     r"\bgradle\b.*(bootRun|appRun)\b",
     r"\bcargo\b\s+run\b",
     r"\bgo\b\s+run\b",
-    r"(\.\/|bash\s+|sh\s+)?(st-start|start\.sh)\b",
+    r"(\.\/|bash\s+|sh\s+)?(start\.sh)\b",
 ]
 
 _EXCLUDE_PATTERNS: list[str] = [

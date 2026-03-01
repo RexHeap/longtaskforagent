@@ -263,7 +263,6 @@ Always start from a known-clean state. Do not assume services are already runnin
 
 ## Critical Rules
 
-- **Self-managed lifecycle**: Always call `st-start.sh` before testing and `st-clear.sh` after. Do not rely on external state from Worker Step 2
 - **Requirements-driven**: Test cases derive from SRS/Design, validating implementation against requirements — not duplicating unit test assertions
 - **Black-box only**: Expected results must be derivable from SRS and the observable interface alone — no reading implementation code
 - **Complete after Quality Gates**: All test cases must be written, validated, and executed after TDD and quality gates pass

@@ -92,7 +92,6 @@ python scripts/check_devtools.py feature-list.json --feature <id>
 - For each feature ID in `dependencies[]`:
   1. Read the dependency feature's `verification_steps` to identify API endpoints or service URLs
   2. Verify the dependency's service is responding (quick HTTP health check via `evaluate_script` in browser or curl)
-  3. If unreachable → **block**: "Backend dependency #{dep_id} API is not responding. Ensure `st-start.sh` started backend services successfully."
 - **Skip this sub-check** if: the feature has no backend dependencies, or dependencies are pure library/utility features (no API endpoints in their verification_steps)
 - **Why**: Chrome DevTools MCP E2E testing requires a live backend. Tool availability alone is insufficient.
 
