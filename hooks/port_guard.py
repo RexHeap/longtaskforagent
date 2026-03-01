@@ -81,6 +81,12 @@ _EXCLUDE_PATTERNS: list[str] = [
     r"\bpitest\b",
     r"\bstryker\b",
     r"\bmull\b",
+    # Kill/Terminate commands — don't interfere with user-initiated stops
+    r"\bpkill\b",
+    r"\btaskkill\b",
+    r"\bkill\b",
+    r"\bpkill\b",
+    r"\bproc Kill\b",
 ]
 
 
@@ -297,6 +303,12 @@ def main() -> None:
         sys.exit(0)
 
     if not _needs_cleanup(command):
+        sys.exit(0)
+
+    # Safety: If no st-config.json exists, skip port cleanup entirely
+    # This prevents accidentally killing processes in unknown projects
+    cfg_path = os.path.join(".claude", "st-config.json")
+    if not os.path.isfile(cfg_path):
         sys.exit(0)
 
     # Gather target ports
