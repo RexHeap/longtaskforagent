@@ -24,6 +24,7 @@ Templates and best practices for generating `start.sh` / `start.ps1` (service st
 5. **Temp file cleanup** — remove lock files, temp dirs, build caches created by start script
 6. **Idempotent** — safe to run when services are already stopped; never error on "nothing to stop"
 7. **Cross-platform** — generate both `cleanup.sh` (bash) and `cleanup.ps1` (PowerShell)
+8. **Browser process cleanup** — if project has UI features (`"ui": true`), kill Chrome/Chromium process after services stop; use cross-platform detection (`taskkill` on Windows, `pkill` on Linux/macOS)
 
 ---
 
@@ -136,10 +137,20 @@ echo "=== [Project Name] Service Cleanup ==="
 # --- Step 3: Stop infrastructure ---
 # [stop databases, caches]
 
-# --- Step 4: Clean temp files ---
+# --- Step 4: Kill Chrome browser (for UI features) ---
+if command -v taskkill >/dev/null 2>&1; then
+    # Windows (Git Bash / MSYS2)
+    taskkill /F /IM chrome.exe /T 2>/dev/null || true
+    taskkill /F /IM chromium.exe /T 2>/dev/null || true
+else
+    # Linux / macOS
+    pkill -f "(chrome|chromium)" 2>/dev/null || true
+fi
+
+# --- Step 5: Clean temp files ---
 # [remove $LOG_DIR/*.pid, lock files, temp dirs]
 
-# --- Step 5: Verify ---
+# --- Step 6: Verify ---
 # [check ports are free]
 
 echo ""
@@ -164,10 +175,19 @@ Write-Host "=== [Project Name] Service Cleanup ==="
 # --- Step 3: Stop infrastructure ---
 # [stop databases, caches]
 
-# --- Step 4: Clean temp files ---
+# --- Step 4: Kill Chrome browser (for UI features) ---
+foreach ($name in @("chrome", "chromium")) {
+    $procs = Get-Process -Name $name -ErrorAction SilentlyContinue
+    if ($procs) {
+        Write-Host "Stopping $name browser..."
+        $procs | Stop-Process -Force -ErrorAction SilentlyContinue
+    }
+}
+
+# --- Step 5: Clean temp files ---
 # [Remove-Item *.pid, lock files]
 
-# --- Step 5: Verify ---
+# --- Step 6: Verify ---
 
 Write-Host "=== Cleanup Complete ==="
 ```

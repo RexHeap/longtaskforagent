@@ -22,8 +22,6 @@ Every UI test step must specify which Chrome DevTools MCP tool executes it:
 | Screenshot | `take_screenshot()` | "截图用于视觉验证" |
 | Hover | `hover(uid)` | "悬停于 {element description}" |
 | Drag | `drag(from_uid, to_uid)` | "将 {source} 拖动至 {target}" |
-| List open pages | `list_pages()` | "列出所有打开的浏览器页面 → 验证页面数量" |
-| Close extra page | `close_page(pageId)` | "关闭多余页面 (pageId={id}) → 恢复单页状态" |
 
 ## E2E Scenario Structure (mandatory for every UI test case)
 
@@ -137,46 +135,3 @@ Before finalizing each UI test case, verify:
 - [ ] At least one negative/error path test case exists for this feature
 - [ ] Preconditions are concrete (specific data, auth state) — not just "系统正常运行"
 - [ ] Expected results are specific and assertable — no "显示正确" or "工作正常"
-- [ ] Preconditions state the required browser page count (usually 1)
-- [ ] If test opens new pages: an explicit `close_page(pageId)` step appears before the test ends
-- [ ] After test completes, browser returns to exactly 1 page (or explicitly documented otherwise)
-
-## Browser Page Lifecycle in E2E Scenarios
-
-### Page Count Invariant
-
-At the start of each test case, exactly 1 browser page must be open. This is enforced by the Environment Lifecycle protocol in `long-task-feature-st`. Document this in the Preconditions section of every UI test case:
-
-```
-前置条件:
-- 应用已启动 (start.sh 成功运行)
-- 浏览器仅 1 个页面打开 (由环境生命周期协议保证)
-- 用户身份: [角色]
-```
-
-### When a Test Case Opens New Pages
-
-If a scenario requires opening a new tab (e.g., clicking a link that opens in a new tab):
-
-1. Document in the test step: `new_page(url) → 预期页面数量 = 2`
-2. Include an explicit cleanup step at the end of the test case:
-
-| Step | 操作 | 预期结果 |
-|------|------|---------|
-| N | `list_pages()` → `close_page(pageId of extra page)` | 额外页面关闭，`list_pages()` 返回 1 个页面 |
-
-This cleanup step IS part of the step table — it must appear explicitly in the document.
-
-### Multi-Tab Scenario Example
-
-```
-| Step | 操作 | 预期结果 |
-|------|------|---------|
-| 1 | navigate_page('/dashboard') → wait_for(['仪表盘']) | 页面加载完成 |
-| 2 | evaluate_script(error_detector) | Layer 1: count = 0 |
-| 3 | take_snapshot() | EXPECT: "在新标签打开" 链接可见; REJECT: 链接无 target="_blank" 属性 |
-| 4 | click(uid) 点击"在新标签打开"链接 | 新标签页打开，list_pages() 返回 2 个页面 |
-| 5 | select_page(pageId of new tab) → wait_for(['目标页面标题']) | 切换至新标签，目标页面加载完成 |
-| 6 | evaluate_script(error_detector) → list_console_messages(["error"]) | Layer 1: count = 0; Layer 3: 控制台无 error |
-| 7 | list_pages() → close_page(pageId of new tab) → list_pages() | 新标签关闭，返回 1 个页面 |
-```

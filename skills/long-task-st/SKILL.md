@@ -112,7 +112,7 @@ For each user persona in SRS Stakeholders:
 
 For each scenario: set up initial state, execute step-by-step, verify intermediate states AND final outcome, clean up.
 
-**UI E2E Testing** (only if `"ui": true` features exist): Use Chrome DevTools MCP tools — `navigate_page`, `take_snapshot`, `click`/`fill`/`press_key`, `take_screenshot`, `list_console_messages`, `list_network_requests`. Apply browser page lifecycle protocol (see `long-task-feature-st` Environment Lifecycle) before and after each E2E scenario that exercises UI features.
+**UI E2E Testing** (only if `"ui": true` features exist): Use Chrome DevTools MCP tools — `navigate_page`, `take_snapshot`, `click`/`fill`/`press_key`, `take_screenshot`, `list_console_messages`, `list_network_requests`.
 
 Write E2E tests in `tests/e2e/` or `tests/st/`. Run and record results.
 

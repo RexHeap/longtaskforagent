@@ -46,40 +46,12 @@ This skill owns its own start/cleanup lifecycle — it does not rely on Worker S
    - If start script exits non-zero: report to user via `AskUserQuestion`; do NOT proceed
    - Start scripts are idempotent — safe to call even if services already running
 2. **Verify health**: confirm app is responding (navigate_page + wait_for, or health endpoint check)
-3. **Browser pre-cleanup** (for `"ui": true` features):
-   - `list_pages()` → record baseline page count
-   - Close extra pages: `close_page(pageId)` for each page beyond the first
-   - `select_page(pageId)` → activate the single remaining page
-
-### Per-UI-Test-Case Isolation
-
-**Before each UI test case:**
-1. `list_pages()` → verify exactly 1 page is open
-2. Close any extra pages left from prior tests: `close_page(pageId)` for each beyond the first
-3. `select_page(pageId)` → ensure base page is active
-
-**After each UI test case:**
-1. `list_pages()` → find pages opened during the test
-2. `close_page(pageId)` for each page beyond the first (index > 0)
-3. `list_pages()` again → confirm exactly 1 page remains
-
-**Edge cases:**
-- `close_page()` failure: log and continue; do not abort test
-- Multi-tab tests: skip per-test cleanup; close extras only after the scenario ends
-- Never close ALL pages — MCP requires at least 1 page to remain open
 
 ### Cleanup (after all test cases complete)
 
-1. **Browser cleanup** (MCP, for `"ui": true` features):
-   - `list_pages()` → close all extra pages via `close_page(pageId)`
-   - Log: "Browser cleanup complete. {n} pages closed. 1 page remaining."
-2. **Stop services**: run `cleanup.sh` (bash) or `cleanup.ps1` (PowerShell)
+1. **Stop services**: run `cleanup.sh` (bash) or `cleanup.ps1` (PowerShell) — handles service teardown and Chrome browser kill
    - If cleanup script exits non-zero: record in `task-progress.md`; instruct user to run manually
-   - Service cleanup order (handled by cleanup.sh): frontend → backend → databases/caches
-
-**Responsibility boundary:**
-- MCP tools (`list_pages` / `close_page`): manage browser page state — done by **this skill**
-- Shell scripts (`cleanup.sh`): manage service processes — delegated to the shell script
+   - Service cleanup order (handled by cleanup.sh): frontend → backend → databases/caches → Chrome browser kill
 
 ## Checklist
 
@@ -201,14 +173,6 @@ For UI features, test cases consolidate previously separate concerns:
 - The test step table becomes a **script** that can be mechanically translated into Chrome DevTools MCP calls
 - See `prompts/e2e-scenario-prompt.md` for the full MCP tool → test step mapping table
 
-**g) Browser Page Lifecycle (mandatory for all UI test case execution):**
-
-Multiple UI test cases run in one session — browser state accumulates. Apply the Environment Lifecycle protocol (see above) to prevent cross-test state pollution:
-- **Before each test case**: verify `list_pages()` returns exactly 1; close extras if not
-- **After each test case**: close any pages opened during the test; verify count returns to 1
-- **Preconditions section** of each UI test case document MUST state: "Exactly 1 browser page open"
-- If a test case opens new pages (e.g., new tab), include an explicit `close_page(pageId)` step as part of the test case — this cleanup IS part of the step table
-
 ### 5. Write Test Case Document
 
 Output file: `docs/test-cases/feature-{id}-{slug}.md`
@@ -239,11 +203,11 @@ python scripts/validate_st_cases.py docs/test-cases/feature-{id}-{slug}.md --fea
 
 Since implementation code already exists (TDD and Quality Gates are complete), execute each test case to verify acceptance:
 
-1. **Apply Environment Lifecycle**: services started (start.sh), browser pre-cleaned (list_pages/close_page)
+1. **Apply Environment Lifecycle**: services started (start.sh)
 2. For **non-UI test cases**: verify by running the relevant test commands or manual checks against the running system
-3. For **UI test cases**: execute via Chrome DevTools MCP following the step tables; apply per-test-case isolation (list_pages/close_page) before and after each test
+3. For **UI test cases**: execute via Chrome DevTools MCP following the step tables
 4. Update the traceability matrix `结果` column to `PASS` or `FAIL` for each case
-5. **Apply Cleanup**: browser cleanup (list_pages/close_page all extras) → cleanup.sh to stop services
+5. **Apply Cleanup**: run cleanup.sh — stops services and kills Chrome browser
 
 **If any test case FAILS:**
 - Report to user via `AskUserQuestion` with: failed case ID, step details, actual vs expected
@@ -284,7 +248,6 @@ This skill calls `start.sh` / `start.ps1` at its own start. Do not assume servic
 ## Critical Rules
 
 - **Self-managed lifecycle**: Always call `start.sh` before testing and `cleanup.sh` after. Do not rely on external state from Worker Step 2
-- **Browser page isolation**: Each UI test case must start with exactly 1 page open. Apply `list_pages`/`close_page` protocol before and after every UI test to prevent state pollution
 - **Requirements-driven**: Test cases derive from SRS/Design, validating implementation against requirements — not duplicating unit test assertions
 - **Black-box only**: Expected results must be derivable from SRS and the observable interface alone — no reading implementation code
 - **Complete after Quality Gates**: All test cases must be written, validated, and executed after TDD and quality gates pass
