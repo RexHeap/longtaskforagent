@@ -36,37 +36,48 @@ This skill verifies from the **outside** — as a user or external system would:
 
 **Rule:** If a test case requires reading source code to determine the expected result, it is not a black-box test — rewrite it using only the SRS specification.
 
-## Service Management
+## Service Lifecycle (via env-guide.md)
 
-Manage services directly — no wrapper scripts. The `.claude/hooks/pre_bash_port_guard.py` hook automatically kills conflicting processes before any server-start command.
+Manage services explicitly using `env-guide.md`. No hooks handle this automatically.
 
 ### Start (before first test case)
 
-1. **Check if services are running**: Verify the health endpoint (HTTP GET or port check)
-2. **If not running**: Start services directly using commands from `long-task-guide.md`:
-   - The port-guard hook fires automatically and clears any conflicting ports first
-   - Example: `uvicorn main:app --port 8000 &` (Python) or `npm run dev &` (Node)
-   - Wait for health endpoint to respond (use `wait_for` MCP tool for UI, or `curl` for API)
-3. **If start fails**: Diagnose root cause (check logs, verify environment activation, check `.env`)
-   - If unresolvable: report to user via `AskUserQuestion`; do NOT proceed
-4. **Record service info**: Note ports and process info in `task-progress.md`
+1. **Read `env-guide.md`** — locate the "Start All Services" section
+2. **Check if services are already running**: run the "Verify Services Running" health checks
+   - If already running and healthy: record PID/port in `task-progress.md`; proceed
+3. **If not running**: execute each start command with output capture:
+   ```bash
+   # Unix/macOS
+   [start command] > /tmp/svc-<slug>-start.log 2>&1 &
+   sleep 3
+   head -30 /tmp/svc-<slug>-start.log
+
+   # Windows
+   cmd /c "start /b [command] > %TEMP%\svc-<slug>-start.log 2>&1"
+   timeout /t 3 /nobreak >nul
+   powershell "Get-Content $env:TEMP\svc-<slug>-start.log -TotalCount 30"
+   ```
+   - Extract PID and port from the first 30 lines; record both in `task-progress.md`
+   - Run "Verify Services Running" health checks from `env-guide.md` — must respond before proceeding
+4. **If start fails**: check the log file, diagnose root cause; report to user via `AskUserQuestion` — do NOT proceed
 
 ### Cleanup (after all test cases complete) — MANDATORY
 
-1. **Stop services**: Kill the processes started above (by PID recorded in task-progress.md, or by port)
-   - By PID: `kill <pid>` (Unix) or `taskkill /F /PID <pid>` (Windows)
-   - By port: use `python scripts/port_guard_hook_template.py` locally, or find PID via `netstat -ano | grep <port>` (Windows) / `lsof -i :<port>` (Unix)
-2. **Verify cleanup**: confirm ports are released (health endpoint no longer responds)
-3. **Record cleanup result**: Note cleanup status in `task-progress.md`
+1. **Read `env-guide.md`** — locate "Stop All Services" and "Verify Services Stopped" sections
+2. **Stop services**: kill by PID (from `task-progress.md`) — preferred; or kill by port (fallback commands in `env-guide.md`)
+3. **Verify stopped**: run "Verify Services Stopped" commands — ports must not respond (max 5 seconds)
+4. **Record**: note cleanup status in `task-progress.md`
 
 **Why mandatory**: Leaving services running causes port conflicts in subsequent ST cycles.
 
-### Fix-and-Retest Protocol
+### Restart Protocol (between fix-and-retest cycles)
 
-When a test case fails and code is fixed:
-1. Kill the currently running service (by PID or port)
-2. Start fresh (port-guard hook clears any stale processes automatically)
-3. Re-execute the failed test cases from the beginning of the affected scenario
+When a test case fails, code is fixed, and services must restart:
+
+1. **Kill**: stop by PID (from `task-progress.md`) or by port (env-guide.md Stop commands)
+2. **Verify dead**: poll port — must not respond within 5 seconds
+3. **Start**: run start command with output capture (`head -30`) — extract new PID/port; update `task-progress.md`
+4. **Verify alive**: poll health endpoint — must respond within 10 seconds
 
 ## Checklist
 
@@ -225,7 +236,7 @@ Since implementation code already exists (TDD and Quality Gates are complete), e
 - Do not merge or simplify the test case execution process
 - **UI test cases MUST use Chrome DevTools MCP for verification**
 
-1. **Start services** per Service Management above (port-guard hook ensures clean ports)
+1. **Start services** per Service Management above — follow env-guide.md start protocol with output capture; record PID and port in `task-progress.md`
 2. For **non-UI test cases**: verify by running relevant test commands or manual checks against the running system
 3. For **UI test cases**: execute via Chrome DevTools MCP following the step tables — see `prompts/e2e-scenario-prompt.md` for MCP tool mapping
 4. Update the traceability matrix `结果` column to `PASS` or `FAIL` for each case

@@ -20,6 +20,7 @@ You MUST create a TodoWrite task for each step and complete them in order:
 - Read `task-progress.md` `## Current State` section — progress stats, last completed feature, next feature up
 - Read `feature-list.json` — note `constraints[]`, `assumptions[]`, `required_configs[]`, feature statuses
 - Read `long-task-guide.md` — project-specific workflow guidance
+- Read `env-guide.md` (if it exists) — note service names, ports, and health check URLs; required if the target feature has service dependencies
 - Read design doc **Section 1** (`docs/plans/*-design.md`) — project overview and architecture snapshot for global context
 - Run `git log --oneline -10` — recent commit context
 - Pick next `"status": "failing"` feature by priority, then by array position in `features[]` (first eligible wins) — **skip features with `"deprecated": true`**
@@ -57,6 +58,7 @@ When you need the design section or SRS requirement for a feature, do NOT grep f
   - If `init.sh` / `init.ps1` exists and environment is not ready: run it once
   - Record decision in `task-progress.md` if script was executed
 - **Confirm test commands available**: Run `python scripts/get_tool_commands.py feature-list.json` and verify the test/coverage/mutation commands are correct for the tech stack; use these commands directly throughout the cycle (no wrapper scripts)
+- **Service readiness**: Services are managed by `long-task-feature-st` (Step 10) — do not start them during Bootstrap. If you need a running service for manual smoke testing during implementation, use `env-guide.md` "Start All Services" with output capture, record PID in `task-progress.md`, and stop it using "Stop All Services" before Step 10 begins
 - Smoke-test previously passing features (activate environment per `long-task-guide.md` → run test command directly)
 
 ### 3. Config Gate

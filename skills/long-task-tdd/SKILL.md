@@ -103,7 +103,13 @@ Would the test **fail** for each? If NO for most → rewrite.
 
 - **UI Pre-condition (verify before first [devtools] step):**
   Before any Chrome DevTools MCP testing, verify the application is reachable:
-  1. Start the dev server if not running (e.g., `npm run dev &` or `uvicorn main:app --port 8000 &`) — the port-guard hook ensures clean ports automatically
+  1. Start the dev server if not running — read `env-guide.md` and use the start command for the service with output capture:
+     ```bash
+     [start command from env-guide.md] > /tmp/svc-<slug>-start.log 2>&1 &
+     sleep 3
+     head -30 /tmp/svc-<slug>-start.log   # extract PID and port
+     ```
+     Record PID in `task-progress.md`. If PID is already recorded from this session, run the health check first — skip restart if already running.
   2. Use `navigate_page` to the feature's `ui_entry` URL (or default localhost URL)
   3. If connection refused or page error (ERR_CONNECTION_REFUSED, etc.) → the app is not running. DO NOT proceed with UI tests. Diagnose and fix the startup issue. Never skip UI verification.
 - Every `[devtools]` step must use EXPECT/REJECT format:
@@ -134,6 +140,14 @@ For subagent mode, dispatch with `skills/long-task-tdd/prompts/implementer-promp
 - Implement fresh from tests — never reference pre-existing code that was "deleted" in the Iron Law
 - One test at a time: make the simplest failing test pass first, then the next
 - No premature optimization or extra features
+
+**Startup output requirement** — for any feature that implements a server process or background service:
+The implementation MUST log at startup:
+- Bound port: e.g., `Starting server on port 8080`
+- PID: e.g., `PID: 12345`
+- Ready signal: e.g., `Server ready`
+
+Write a TDD Red test that verifies the startup output contains these values before implementing the server binding. This enables reliable port/PID extraction via `head -30` of the startup log.
 
 ## Step 3: TDD Refactor
 

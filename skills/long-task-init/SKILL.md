@@ -56,11 +56,70 @@ You MUST create a TodoWrite task for each step and complete them in order:
      - Direct mutation testing command (e.g., `mutmut run`)
      - Direct coverage report command
      - These replace the now-removed test.sh/mutate.sh wrappers — Claude runs these directly
+   - **Must include `Service Commands` section** (only if project has server processes): reference `env-guide.md` as the authoritative source for start/stop/restart commands; list health check URLs; include reminder about the Restart Protocol
    - Validate:
      ```bash
      python scripts/validate_guide.py long-task-guide.md --feature-list feature-list.json
      ```
-5. **Generate `init.sh` / `init.ps1`** — Create real, runnable bootstrap scripts:
+5. **Generate `env-guide.md`** — Create an explicit service lifecycle guide at the project root (user-editable):
+
+   - Read the design doc for service port declarations, health check URLs, and service names (API design / architecture sections)
+   - Read `.env.example` for `*_PORT=` variables
+   - Generate `env-guide.md` with the following sections:
+
+   **Header note** (top of file):
+   > User-editable. Claude reads this file before managing services. Update when ports change or new services are added.
+
+   **Services table**:
+   | Service Name | Port | Start Command | Stop Command | Verify URL |
+   |---|---|---|---|---|
+   | (one row per service) | | | | |
+
+   **Start All Services** — for each service:
+   ```bash
+   # Unix/macOS
+   [start command] > /tmp/svc-<slug>-start.log 2>&1 &
+   sleep 3
+   head -30 /tmp/svc-<slug>-start.log
+   # → Extract PID and port from output; record both in task-progress.md
+
+   # Windows alternative
+   cmd /c "start /b [command] > %TEMP%\svc-<slug>-start.log 2>&1"
+   timeout /t 3 /nobreak >nul
+   powershell "Get-Content $env:TEMP\svc-<slug>-start.log -TotalCount 30"
+   ```
+
+   **Verify Services Running** — for each service:
+   ```bash
+   curl -f http://localhost:<port>/health   # or appropriate health endpoint
+   ```
+
+   **Stop All Services** — kill by PID (primary) or port (fallback):
+   ```bash
+   # By PID (preferred — use PID recorded in task-progress.md)
+   kill <PID>                              # Unix/macOS
+   taskkill /F /PID <PID>                  # Windows
+
+   # By port (fallback)
+   lsof -ti :<port> | xargs kill -9        # Unix/macOS
+   for /f "tokens=5" %a in ('netstat -ano ^| findstr :<port>') do taskkill /F /PID %a  # Windows
+   ```
+
+   **Verify Services Stopped** — ports must show no output:
+   ```bash
+   lsof -i :<port>                         # Unix/macOS — expect no output
+   netstat -ano | findstr :<port>           # Windows — expect no output
+   ```
+
+   **Restart Protocol (4 steps)**:
+   1. **Kill** — Stop All Services (by PID from task-progress.md, or by port)
+   2. **Verify dead** — run Verify Services Stopped; poll port max 5 seconds — must not respond
+   3. **Start** — run Start All Services with output capture → `head -30` → extract new PID/port → update task-progress.md
+   4. **Verify alive** — run Verify Services Running; poll health endpoint max 10 seconds — must respond
+
+   - If the project is CLI-only or library-only (no server processes): generate a minimal `env-guide.md` with a header note "No server processes — environment activation only" and only the activation command from `long-task-guide.md`
+
+6. **Generate `init.sh` / `init.ps1`** — Create real, runnable bootstrap scripts:
    - Read `references/init-script-recipes.md` (in the long-task-init skill directory) for per-tool templates and best practices
    - **Detect environment manager** from design doc tech stack and project constraints:
      - Python: miniconda/conda/mamba, venv, poetry, pipenv, uv, pyenv
@@ -73,41 +132,7 @@ You MUST create a TodoWrite task for each step and complete them in order:
    - **Must include**: error handling, version checks, clear success/failure output
    - Actual dependency installation commands (not commented stubs)
    - Must be immediately executable after `git clone`
-   - **Must include at the end**: psutil installation for ST port-guard hooks:
-     ```bash
-     # Install psutil for ST port-guard hooks (cross-platform process management)
-     if command -v pip &>/dev/null; then pip install psutil --quiet
-     elif command -v pip3 &>/dev/null; then pip3 install psutil --quiet
-     else echo "[WARN] pip not found — ST port-guard hook will use stdlib fallback"; fi
-     ```
-   - For Python projects: also add `psutil` to `requirements.txt` or `pyproject.toml`
-6. **Generate `.claude/st-config.json`** — Declare service ports for the plugin-level port-guard hook:
-
-   **Why**: The long-task-agent plugin registers a PreToolUse/Bash hook (`hooks/port_guard.py`) that fires automatically before every server-start command. It reads `.claude/st-config.json` to know which ports belong to this project.
-
-   Extract port information from:
-   - Design doc: service port declarations in API design or architecture sections
-   - `.env.example`: extract `*_PORT=` variables
-   - `package.json` scripts: extract `--port` arguments
-   - `application.yml` / `application.properties`: extract `server.port`
-
-   Generate `.claude/st-config.json`:
-   ```json
-   {
-     "ports": [<all discovered port numbers as integers>],
-     "port_range": null,
-     "process_patterns": [<project-specific process names, e.g., "uvicorn", "myapp">],
-     "health_check": {
-       "url": "http://localhost:<primary_port>/health",
-       "timeout": 30
-     },
-     "exclude_pids": []
-   }
-   ```
-   If no ports can be determined, use `"ports": []` — the hook falls back to runtime auto-discovery.
-
-   **Note**: No hook scripts or settings.json changes needed — the PreToolUse, SessionStart, and SessionEnd hooks are already registered at the plugin level via the long-task-agent `hooks/hooks.json`.
-
+   - **Note**: psutil is not required — service lifecycle is managed via `env-guide.md` commands, not hooks
 7. **Populate SRS fields in `feature-list.json`** — from the **SRS document**:
    - `constraints[]` — copy CON-xxx items from SRS "Constraints" section; each a concise string
    - `assumptions[]` — copy ASM-xxx items from SRS "Assumptions & Dependencies" section; each a concise string
@@ -160,18 +185,16 @@ You MUST create a TodoWrite task for each step and complete them in order:
     - Verify test execution works: activate env → run test command from `long-task-guide.md` → confirm tests execute (may all fail at this point — that's expected)
     - Verify mutation testing command is available: activate env → run mutation tool version check
     - If any check fails: diagnose root cause, fix the script or configuration, re-run
-    - Do NOT manually start services here — services are started by Claude directly during ST testing; the plugin-level port-guard hook fires automatically to ensure clean ports
+    - Do NOT start services here — services are started during ST testing using the commands defined in `env-guide.md`
 15. **Update `task-progress.md`** — update `## Current State` with initial progress (0/N features passing), then append Session 0 entry (include SRS + design doc references)
 16. **Begin first Worker cycle** — **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-work`
 
-## Port Config Maintenance (Worker cycles)
+## Service Config Maintenance (Worker cycles)
 
-When a Worker cycle introduces a **new backend service or changes a service port**, update `.claude/st-config.json`:
-- Add the new port to `ports[]`
-- Add the process name to `process_patterns[]` if project-specific
+When a Worker cycle introduces a **new backend service or changes a service port**, update `env-guide.md`:
+- Add a new row to the Services table (service name, port, start/stop/verify commands)
+- Add corresponding Start, Verify, Stop, and Restart commands for the new service
 - Include in the git commit for that feature
-
-The plugin-level port-guard hook reads this file at runtime — no hook scripts need to be regenerated.
 
 ## Feature List Schema
 
@@ -233,8 +256,8 @@ Each feature:
 | `task-progress.md` | Session-by-session progress log |
 | `RELEASE_NOTES.md` | Living release notes (Keep a Changelog format) |
 | `examples/` | Runnable examples directory |
-| `init.sh` / `init.ps1` | Environment bootstrap (LLM-generated); includes psutil install for plugin port-guard hook |
-| `.claude/st-config.json` | Port declarations for plugin port-guard hook (LLM-generated, Worker-maintained) |
+| `init.sh` / `init.ps1` | Environment bootstrap (LLM-generated) |
+| `env-guide.md` | Service lifecycle commands — start/stop/restart/verify with output capture; user-editable |
 | `long-task-guide.md` | Worker session guide with env activation + direct test commands (LLM-generated, validated) |
 | `.env.example` | Template for required env configs (safe to commit) |
 

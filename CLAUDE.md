@@ -224,6 +224,8 @@ using-long-task (router)
 - **verification_steps immutable in Worker**: Only the increment skill can update verification_steps; Worker must use `/long-task:increment` for requirement changes
 - **ST acceptance test cases after Quality Gates**: Generate and execute ISO/IEC/IEEE 29119 acceptance test cases per feature after TDD and Quality Gates; test cases validate implementation against requirements
 - **Deprecated features excluded**: Worker skips deprecated features; ST readiness ignores them; routing counts only active features
+- **Service lifecycle via env-guide.md**: All service start/stop/restart operations use the commands in `env-guide.md`. No implicit hook-based cleanup exists. Always follow the 4-step Restart Protocol between test cycles. Always capture the first 30 lines of startup output to extract PID/port.
+- **Startup output in code**: Any code that starts a server or background service must print bound port, PID, and ready signal at startup — enables reliable extraction via `head -30` of the startup log.
 
 ### Generated Persistent Artifacts
 
@@ -238,8 +240,8 @@ using-long-task (router)
 | `task-progress.md` | Init | `## Current State` header (updated by Worker each session) + session log |
 | `RELEASE_NOTES.md` | Init | Living release notes (Keep a Changelog format) |
 | `examples/` | Worker | Runnable examples demonstrating completed features |
-| `init.sh` / `init.ps1` | Init | Environment bootstrap (LLM-generated); includes psutil install for plugin port-guard hook |
-| `.claude/st-config.json` | Init | Declares known service ports for plugin port-guard hook (updated by Worker when new services added) |
+| `init.sh` / `init.ps1` | Init | Environment bootstrap (LLM-generated) |
+| `env-guide.md` | Init | Service lifecycle commands — start/stop/restart/verify with output capture; user-editable |
 | `long-task-guide.md` | Init | Worker session guide: includes env activation commands + direct test/coverage/mutation commands (LLM-generated, validated) |
 | `.env.example` | Init | Template for required env configs (safe to commit; `.env` has secrets) |
 | `docs/plans/*-st-plan.md` | ST | System testing plan with Requirements Traceability Matrix |
@@ -392,11 +394,10 @@ long-task-agent/
 │   ├── increment.md                   # /long-task:increment
 │   └── status.md                      # /long-task:status
 ├── hooks/
-│   ├── hooks.json                     # Plugin-level hook config (SessionStart + PreToolUse/Bash + SessionEnd)
+│   ├── hooks.json                     # Plugin-level hook config (SessionStart only — port-guard and session-cleanup removed)
 │   ├── session-start                  # Inject using-long-task + phase detection (bash)
 │   ├── run-hook.cmd                   # Cross-platform polyglot wrapper for bash hooks
-│   ├── port_guard.py                  # PreToolUse/Bash hook: auto-clears ports before server-start commands
-│   └── session_cleanup.py             # SessionStart/End hook: snapshot → differential cleanup
+│   └── (port_guard.py, session_cleanup.py removed — service lifecycle managed via env-guide.md)
 ├── scripts/
 │   ├── init_project.py                # Project scaffolding
 │   ├── get_tool_commands.py           # Tech stack → CLI commands lookup

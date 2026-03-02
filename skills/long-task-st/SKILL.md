@@ -28,11 +28,17 @@ python scripts/check_st_readiness.py feature-list.json
 - All features have `"status": "passing"` — if any failing, invoke `long-task:long-task-work` instead
 - SRS document exists (`docs/plans/*-srs.md`); Design document exists (`docs/plans/*-design.md`)
 - Load `.env` if it exists
-- **Start ST runtime services**: Start services directly using commands from `long-task-guide.md`
-  - Skip if project is CLI/library only
-  - The port-guard hook fires automatically before any server-start command, clearing conflicting ports
-  - Verify health endpoint responds before proceeding; if start fails, record in `task-progress.md` and report to user via `AskUserQuestion`
-  - **Record info**: Note ports and process PIDs in `task-progress.md`
+- **Start ST runtime services**: Start services using commands from `env-guide.md` (skip if CLI/library only)
+  - Read `env-guide.md` — use "Start All Services" section; run each command with output redirect:
+    ```bash
+    [start command] > /tmp/svc-<slug>-start.log 2>&1 &
+    sleep 3
+    head -30 /tmp/svc-<slug>-start.log
+    ```
+  - Extract PID and port from the first 30 lines
+  - Run "Verify Services Running" health checks from `env-guide.md` — must respond before proceeding
+  - If start fails: check the log, record in `task-progress.md`, report to user via `AskUserQuestion`
+  - **Record info**: PIDs and ports in `task-progress.md` — required for Step 11 cleanup
 - Read `feature-list.json` — note `tech_stack`, `quality_gates`, `constraints[]`, `assumptions[]`
 - Read SRS — extract all FR-xxx, NFR-xxx, IFR-xxx, CON-xxx requirements; read Stakeholders, User Personas, and Glossary sections
 - Read Design doc — extract architecture, API design, testing strategy (§9), third-party dependencies (§8)
@@ -194,8 +200,8 @@ Generate `docs/plans/YYYY-MM-DD-st-report.md` with these sections:
 - Update `task-progress.md` with ST session entry
 - Validate: `python scripts/validate_features.py feature-list.json`
 - **Cleanup (MANDATORY)**: Stop services started in Step 1
-  - Kill by PID (recorded in `task-progress.md`) or by port (`netstat -ano | findstr <port>` on Windows, `lsof -i :<port>` on Unix)
-  - Verify ports are released (health endpoint no longer responds)
+  - Read `env-guide.md` "Stop All Services" section — kill by PID (from `task-progress.md`, preferred) or by port (fallback)
+  - Run `env-guide.md` "Verify Services Stopped" commands — ports must not respond
   - **Record cleanup result**: Note cleanup status in `task-progress.md`
 
 ### 12. Verdict
