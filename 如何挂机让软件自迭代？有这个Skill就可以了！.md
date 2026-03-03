@@ -46,6 +46,32 @@ AI Coder会带来**X倍效率提升**已经是个进行时。问题是这个**X*
 
 先看它能干什么：
 
+先看效果：
+
+
+
+以上基于CC+opus，技术选型langchain
+
+
+
+
+
+同样一份原始需求，基于CC+GLM4.7 -5.0又开发了一版，技术选型也为langchain
+
+
+
+
+
+还没完，基于CC+minimax-m25，再开发了一版，此次选型为Spring AI
+
+
+
+
+
+共计消耗tokens约为10亿上下
+
+
+
 ### 全流程严格遵从SDD，告别Vibe coding“抽卡”
 
 ![](images\4.png)

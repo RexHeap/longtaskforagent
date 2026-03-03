@@ -1,179 +1,185 @@
-# Quick Start
+# 语言 / Language
 
-### 1. Installation
+**[中文](README.md)** | **[English](README_EN.md)**
 
-In Claude Code, register the marketplace first:
+---
+
+# 快速开始
+
+### 1. 安装
+
+在 Claude Code 中，首先注册市场：
 
 ```bash
 /plugin marketplace add suriyel/longtaskforagent
 ```
 
-Then install the plugin from this marketplace:
+然后从该市场安装插件：
 
 ```shell
 /plugin install long-task@longtaskforagent
 ```
 
-### 2. Quick Start
+### 2. 快速开始
 
-After launching Claude Code, simply tell it what you want to build:
-
-```
-> I want to build a weather query mini-app. use `long task skill`.
-```
-
-The system will automatically enter the **Requirements phase**, helping you refine requirements through structured questioning and ultimately generate a standardized SRS document. The subsequent workflow is fully automated:
+启动 Claude Code 后，只需告诉它您想构建什么：
 
 ```
-Requirements → UCD (if UI) → Design → Init → Worker cycles → System Testing
+> 我想构建一个天气查询小程序。使用 long task skill。
 ```
 
-Or use shortcut commands to jump directly to the corresponding phase:
+系统将自动进入**需求阶段**，通过结构化提问帮助您完善需求，最终生成标准化的 SRS 文档。后续工作流程完全自动化：
 
 ```
-/long-task:requirements  — Start requirements elicitation
-/long-task:ucd           — Generate UCD style guide
-/long-task:design        — Start design phase
-/long-task:init          — Initialize project after design approval
-/long-task:work          — Start feature development
-/long-task:st            — Run system testing
-/long-task:increment     — Incremental development (add new features)
+需求 → UCD (如有UI) → 设计 → 初始化 → 工作循环 → 系统测试
+```
+
+或使用快捷命令直接跳转到对应阶段：
+
+```
+/long-task:requirements  — 启动需求收集
+/long-task:ucd           — 生成 UCD 风格指南
+/long-task:design        — 启动设计阶段
+/long-task:init          — 设计批准后初始化项目
+/long-task:work          — 启动功能开发
+/long-task:st            — 运行系统测试
+/long-task:increment     — 增量开发（添加新功能）
 ```
 
 ---
 
 # Long-Task Agent
 
-**A Claude Code skill plugin that turns single-session AI coding into a rigorous, multi-session software engineering workflow.**
+**一款 Claude Code 技能插件，将单会话 AI 编码转变为严谨的多会话软件工程工作流。**
 
-Most AI coding assistants lose context after one conversation. Long-Task Agent solves this by implementing a six-phase architecture with persistent state bridging — enabling Claude Code to build complex projects across unlimited sessions with the discipline of a professional engineering team.
+大多数 AI 编程助手在一次对话后会丢失上下文。Long-Task Agent 通过实现六阶段架构和持久状态桥接解决了这个问题——使 Claude Code 能够以专业工程团队的纪律，跨无限会话构建复杂项目。
 ![Hero Banner](images/1.png)
 
-## Why Long-Task Agent?
+## 为什么选择 Long-Task Agent？
 
-| Problem | How Long-Task Agent Solves It |
+| 问题 | Long-Task Agent 如何解决 |
 |---------|-------------------------------|
-| AI forgets everything after `/clear` | Persistent artifacts (`feature-list.json`, `task-progress.md`, git history) bridge sessions automatically |
-| AI generates code without understanding requirements | ISO/IEC/IEEE 29148-aligned requirements elicitation produces an approved SRS before any code is written |
-| AI skips testing or writes shallow tests | Strict TDD (Red→Green→Refactor) with coverage gates (≥90% line, ≥80% branch) and mutation testing (≥80% score) |
-| AI produces inconsistent UI | UCD style guide with token-based design system ensures visual consistency across all features |
-| AI drifts from the approved design | Automated spec & design compliance review after every feature |
-| No way to add features to an existing project safely | Increment skill performs impact analysis, updates SRS/Design/UCD in place, tracks changes with waves |
-| "Works on my machine" syndrome | System Testing phase (IEEE 829) with regression, integration, E2E, and NFR verification |
+| AI 在 `/clear` 后忘记所有内容 | 持久化产物（`feature-list.json`、`task-progress.md`、git 历史）自动桥接会话 |
+| AI 不理解需求就生成代码 | 符合 ISO/IEC/IEEE 29148 的需求收集在编写任何代码前产生经批准的 SRS |
+| AI 跳过测试或编写浅层测试 | 严格的 TDD（红→绿→重构）配合覆盖率门禁（≥90% 行覆盖，≥80% 分支覆盖）和变异测试（≥80% 得分） |
+| AI 产生不一致的 UI | 带令牌化设计系统的 UCD 风格指南确保所有功能的视觉一致性 |
+| AI 偏离批准的设计 | 每个功能后自动进行规范和设计合规性审查 |
+| 无法安全地向现有项目添加功能 | 增量技能执行影响分析，就地更新 SRS/设计/UCD，用波次跟踪变更 |
+| "在我机器上能跑"综合症 | 系统测试阶段（IEEE 829）包含回归、集成、端到端和 NFR 验证 |
 
 ![Problem vs Solution](images/2.png)
 
-## Core Philosophy
+## 核心理念
 
-### 1. Requirements-Driven, Not Code-First
+### 1. 需求驱动，而非代码优先
 
-Every project starts with structured requirements elicitation — not coding. The SRS captures the *what*, the UCD captures the *look*, and the design document captures the *how*. No code is written until all three are approved.
+每个项目都从结构化的需求收集开始——而不是编码。SRS 捕获*做什么*，UCD 捕获*外观*，设计文档捕获*怎么做*。三者全部批准后才会编写代码。
 
-### 2. Persistent State Bridges Sessions
+### 2. 持久状态桥接会话
 
-Ten+ persistent artifacts ensure zero knowledge loss between sessions:
+十多个持久化产物确保会话间零知识丢失：
 
-| Artifact | Purpose |
+| 产物 | 用途 |
 |----------|---------|
-| `feature-list.json` | Structured task inventory with status tracking (JSON prevents model corruption) |
-| `task-progress.md` | Session-by-session log with current state header |
-| `docs/plans/*-srs.md` | Approved Software Requirements Specification |
-| `docs/plans/*-design.md` | Approved technical design document |
-| `docs/plans/*-ucd.md` | Approved UCD style guide (UI projects) |
-| `long-task-guide.md` | Worker session guide with env activation + tool commands |
-| `docs/test-cases/feature-*.md` | Per-feature ST test case documents (ISO/IEC/IEEE 29119) |
-| `docs/plans/*-st-plan.md` | System testing plan with RTM |
-| `docs/plans/*-st-report.md` | System testing report with Go/No-Go verdict |
-| `RELEASE_NOTES.md` | Living changelog in Keep a Changelog format |
-| Git history | Full change history with descriptive commits |
+| `feature-list.json` | 带状态跟踪的结构化任务清单（JSON 防止模型损坏） |
+| `task-progress.md` | 逐会话日志，带当前状态标题 |
+| `docs/plans/*-srs.md` | 已批准的软件需求规格说明书 |
+| `docs/plans/*-design.md` | 已批准的技术设计文档 |
+| `docs/plans/*-ucd.md` | 已批准的 UCD 风格指南（UI 项目） |
+| `long-task-guide.md` | 工作会话指南，含环境激活 + 工具命令 |
+| `docs/test-cases/feature-*.md` | 每功能的 ST 测试用例文档（ISO/IEC/IEEE 29119） |
+| `docs/plans/*-st-plan.md` | 带 RTM 的系统测试计划 |
+| `docs/plans/*-st-report.md` | 带 Go/No-Go 结论的系统测试报告 |
+| `RELEASE_NOTES.md` | Keep a Changelog 格式的活态变更日志 |
+| Git 历史 | 带描述性提交的完整变更历史 |
 
-### 3. Quality is Non-Negotiable
+### 3. 质量不可妥协
 
-Every feature passes through a gauntlet of automated quality gates — no exceptions, no shortcuts:
+每个功能都要通过一系列自动化质量门禁——无例外，无捷径：
 
-- **TDD Red→Green→Refactor** — tests are written before code, always
-- **Coverage Gate** — line ≥90%, branch ≥80%
-- **Mutation Gate** — mutation score ≥80% (catches tests that pass without actually testing anything)
-- **Spec & Design Compliance Review** — every feature is checked against the SRS and design doc
-- **UCD Compliance** — UI features are verified against style tokens
+- **TDD 红→绿→重构** — 先写测试，总是如此
+- **覆盖率门禁** — 行覆盖 ≥90%，分支覆盖 ≥80%
+- **变异门禁** — 变异得分 ≥80%（捕获那些通过但实际没测试任何东西的测试）
+- **规范和设计合规性审查** — 每个功能都要对照 SRS 和设计文档检查
+- **UCD 合规** — UI 功能要验证是否符合风格令牌
 
-### 4. One Feature Per Cycle
+### 4. 每个周期一个功能
 
-Each worker session focuses on exactly one feature. This prevents context exhaustion, ensures clean commits, and keeps every feature independently verifiable.
+每个工作会话专注于恰好一个功能。这防止上下文耗尽，确保干净的提交，并使每个功能独立可验证。
 
 ![Quality Gates](images/3.png)
 
-## Six-Phase Architecture
+## 六阶段架构
 
 
 ![Architecture](images/4.png)
 
-### Phase 0a: Requirements Elicitation
+### 阶段 0a：需求收集
 
-- Structured questioning aligned with ISO/IEC/IEEE 29148
-- EARS requirement templates (Given/When/Then acceptance criteria)
-- Anti-pattern detection: weasel words, compound requirements, design leakage
-- Produces an approved **SRS** (`docs/plans/*-srs.md`)
+- 符合 ISO/IEC/IEEE 29148 的结构化提问
+- EARS 需求模板（Given/When/Then 验收标准）
+- 反模式检测：模糊词、复合需求、设计泄漏
+- 产出一份已批准的 **SRS**（`docs/plans/*-srs.md`）
 
-### Phase 0b: UCD Style Guide
+### 阶段 0b：UCD 风格指南
 
-- Defines visual direction, color tokens, typography, spacing
-- Generates text-to-image prompts for component mockups
-- Auto-skips for non-UI projects
-- Produces an approved **UCD** (`docs/plans/*-ucd.md`)
+- 定义视觉方向、颜色令牌、排版、间距
+- 为组件模型生成文本转图像提示词
+- 非UI项目自动跳过
+- 产出一份已批准的 **UCD**（`docs/plans/*-ucd.md`）
 
-### Phase 0c: Design
+### 阶段 0c：设计
 
-- Proposes 2-3 approaches with trade-offs
-- Per-feature Mermaid diagrams (class, sequence, flow)
-- Third-party dependency versions with compatibility verification
-- Produces an approved **Design Document** (`docs/plans/*-design.md`)
+- 提出带有权衡分析的 2-3 种方案
+- 每功能的 Mermaid 图（类图、序列图、流程图）
+- 第三方依赖版本及兼容性验证
+- 产出一份已批准的 **设计文档**（`docs/plans/*-design.md`）
 
-### Phase 1: Initialization
+### 阶段 1：初始化
 
-- Reads SRS + Design, scaffolds project skeleton
-- Decomposes requirements into 10-200+ verifiable features
-- Generates environment bootstrap scripts (`init.sh` / `init.ps1`)
-- Creates initial git commit
+- 读取 SRS + 设计，脚手架项目骨架
+- 将需求分解为 10-200+ 个可验证功能
+- 生成环境引导脚本（`init.sh` / `init.ps1`）
+- 创建初始 git 提交
 
-### Phase 2: Worker Cycles
+### 阶段 2：工作循环
 
-Each cycle follows a strict discipline:
+每个循环遵循严格纪律：
 
 ```
-Orient → Bootstrap → Config Gate → DevTools Gate → Plan
-  → TDD Red → TDD Green → Coverage Gate
-    → TDD Refactor → Mutation Gate
-      → Feature ST (Black-Box) → Compliance Review
-        → Add Examples → Persist → Next Feature
+定位 → 引导 → 配置门禁 → 开发工具门禁 → 计划
+  → TDD 红 → TDD 绿 → 覆盖率门禁
+    → TDD 重构 → 变异门禁
+      → 功能 ST（黑盒） → 合规性审查
+        → 添加示例 → 持久化 → 下一个功能
 ```
 
-### Phase 3: System Testing
+### 阶段 3：系统测试
 
-- Per-feature ST (ISO/IEC/IEEE 29119) — black-box acceptance testing via Chrome DevTools MCP
-- IEEE 829-aligned system-level test planning with Requirements Traceability Matrix
-- Regression, integration, E2E, NFR verification, exploratory testing
-- Go/No-Go verdict — defects loop back to Worker for fixes
+- 每功能 ST（ISO/IEC/IEEE 29119）—— 通过 Chrome DevTools MCP 进行黑盒验收测试
+- 符合 IEEE 829 的系统级测试计划，带需求追溯矩阵
+- 回归、集成、端到端、NFR 验证、探索性测试
+- Go/No-Go 结论——缺陷循环回工作会话进行修复
 
-### Phase 1.5: Increment (Post-Launch Changes)
+### 阶段 1.5：增量（发布后变更）
 
-- Place an `increment-request.json` signal file → the skill auto-detects it
-- Impact analysis against existing features
-- Updates SRS, Design, UCD in place (git tracks history)
-- Appends new features with wave metadata for traceability
+- 放置 `increment-request.json` 信号文件 → 技能自动检测
+- 对现有功能的影响分析
+- 就地更新 SRS、设计、UCD（git 跟踪历史）
+- 带波次元数据追加新功能以实现可追溯性
   ![Worker Cycle](images/5.png)
 
-## 12-Skill Superpowers Architecture
+## 12 技能超能力架构
 
-Long-Task Agent uses an **on-demand skill loading** pattern — only the bootstrap router is loaded at session start; phase skills are loaded as needed, keeping context lean.
+Long-Task Agent 使用**按需技能加载**模式——只有引导路由器在会话开始时加载；阶段技能按需加载，保持上下文精简。
 
 ```
-using-long-task (bootstrap router — always loaded)
+using-long-task (引导路由器 — 始终加载)
    │
    ├─→ long-task-requirements ──→ long-task-ucd ──→ long-task-design ──→ long-task-init
-   │                              (auto-skip if no UI)                        │
+   │                              (无UI时自动跳过)                        │
    │                                                                          ↓
-   ├─→ long-task-increment (if increment-request.json exists)          long-task-work
+   ├─→ long-task-increment (如果 increment-request.json 存在)          long-task-work
    │                                                                     │  │  │  │
    │                                                              ┌───────┘  │  └──────┴─────┐
    │                                                              ↓          ↓                ↓
@@ -183,39 +189,39 @@ using-long-task (bootstrap router — always loaded)
    │                                                              └───────────┴──────→ long-task
    │                                                                           -review
    │
-   └─→ long-task-st (when all features pass)
+   └─→ long-task-st (当所有功能通过时)
 ```
 
-| Skill | Role |
+| 技能 | 角色 |
 |-------|------|
-| `using-long-task` | Bootstrap router — detects project state, invokes correct phase |
-| `long-task-requirements` | ISO 29148 requirements elicitation → SRS |
-| `long-task-ucd` | UCD style guide with design tokens |
-| `long-task-design` | Technical design with trade-off analysis |
-| `long-task-init` | Project scaffolding and feature decomposition |
-| `long-task-work` | Worker orchestrator (one feature per cycle) |
-| `long-task-tdd` | TDD Red→Green→Refactor discipline |
-| `long-task-quality` | Coverage gate + mutation gate |
-| `long-task-feature-st` | Per-feature black-box acceptance testing (Chrome DevTools MCP + ISO/IEC/IEEE 29119) |
-| `long-task-review` | Spec, design, and UCD compliance review |
-| `long-task-increment` | Post-launch feature additions with impact analysis |
-| `long-task-st` | IEEE 829 system testing with Go/No-Go verdict |
+| `using-long-task` | 引导路由器——检测项目状态，调用正确阶段 |
+| `long-task-requirements` | ISO 29148 需求收集 → SRS |
+| `long-task-ucd` | 带设计令牌的 UCD 风格指南 |
+| `long-task-design` | 带权衡分析的技术设计 |
+| `long-task-init` | 项目脚手架和功能分解 |
+| `long-task-work` | 工作编排器（每周期一个功能） |
+| `long-task-tdd` | TDD 红→绿→重构纪律 |
+| `long-task-quality` | 覆盖率门禁 + 变异门禁 |
+| `long-task-feature-st` | 每功能黑盒验收测试（Chrome DevTools MCP + ISO/IEC/IEEE 29119） |
+| `long-task-review` | 规范、设计和 UCD 合规性审查 |
+| `long-task-increment` | 带影响分析的发布后功能添加 |
+| `long-task-st` | 带 Go/No-Go 结论的 IEEE 829 系统测试 |
 
 ---
 
-## Multi-Language Support
+## 多语言支持
 
-Long-Task Agent is language-agnostic. It supports any tech stack through configurable tool settings:
+Long-Task Agent 与语言无关。它通过可配置的工具设置支持任何技术栈：
 
-| Language | Test Framework | Coverage | Mutation Testing |
+| 语言 | 测试框架 | 覆盖率 | 变异测试 |
 |----------|---------------|----------|------------------|
 | Python | pytest | pytest-cov | mutmut |
 | Java | JUnit | JaCoCo | PIT (pitest) |
 | TypeScript | Vitest / Jest | c8 / istanbul | Stryker |
 | C/C++ | Google Test | gcov + lcov | Mull |
-| *Custom* | *Any* | *Any* | *Any* |
+| *自定义* | *任意* | *任意* | *任意* |
 
-The `tech_stack` field in `feature-list.json` drives all tool commands — use `get_tool_commands.py` to eliminate per-language lookup:
+`feature-list.json` 中的 `tech_stack` 字段驱动所有工具命令——使用 `get_tool_commands.py` 消除每种语言的查找：
 
 ```bash
 python long-task-agent/scripts/get_tool_commands.py feature-list.json
@@ -223,105 +229,99 @@ python long-task-agent/scripts/get_tool_commands.py feature-list.json
 
 ---
 
-## Validation & Safety Scripts
+## 验证和安全脚本
 
-The plugin includes a suite of validation scripts to prevent common failures:
+插件包含一套验证脚本以防止常见故障：
 
-| Script | Purpose |
+| 脚本 | 用途 |
 |--------|---------|
-| `validate_features.py` | Validates `feature-list.json` schema and data integrity |
-| `validate_guide.py` | Validates `long-task-guide.md` structural completeness |
-| `check_configs.py` | Verifies required environment configs before feature work |
-| `check_devtools.py` | Verifies Chrome DevTools MCP availability for UI features |
-| `check_st_readiness.py` | Confirms all features pass before system testing |
-| `validate_increment_request.py` | Validates increment request signal file |
-| `validate_st_cases.py` | Validates ST test case document (ISO/IEC/IEEE 29119) |
-| `get_tool_commands.py` | Maps tech stack to CLI commands |
-| `analyze-tokens.py` | Analyzes UCD design tokens from generated images |
-| `auto_loop.py` | Automated workflow runner for multi-feature sessions |
+| `validate_features.py` | 验证 `feature-list.json` 模式和数据完整性 |
+| `validate_guide.py` | 验证 `long-task-guide.md` 结构完整性 |
+| `check_configs.py` | 在功能工作前验证所需的环境配置 |
+| `check_devtools.py` | 验证 UI 功能的 Chrome DevTools MCP 可用性 |
+| `check_st_readiness.py` | 在系统测试前确认所有功能通过 |
+| `validate_increment_request.py` | 验证增量请求信号文件 |
+| `validate_st_cases.py` | 验证 ST 测试用例文档（ISO/IEC/IEEE 29119） |
+| `get_tool_commands.py` | 将技术栈映射到 CLI 命令 |
+| `analyze-tokens.py` | 从生成的图像分析 UCD 设计令牌 |
+| `auto_loop.py` | 多功能会话的自动化工作流运行器 |
 
 ---
 
-## How It Compares
+## 对比分析
 
-<!-- ILLUSTRATION: Comparison Matrix
-![Comparison](images/6.png)
-
-> **Text-to-image prompt**: A feature comparison matrix rendered as a clean infographic table. Rows represent capabilities: "Multi-session persistence", "Requirements elicitation", "TDD enforcement", "Coverage gates", "Mutation testing", "UI style consistency", "Design compliance review", "System testing", "Incremental development". Columns compare "Typical AI Coding" (mostly red X marks) vs "Long-Task Agent" (all green checkmarks). The Long-Task Agent column glows with a subtle highlight. Clean table design with alternating row colors, professional fonts. Landscape, 1200×800px.
--->
-
-| Capability | Typical AI Coding | Long-Task Agent |
+| 能力 | 典型 AI 编程 | Long-Task Agent |
 |------------|------------------|-----------------|
-| Multi-session persistence | Manual copy-paste | Automatic via 10+ persistent artifacts |
-| Requirements process | "Just build it" | ISO 29148-aligned SRS with structured elicitation |
-| Design process | Ad-hoc | 2-3 approaches with trade-offs, section-by-section approval |
-| TDD discipline | Optional, often skipped | Mandatory Red→Green→Refactor for every feature |
-| Test quality verification | Line coverage only (if any) | Coverage + mutation testing with configurable thresholds |
-| UI consistency | Per-developer taste | UCD style guide with token-based design system |
-| Post-implementation review | None | Automated spec & design compliance review |
-| System testing | Manual QA | IEEE 829-aligned with RTM, Go/No-Go verdict |
-| Adding features post-launch | Edit code directly | Impact analysis, tracked waves, document updates |
-| Project state visibility | Read the code | `task-progress.md` + `feature-list.json` + `/long-task:status` |
+| 多会话持久化 | 手动复制粘贴 | 通过 10+ 持久化产物自动完成 |
+| 需求流程 | "直接构建" | 符合 ISO 29148 的 SRS，带结构化收集 |
+| 设计流程 | 临时性 | 2-3 种方案带权衡，逐节批准 |
+| TDD 纪律 | 可选，经常跳过 | 每个功能强制 红→绿→重构 |
+| 测试质量验证 | 仅行覆盖（如果有） | 覆盖率 + 变异测试，可配置阈值 |
+| UI 一致性 | 每个开发者的口味 | 带令牌化设计系统的 UCD 风格指南 |
+| 实现后审查 | 无 | 自动规范和设计合规性审查 |
+| 系统测试 | 手动 QA | 符合 IEEE 829，带 RTM、Go/No-Go 结论 |
+| 发布后添加功能 | 直接编辑代码 | 影响分析、跟踪波次、文档更新 |
+| 项目状态可见性 | 读代码 | `task-progress.md` + `feature-list.json` + `/long-task:status` |
 
 ---
 
-## Project Structure
+## 项目结构
 
 ```
 long-task-agent/
-├── skills/                          # 12 skills (on-demand loaded)
-│   ├── using-long-task/             # Bootstrap router
-│   ├── long-task-requirements/      # Phase 0a: Requirements & SRS
-│   ├── long-task-ucd/               # Phase 0b: UCD style guide
-│   ├── long-task-design/            # Phase 0c: Design
-│   ├── long-task-init/              # Phase 1: Initialization
-│   ├── long-task-work/              # Phase 2: Worker orchestrator
-│   ├── long-task-tdd/               # TDD discipline
-│   ├── long-task-quality/           # Coverage + mutation gates
-│   ├── long-task-feature-st/        # Per-feature black-box acceptance testing
-│   ├── long-task-review/            # Compliance review
-│   ├── long-task-increment/         # Incremental development
-│   └── long-task-st/                # System testing
-├── scripts/                         # Validation & utility scripts
-├── tests/                           # Test suite for all scripts
-├── hooks/                           # SessionStart hook config
-├── commands/                        # User shortcut commands
-├── docs/templates/                  # Customizable SRS & design templates
-└── CLAUDE.md                        # Cross-session navigation index
+├── skills/                          # 12 个技能（按需加载）
+│   ├── using-long-task/             # 引导路由器
+│   ├── long-task-requirements/      # 阶段 0a：需求和 SRS
+│   ├── long-task-ucd/               # 阶段 0b：UCD 风格指南
+│   ├── long-task-design/            # 阶段 0c：设计
+│   ├── long-task-init/              # 阶段 1：初始化
+│   ├── long-task-work/              # 阶段 2：工作编排器
+│   ├── long-task-tdd/               # TDD 纪律
+│   ├── long-task-quality/           # 覆盖率 + 变异门禁
+│   ├── long-task-feature-st/        # 每功能黑盒验收测试
+│   ├── long-task-review/            # 合规性审查
+│   ├── long-task-increment/         # 增量开发
+│   └── long-task-st/                # 系统测试
+├── scripts/                         # 验证和实用脚本
+├── tests/                           # 所有脚本的测试套件
+├── hooks/                           # SessionStart 钩子配置
+├── commands/                        # 用户快捷命令
+├── docs/templates/                  # 可自定义的 SRS 和设计模板
+└── CLAUDE.md                        # 跨会话导航索引
 ```
 
 ---
 
-## Guiding Principles
+## 指导原则
 
-> **"Measure twice, cut once."**
+> **"三思而后行。"**
 
-1. **No code without approved requirements** — the SRS captures hidden assumptions before they become bugs
-2. **No implementation without approved design** — 2-3 approaches are evaluated before committing to one
-3. **No shortcuts on quality** — TDD, coverage, mutation testing, and compliance review are non-negotiable gates
-4. **One feature, one cycle** — focused work prevents context exhaustion and ensures clean, atomic commits
-5. **Persistent artifacts over ephemeral memory** — JSON state files and git history survive any context loss
-6. **Systematic debugging over guess-and-fix** — root cause analysis before any fix attempt
-7. **Immutable verification steps** — once set, the bar never lowers
+1. **无批准需求就不写代码** — SRS 在隐藏假设变成 bug 之前捕获它们
+2. **无批准设计就不实现** — 在承诺一种方案前评估 2-3 种方案
+3. **质量不走捷径** — TDD、覆盖率、变异测试和合规性审查是不可协商的门禁
+4. **一个功能，一个周期** — 专注工作防止上下文耗尽并确保干净、原子性的提交
+5. **持久化产物胜过短暂记忆** — JSON 状态文件和 git 历史在任何上下文丢失后依然存在
+6. **系统化调试胜过猜测修复** — 在任何修复尝试前进行根因分析
+7. **不可变的验证步骤** — 一旦设定，标准永不降低
 
 
 ![Principles](images/7.png)
 
-## Roadmap
+## 路线图
 
-- **Parallel Agent Dispatch** — identify independent features and dispatch worker subagents in parallel
-- **Plugin Discovery System** — YAML frontmatter metadata, priority shadowing, marketplace distribution
-- **Auto-Update Mechanism** — version checking with user notification (never auto-apply)
-- **Multi-Platform Support** — Codex (OpenAI) and OpenCode adapter layers
+- **并行 Agent 调度** — 识别独立功能并并行调度工作子 agent
+- **插件发现系统** — YAML 前置元数据、优先级遮蔽、市场分发
+- **自动更新机制** — 版本检查和用户通知（从不自动应用）
+- **多平台支持** — Codex (OpenAI) 和 OpenCode 适配层
 
 ---
 
-## License
+## 许可证
 
 [MIT](LICENSE)
 
 ---
 
 <p align="center">
-  <i>Built for Claude Code — turning AI-assisted development into AI-engineered development.</i>
+  <i>为 Claude Code 构建 — 将 AI 辅助开发转变为 AI 工程化开发。</i>
 </p>
