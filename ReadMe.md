@@ -1,41 +1,43 @@
 # Quick Start
 
-### 1. 安装
+### 1. Installation
 
-在 Claude Code 中安装本 skill：
+In Claude Code, register the marketplace first:
 
 ```bash
-# 方式一：直接安装到 Claude Code
-claude install suriyel/longtaskforagent
-
-# 方式二：手动克隆到 skills 目录
-git clone https://github.com/suriyel/longtaskforagent.git
+/plugin marketplace add suriyel/longtaskforagent
 ```
 
-### 2. 快速示例
+Then install the plugin from this marketplace:
 
-开启 Claude Code 后，只需告诉它你想做什么：
-
-```
-> 我想做一个天气查询小程序
+```shell
+/plugin install long-task@longtaskforagent
 ```
 
-系统会自动进入 **Requirements 阶段**，通过结构化提问帮你完善需求，最终生成规范的 SRS 文档。后续流程完全自动化：
+### 2. Quick Start
+
+After launching Claude Code, simply tell it what you want to build:
 
 ```
-Requirements → UCD (如有UI) → Design → Init → Worker cycles → System Testing
+> I want to build a weather query mini-app. use `long task skill`.
 ```
 
-或者使用快捷命令直接跳转到对应阶段：
+The system will automatically enter the **Requirements phase**, helping you refine requirements through structured questioning and ultimately generate a standardized SRS document. The subsequent workflow is fully automated:
 
 ```
-/long-task:requirements  — 开始需求 elicitation
-/long-task:ucd           — 生成 UCD 风格指南
-/long-task:design        — 开始设计阶段
-/long-task:init          — 设计审批后初始化项目
-/long-task:work          — 开始功能开发
-/long-task:st            — 运行系统测试
-/long-task:increment     — 增量开发（添加新功能）
+Requirements → UCD (if UI) → Design → Init → Worker cycles → System Testing
+```
+
+Or use shortcut commands to jump directly to the corresponding phase:
+
+```
+/long-task:requirements  — Start requirements elicitation
+/long-task:ucd           — Generate UCD style guide
+/long-task:design        — Start design phase
+/long-task:init          — Initialize project after design approval
+/long-task:work          — Start feature development
+/long-task:st            — Run system testing
+/long-task:increment     — Incremental development (add new features)
 ```
 
 ---
@@ -243,7 +245,8 @@ The plugin includes a suite of validation scripts to prevent common failures:
 ## How It Compares
 
 <!-- ILLUSTRATION: Comparison Matrix
-![Comparison](docs/images/comparison.png)
+![Comparison](images/6.png)
+
 > **Text-to-image prompt**: A feature comparison matrix rendered as a clean infographic table. Rows represent capabilities: "Multi-session persistence", "Requirements elicitation", "TDD enforcement", "Coverage gates", "Mutation testing", "UI style consistency", "Design compliance review", "System testing", "Incremental development". Columns compare "Typical AI Coding" (mostly red X marks) vs "Long-Task Agent" (all green checkmarks). The Long-Task Agent column glows with a subtle highlight. Clean table design with alternating row colors, professional fonts. Landscape, 1200×800px.
 -->
 
@@ -301,12 +304,8 @@ long-task-agent/
 6. **Systematic debugging over guess-and-fix** — root cause analysis before any fix attempt
 7. **Immutable verification steps** — once set, the bar never lowers
 
-<!-- ILLUSTRATION: Guiding Principles
-![Principles](docs/images/principles.png)
-> **Text-to-image prompt**: Seven principle cards arranged in a 3-3-1 grid layout, each card featuring a minimalist icon and a short title. Card 1: clipboard with checkmark "Requirements First". Card 2: blueprint icon "Design Before Code". Card 3: shield with star "Quality Non-Negotiable". Card 4: target with single arrow "One Feature, One Cycle". Card 5: bridge connecting two cliffs "Persistent State". Card 6: magnifying glass on root "Systematic Debugging". Card 7: locked padlock "Immutable Standards". Cards have subtle drop shadows on a light gray background. Each card uses a distinct accent color from a cohesive palette (navy, teal, emerald, amber, coral, violet, slate). Grid layout, 1200×900px.
--->
 
----
+![Principles](images/7.png)
 
 ## Roadmap
 
