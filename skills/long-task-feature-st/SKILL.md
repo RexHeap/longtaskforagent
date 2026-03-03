@@ -40,6 +40,8 @@ This skill verifies from the **outside** — as a user or external system would:
 
 Manage services explicitly using `env-guide.md`. No hooks handle this automatically.
 
+**env-guide.md is the source of truth.** It must always reflect commands that actually work. If a command in env-guide.md fails, fix the command and update env-guide.md before proceeding.
+
 ### Start (before first test case)
 
 1. **Read `env-guide.md`** — locate the "Start All Services" section
@@ -59,12 +61,16 @@ Manage services explicitly using `env-guide.md`. No hooks handle this automatica
    ```
    - Extract PID and port from the first 30 lines; record both in `task-progress.md`
    - Run "Verify Services Running" health checks from `env-guide.md` — must respond before proceeding
-4. **If start fails**: check the log file, diagnose root cause; report to user via `AskUserQuestion` — do NOT proceed
+4. **If start fails**: check the log file, diagnose root cause
+   - Try corrected commands (port conflict, missing env vars, env not activated, missing dependencies)
+   - Once a working command is found: **update `env-guide.md`** — fix the Services table row and Start command; if the fix requires >2 shell commands, extract to `scripts/svc-<slug>-start.sh` / `scripts/svc-<slug>-start.ps1` and update env-guide.md to call the script
+   - Report to user via `AskUserQuestion`: include original error, fix applied, note that env-guide.md was updated — do NOT proceed until service is healthy
 
 ### Cleanup (after all test cases complete) — MANDATORY
 
 1. **Read `env-guide.md`** — locate "Stop All Services" and "Verify Services Stopped" sections
 2. **Stop services**: kill by PID (from `task-progress.md`) — preferred; or kill by port (fallback commands in `env-guide.md`)
+   - If the stop command fails (PID not found, kill returns error): try the port-based fallback; once a working command is confirmed, **update `env-guide.md`** Stop command to reflect the fix
 3. **Verify stopped**: run "Verify Services Stopped" commands — ports must not respond (max 5 seconds)
 4. **Record**: note cleanup status in `task-progress.md`
 
@@ -75,9 +81,20 @@ Manage services explicitly using `env-guide.md`. No hooks handle this automatica
 When a test case fails, code is fixed, and services must restart:
 
 1. **Kill**: stop by PID (from `task-progress.md`) or by port (env-guide.md Stop commands)
+   - If kill fails: try port-based fallback; once working, **update `env-guide.md`** Stop command
 2. **Verify dead**: poll port — must not respond within 5 seconds
 3. **Start**: run start command with output capture (`head -30`) — extract new PID/port; update `task-progress.md`
+   - If start fails: diagnose, fix, **update `env-guide.md`** before retrying
 4. **Verify alive**: poll health endpoint — must respond within 10 seconds
+
+### Scripts Convention (for complex service sequences)
+
+If startup or cleanup requires >2 shell steps (e.g., DB migration + seed + server start), consolidate into versioned scripts rather than keeping complex inline commands in env-guide.md:
+
+- Create `scripts/svc-<slug>-start.sh` (Unix) / `scripts/svc-<slug>-start.ps1` (Windows) — full startup sequence
+- Create `scripts/svc-<slug>-stop.sh` / `scripts/svc-<slug>-stop.ps1` — full teardown sequence
+- Update `env-guide.md` "Start All Services" to call `bash scripts/svc-<slug>-start.sh` (or `pwsh scripts/svc-<slug>-start.ps1`)
+- Commit the scripts and updated env-guide.md together in the same commit
 
 ## Checklist
 

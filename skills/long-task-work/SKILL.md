@@ -211,7 +211,7 @@ Create runnable examples in `examples/` demonstrating the completed feature.
 | "Mutation score is probably OK" | Run mutation tests and read the report. |
 | "The UI looks correct to me" | Run automated detection + EXPECT/REJECT. |
 | "ST test case failed but the code is fine" | Report to user. No bypass. Fix code or use `/long-task:increment` to modify test case. |
-| "Port is busy, let me kill manually" | The port-guard hook handles this automatically. Just re-run the command. |
+| "Port is busy, let me kill manually" | Use env-guide.md "Stop All Services" (port fallback) to kill it, then restart via env-guide.md Start — update env-guide.md if the command needed correction. |
 | "Environment is down, skip ST cases" | BLOCKED, not skipped. Fix environment or ask user. |
 | "I need to change the verification_steps" | Use `/long-task:increment` — Worker cannot modify them. |
 | "This deprecated feature still needs work" | Skip it. Deprecated features are excluded. |

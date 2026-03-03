@@ -117,6 +117,7 @@ You MUST create a TodoWrite task for each step and complete them in order:
    3. **Start** — run Start All Services with output capture → `head -30` → extract new PID/port → update task-progress.md
    4. **Verify alive** — run Verify Services Running; poll health endpoint max 10 seconds — must respond
 
+   - **Complex startup sequences**: if a service requires >2 shell commands to start (e.g., DB migration + seed + server), generate `scripts/svc-<slug>-start.sh` / `scripts/svc-<slug>-start.ps1` containing the full sequence; update env-guide.md "Start All Services" to call `bash scripts/svc-<slug>-start.sh` instead of inline commands; same for stop sequences (`scripts/svc-<slug>-stop.sh`). This keeps env-guide.md readable while versioning the logic in scripts/
    - If the project is CLI-only or library-only (no server processes): generate a minimal `env-guide.md` with a header note "No server processes — environment activation only" and only the activation command from `long-task-guide.md`
 
 6. **Generate `init.sh` / `init.ps1`** — Create real, runnable bootstrap scripts:
@@ -191,10 +192,13 @@ You MUST create a TodoWrite task for each step and complete them in order:
 
 ## Service Config Maintenance (Worker cycles)
 
-When a Worker cycle introduces a **new backend service or changes a service port**, update `env-guide.md`:
-- Add a new row to the Services table (service name, port, start/stop/verify commands)
-- Add corresponding Start, Verify, Stop, and Restart commands for the new service
-- Include in the git commit for that feature
+When a Worker cycle introduces a new backend service, changes a service port, or discovers that the actual start/stop command differs from env-guide.md, update `env-guide.md`:
+- Add/update the Services table row (service name, port, start/stop/verify commands)
+- Add/update corresponding Start, Verify, Stop, and Restart commands
+- If the startup or stop sequence requires >2 shell steps: extract to `scripts/svc-<slug>-start.sh` / `scripts/svc-<slug>-stop.sh` and update env-guide.md to reference the script
+- Include env-guide.md and any `scripts/svc-*` changes in the same git commit as the feature
+
+**env-guide.md must always reflect commands that actually work.** Any time a command is proven correct (during TDD Green or after fixing a failure), env-guide.md must be updated to match.
 
 ## Feature List Schema
 

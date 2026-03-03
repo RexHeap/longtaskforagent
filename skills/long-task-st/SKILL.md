@@ -37,7 +37,7 @@ python scripts/check_st_readiness.py feature-list.json
     ```
   - Extract PID and port from the first 30 lines
   - Run "Verify Services Running" health checks from `env-guide.md` — must respond before proceeding
-  - If start fails: check the log, record in `task-progress.md`, report to user via `AskUserQuestion`
+  - If start fails: check the log, diagnose root cause; try corrected commands (port conflict, env vars, missing deps); once a working command is confirmed **update `env-guide.md`** (Services table + Start command); if the fix needs >2 steps, extract to `scripts/svc-<slug>-start.sh` and reference from env-guide.md; then report to user via `AskUserQuestion`
   - **Record info**: PIDs and ports in `task-progress.md` — required for Step 11 cleanup
 - Read `feature-list.json` — note `tech_stack`, `quality_gates`, `constraints[]`, `assumptions[]`
 - Read SRS — extract all FR-xxx, NFR-xxx, IFR-xxx, CON-xxx requirements; read Stakeholders, User Personas, and Glossary sections
@@ -201,6 +201,7 @@ Generate `docs/plans/YYYY-MM-DD-st-report.md` with these sections:
 - Validate: `python scripts/validate_features.py feature-list.json`
 - **Cleanup (MANDATORY)**: Stop services started in Step 1
   - Read `env-guide.md` "Stop All Services" section — kill by PID (from `task-progress.md`, preferred) or by port (fallback)
+  - If the stop command fails: try port-based fallback; once a working command is confirmed, **update `env-guide.md`** Stop command; if >2 steps are needed, extract to `scripts/svc-<slug>-stop.sh` and reference from env-guide.md
   - Run `env-guide.md` "Verify Services Stopped" commands — ports must not respond
   - **Record cleanup result**: Note cleanup status in `task-progress.md`
 
