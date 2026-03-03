@@ -48,27 +48,25 @@ AI Coder会带来**X倍效率提升**已经是个进行时。问题是这个**X*
 
 先看效果：
 
-
+![image-20260304023852739](http://gitee.com/null_161_0561/picpic/raw/master/2021/image-20260304023852739.png)
 
 以上基于CC+opus，技术选型langchain
 
+同样一份原始需求，基于CC+GLM4.7 -5.0，采用本Skill再编码一次，技术选型也为langchain，此次增加了界面添加Tool功能
+
+![image-20260304023751414](http://gitee.com/null_161_0561/picpic/raw/master/2021/image-20260304023751414.png)
+
+还没完，基于CC+minimax-m25，再开发了一版，此次选型为Spring AI，需求变更为电信客服助手
+
+![image-20260304021246650](http://gitee.com/null_161_0561/picpic/raw/master/2021/image-20260304021246650.png)
+
+以及一套人才政策微信小程序+后台：
+
+![image-20260304024654392](http://gitee.com/null_161_0561/picpic/raw/master/2021/image-20260304024654392.png)
 
 
 
-
-同样一份原始需求，基于CC+GLM4.7 -5.0又开发了一版，技术选型也为langchain
-
-
-
-
-
-还没完，基于CC+minimax-m25，再开发了一版，此次选型为Spring AI
-
-
-
-
-
-共计消耗tokens约为10亿上下
+共计消耗tokens约为10亿上下，用于验证及优化本Skill
 
 
 
