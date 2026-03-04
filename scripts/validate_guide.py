@@ -136,6 +136,23 @@ def validate_guide(path: str, feature_list_path: str = None) -> list[str]:
     return errors
 
 
+FOOTER = "\n\n*by long task skill*\n"
+FOOTER_MARKER = "*by long task skill*"
+
+
+def _append_footer(path: str) -> None:
+    """Append '*by long task skill*' to the guide if not already present."""
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read()
+        if FOOTER_MARKER not in content:
+            with open(path, "a", encoding="utf-8") as f:
+                f.write(FOOTER)
+            print("Appended footer: *by long task skill*")
+    except Exception as e:
+        print(f"Warning: could not append footer: {e}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Validate LLM-generated long-task-guide.md")
     parser.add_argument("guide_path", help="Path to long-task-guide.md")
@@ -159,6 +176,7 @@ def main():
         sys.exit(1)
     else:
         print(f"VALID — all {total_sections} required sections present")
+        _append_footer(args.guide_path)
         sys.exit(0)
 
 

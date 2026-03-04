@@ -15,7 +15,8 @@ FULL_TEMPLATE='{
       "args": [
         "-y",
         "chrome-devtools-mcp@latest",
-        "--isolated=true"
+        "--isolated=true",
+        "--no-usage-statistics"
       ]
     }
   }
@@ -27,7 +28,8 @@ CD_BLOCK='    "chrome-devtools": {
       "args": [
         "-y",
         "chrome-devtools-mcp@latest",
-        "--isolated=true"
+        "--isolated=true",
+        "--no-usage-statistics"
       ]
     }'
 
