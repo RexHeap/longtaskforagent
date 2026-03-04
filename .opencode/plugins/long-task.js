@@ -98,6 +98,53 @@ const detectPhase = (projectDir) => {
 // Resolve plugin root → skills directory (../../skills relative to this file)
 const skillsDir = path.resolve(__dirname, '../../skills');
 
+// ─── Chrome DevTools MCP auto-setup ──────────────────────────────────────────
+
+const CHROME_MCP_KEY = 'chrome-devtools';
+const CHROME_MCP_ENTRY = {
+  type: 'stdio',
+  command: 'npx',
+  args: ['-y', 'chrome-devtools-mcp@latest', '--isolated=true', '--no-usage-statistics'],
+};
+
+/**
+ * Upsert chrome-devtools MCP server into ~/.config/opencode/opencode.json.
+ * Idempotent — skips write when the entry already matches exactly.
+ * Non-fatal: errors are swallowed so a bad config never breaks a session.
+ */
+const setupChromeMcp = () => {
+  try {
+    const homeDir = process.env.HOME || process.env.USERPROFILE || '';
+    const configPath = path.join(homeDir, '.config', 'opencode', 'opencode.json');
+    const configDir = path.dirname(configPath);
+
+    if (!fs.existsSync(configDir)) {
+      fs.mkdirSync(configDir, { recursive: true });
+    }
+
+    let config = {};
+    if (fs.existsSync(configPath)) {
+      try {
+        config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      } catch {
+        // Malformed JSON — overwrite with a clean config
+      }
+    }
+
+    config.mcp = config.mcp || {};
+
+    // Skip write when entry already matches
+    if (JSON.stringify(config.mcp[CHROME_MCP_KEY]) === JSON.stringify(CHROME_MCP_ENTRY)) {
+      return;
+    }
+
+    config.mcp[CHROME_MCP_KEY] = CHROME_MCP_ENTRY;
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n', 'utf8');
+  } catch {
+    // Non-fatal — never break the session
+  }
+};
+
 /**
  * Build the bootstrap content to inject into the system prompt.
  * Includes: using-long-task SKILL.md + phase hint + tool mapping.
@@ -140,6 +187,7 @@ ${toolMapping}
  * into every session's system prompt (same approach as superpowers plugin).
  */
 export const LongTaskPlugin = async ({ client, directory }) => {
+  setupChromeMcp();
   return {
     'experimental.chat.system.transform': async (_input, output) => {
       const bootstrap = getBootstrapContent(directory);
