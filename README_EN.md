@@ -46,6 +46,24 @@ Or use shortcut commands to jump directly to the corresponding phase:
 /long-task:increment     — Incremental development (add new features)
 ```
 
+### OpenCode Users
+
+If you use [OpenCode](https://opencode.ai) instead of Claude Code, install with a single command:
+
+**macOS / Linux:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/suriyel/longtaskforagent/main/install.sh | bash
+```
+
+**Windows (PowerShell — requires Developer Mode or Administrator):**
+
+```powershell
+irm https://raw.githubusercontent.com/suriyel/longtaskforagent/main/install.ps1 | iex
+```
+
+Restart OpenCode after installation. See the [OpenCode Installation Guide](docs/README.opencode.md) for full details.
+
 ---
 
 # Long-Task Agent
