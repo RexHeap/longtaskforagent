@@ -37,6 +37,7 @@ def test_creates_all_artifacts():
         expected_files = [
             "feature-list.json",
             "CLAUDE.md",
+            "AGENTS.md",
             "task-progress.md",
             "RELEASE_NOTES.md",
             os.path.join("examples", "README.md"),
@@ -361,6 +362,69 @@ def test_claude_md_contains_key_file_references():
         shutil.rmtree(tmp)
 
 
+def test_creates_agents_md():
+    """AGENTS.md should be created with marker and reference when it does not exist."""
+    tmp = tempfile.mkdtemp()
+    try:
+        run_init("test-project", tmp)
+        am_path = os.path.join(tmp, "AGENTS.md")
+        assert os.path.exists(am_path), "AGENTS.md should be created"
+        with open(am_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        assert "<!-- long-task-agent -->" in content, "Should contain marker"
+        assert "test-project" in content, "Should contain project name"
+    finally:
+        shutil.rmtree(tmp)
+
+
+def test_appends_to_existing_agents_md():
+    """AGENTS.md should be appended to (not overwritten) when it already exists."""
+    tmp = tempfile.mkdtemp()
+    try:
+        am_path = os.path.join(tmp, "AGENTS.md")
+        with open(am_path, "w", encoding="utf-8") as f:
+            f.write("# Existing Content\n\nSome existing instructions.\n")
+        run_init("test-project", tmp)
+        with open(am_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        assert content.startswith("# Existing Content"), "Original content should be preserved"
+        assert "<!-- long-task-agent -->" in content, "Should contain marker"
+        assert "feature-list.json" in content, "Should reference feature list"
+    finally:
+        shutil.rmtree(tmp)
+
+
+def test_idempotent_agents_md():
+    """Running init twice should not duplicate the reference in AGENTS.md."""
+    tmp = tempfile.mkdtemp()
+    try:
+        run_init("test-project", tmp)
+        run_init("test-project", tmp)
+        am_path = os.path.join(tmp, "AGENTS.md")
+        with open(am_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        count = content.count("<!-- long-task-agent -->")
+        assert count == 1, f"Marker should appear exactly once, found {count}"
+    finally:
+        shutil.rmtree(tmp)
+
+
+def test_agents_md_contains_key_file_references():
+    """AGENTS.md should reference key project files: feature-list.json, task-progress.md, docs/plans."""
+    tmp = tempfile.mkdtemp()
+    try:
+        run_init("test-project", tmp)
+        am_path = os.path.join(tmp, "AGENTS.md")
+        with open(am_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        assert "feature-list.json" in content, "Should reference feature list"
+        assert "task-progress.md" in content, "Should reference progress log"
+        assert "docs/plans" in content, "Should reference docs/plans"
+        assert "increment-request.json" in content, "Should reference increment signal file"
+    finally:
+        shutil.rmtree(tmp)
+
+
 def test_stdout_mentions_llm_todo():
     """init_project.py output should remind about LLM-generated files."""
     tmp = tempfile.mkdtemp()
@@ -391,6 +455,10 @@ if __name__ == "__main__":
         test_appends_to_existing_claude_md,
         test_idempotent_claude_md,
         test_claude_md_contains_guide_reference,
+        test_creates_agents_md,
+        test_appends_to_existing_agents_md,
+        test_idempotent_agents_md,
+        test_agents_md_contains_key_file_references,
         test_stdout_mentions_llm_todo,
         test_feature_list_has_constraints,
         test_feature_list_has_assumptions,

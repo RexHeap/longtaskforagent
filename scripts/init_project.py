@@ -38,7 +38,7 @@ from datetime import datetime
 
 CLAUDE_MD_MARKER = "<!-- long-task-agent -->"
 
-CLAUDE_MD_REFERENCE = (
+_LONG_TASK_REFERENCE_BODY = (
     "\n\n<!-- long-task-agent -->\n"
     "## Long-Task Agent\n\n"
     "This project uses a multi-session agent workflow with 12 skills loaded on-demand.\n"
@@ -50,30 +50,43 @@ CLAUDE_MD_REFERENCE = (
     "`feature-list.json` (task inventory), "
     "`task-progress.md` (session log), "
     "`RELEASE_NOTES.md` (changelog), "
+    "`docs/test-cases/feature-*.md` (per-feature ST test cases), "
     "`docs/plans/*-st-report.md` (ST report), "
     "`increment-request.json` (increment signal).\n"
     "<!-- /long-task-agent -->\n"
 )
 
+CLAUDE_MD_REFERENCE = _LONG_TASK_REFERENCE_BODY
+
+
+def _append_agent_md_reference(out_dir: str, project_name: str, filename: str):
+    """Append long-task-agent reference to an agent instruction file (idempotent)."""
+    path = os.path.join(out_dir, filename)
+
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read()
+        if CLAUDE_MD_MARKER in content:
+            print(f"Skipped: {path} (reference already exists)")
+            return
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(_LONG_TASK_REFERENCE_BODY)
+        print(f"Updated: {path} (appended long-task-agent reference)")
+    else:
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(f"# {project_name}\n")
+            f.write(_LONG_TASK_REFERENCE_BODY)
+        print(f"Created: {path}")
+
 
 def append_claude_md_reference(out_dir: str, project_name: str):
     """Append long-task-agent reference to CLAUDE.md (idempotent)."""
-    cm_path = os.path.join(out_dir, "CLAUDE.md")
+    _append_agent_md_reference(out_dir, project_name, "CLAUDE.md")
 
-    if os.path.exists(cm_path):
-        with open(cm_path, "r", encoding="utf-8") as f:
-            content = f.read()
-        if CLAUDE_MD_MARKER in content:
-            print(f"Skipped: {cm_path} (reference already exists)")
-            return
-        with open(cm_path, "a", encoding="utf-8") as f:
-            f.write(CLAUDE_MD_REFERENCE)
-        print(f"Updated: {cm_path} (appended long-task-agent reference)")
-    else:
-        with open(cm_path, "w", encoding="utf-8") as f:
-            f.write(f"# {project_name}\n")
-            f.write(CLAUDE_MD_REFERENCE)
-        print(f"Created: {cm_path}")
+
+def append_agents_md_reference(out_dir: str, project_name: str):
+    """Append long-task-agent reference to AGENTS.md for opencode (idempotent)."""
+    _append_agent_md_reference(out_dir, project_name, "AGENTS.md")
 
 
 
@@ -252,6 +265,9 @@ def main():
     # CLAUDE.md (append reference, never overwrite)
     append_claude_md_reference(out_dir, args.project_name)
 
+    # AGENTS.md (same reference for opencode, idempotent)
+    append_agents_md_reference(out_dir, args.project_name)
+
     # task-progress.md
     tp_path = os.path.join(out_dir, "task-progress.md")
     with open(tp_path, "w", encoding="utf-8") as f:
@@ -314,7 +330,7 @@ def main():
     print(f"Created: {examples_readme}")
 
     print(f"\nProject '{args.project_name}' initialized at {out_dir}")
-    print("Created: feature-list.json, CLAUDE.md, task-progress.md, RELEASE_NOTES.md, examples/, scripts/ (with helper scripts), docs/plans/, docs/test-cases/, docs/templates/")
+    print("Created: feature-list.json, CLAUDE.md, AGENTS.md, task-progress.md, RELEASE_NOTES.md, examples/, scripts/ (with helper scripts), docs/plans/, docs/test-cases/, docs/templates/")
     print("TODO (LLM generates during Initializer phase):")
     print("  - long-task-guide.md         (tailored Worker guide from SKILL.md + references + design doc)")
     print("  - init.sh / init.ps1         (environment bootstrap from design doc tech stack)")
