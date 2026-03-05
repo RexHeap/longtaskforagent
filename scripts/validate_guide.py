@@ -167,6 +167,8 @@ def main():
     if args.feature_list and has_ui_features(args.feature_list):
         total_sections += len(CHROME_DEVTOOLS_SECTIONS)
 
+    _append_footer(args.guide_path)
+
     if errors:
         print(f"GUIDE VALIDATION FAILED — {len(errors)} issue(s):\n")
         for e in errors:
@@ -176,7 +178,6 @@ def main():
         sys.exit(1)
     else:
         print(f"VALID — all {total_sections} required sections present")
-        _append_footer(args.guide_path)
         sys.exit(0)
 
 
