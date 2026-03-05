@@ -101,10 +101,10 @@ const skillsDir = path.resolve(__dirname, '../../skills');
 // ─── Chrome DevTools MCP auto-setup ──────────────────────────────────────────
 
 const CHROME_MCP_KEY = 'chrome-devtools';
+// OpenCode MCP format: type='local', command as array (not stdio/args style)
 const CHROME_MCP_ENTRY = {
-  type: 'stdio',
-  command: 'npx',
-  args: ['-y', 'chrome-devtools-mcp@latest', '--isolated=true', '--no-usage-statistics'],
+  type: 'local',
+  command: ['npx', '-y', 'chrome-devtools-mcp@latest', '--isolated=true', '--no-usage-statistics'],
 };
 
 /**
