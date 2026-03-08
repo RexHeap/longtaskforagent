@@ -284,9 +284,21 @@ def main():
     scripts_dir = os.path.join(out_dir, "scripts")
     os.makedirs(scripts_dir, exist_ok=True)
 
-    # Navigate from skills/long-task-init/scripts/ up to plugin root, then into scripts/
-    _THIS_DIR = os.path.dirname(os.path.abspath(__file__))  # skills/long-task-init/scripts/
-    _PLUGIN_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(_THIS_DIR)))  # plugin root
+    # Resolve plugin root.
+    # When this script runs from its original install location
+    # (skills/long-task-init/scripts/), three levels up is the plugin root.
+    # When the hook copies this script to a target project's scripts/ directory,
+    # it also writes a `.long-task-plugin-root` hint file alongside it so the
+    # copied script can locate the plugin's scripts/ directory correctly.
+    _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+    _hint_file = os.path.join(_THIS_DIR, '.long-task-plugin-root')
+    if os.path.isfile(_hint_file):
+        with open(_hint_file, encoding='utf-8') as _hf:
+            _hint = _hf.read().strip()
+        _PLUGIN_ROOT = _hint if (_hint and os.path.isdir(_hint)) else \
+            os.path.dirname(os.path.dirname(os.path.dirname(_THIS_DIR)))
+    else:
+        _PLUGIN_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(_THIS_DIR)))
     plugin_scripts_dir = os.path.join(_PLUGIN_ROOT, "scripts")
 
     helper_scripts = [

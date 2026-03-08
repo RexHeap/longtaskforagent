@@ -43,6 +43,18 @@ else
     status_hint="\\n\\nNo SRS, design, or feature-list.json found. Phase: Requirements."
 fi
 
+# ── Copy init_project.py to project scripts dir ──────────────────────────────
+# Ensures that models following the SKILL.md instruction
+# `python scripts/init_project.py …` can find the script in the target project.
+# The companion hint file tells the copied script where the plugin root is so it
+# can locate and copy the helper scripts (validate_features.py etc.) correctly.
+INIT_SCRIPT_SRC="${PLUGIN_ROOT}/skills/long-task-init/scripts/init_project.py"
+if [ -f "$INIT_SCRIPT_SRC" ]; then
+    mkdir -p "scripts"
+    cp "$INIT_SCRIPT_SRC" "scripts/init_project.py"
+    printf '%s' "${PLUGIN_ROOT}" > "scripts/.long-task-plugin-root"
+fi
+
 # Escape string for JSON embedding using bash parameter substitution.
 escape_for_json() {
     local s="$1"

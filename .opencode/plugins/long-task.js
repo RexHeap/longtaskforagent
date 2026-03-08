@@ -98,6 +98,33 @@ const detectPhase = (projectDir) => {
 // Resolve plugin root → skills directory (../../skills relative to this file)
 const skillsDir = path.resolve(__dirname, '../../skills');
 
+// ─── Copy init_project.py to target project ──────────────────────────────────
+// Ensures models following `python scripts/init_project.py …` from SKILL.md can
+// find the script. The companion hint file tells the copied script where the
+// plugin root is so it can locate and copy helper scripts (validate_features.py
+// etc.) into the target project's scripts/ directory correctly.
+
+const pluginRoot = path.resolve(__dirname, '../..');
+
+const copyInitScript = (directory) => {
+  try {
+    const src = path.join(pluginRoot, 'skills', 'long-task-init', 'scripts', 'init_project.py');
+    if (!fs.existsSync(src)) return;
+    const targetScriptsDir = path.join(directory, 'scripts');
+    if (!fs.existsSync(targetScriptsDir)) {
+      fs.mkdirSync(targetScriptsDir, { recursive: true });
+    }
+    fs.copyFileSync(src, path.join(targetScriptsDir, 'init_project.py'));
+    fs.writeFileSync(
+      path.join(targetScriptsDir, '.long-task-plugin-root'),
+      pluginRoot,
+      'utf8'
+    );
+  } catch {
+    // Non-fatal — never break the session
+  }
+};
+
 // ─── Chrome DevTools MCP auto-setup ──────────────────────────────────────────
 
 const CHROME_MCP_KEY = 'chrome-devtools';
@@ -188,6 +215,7 @@ ${toolMapping}
  */
 export const LongTaskPlugin = async ({ client, directory }) => {
   setupChromeMcp();
+  copyInitScript(directory);
   return {
     'experimental.chat.system.transform': async (_input, output) => {
       const bootstrap = getBootstrapContent(directory);
