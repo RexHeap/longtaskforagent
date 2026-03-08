@@ -52,7 +52,14 @@ INIT_SCRIPT_SRC="${PLUGIN_ROOT}/skills/long-task-init/scripts/init_project.py"
 if [ -f "$INIT_SCRIPT_SRC" ]; then
     mkdir -p "scripts"
     cp "$INIT_SCRIPT_SRC" "scripts/init_project.py"
-    printf '%s' "${PLUGIN_ROOT}" > "scripts/.long-task-plugin-root"
+    # Git Bash on Windows returns POSIX-style paths from `pwd`: /c/Users/...
+    # Python on Windows cannot resolve these with os.path.isdir(), so convert
+    # /c/Users/... → C:/Users/... before writing the hint file.
+    PLUGIN_ROOT_HINT="${PLUGIN_ROOT}"
+    if [[ "${PLUGIN_ROOT}" =~ ^/([a-zA-Z])/(.+) ]]; then
+        PLUGIN_ROOT_HINT="${BASH_REMATCH[1]^^}:/${BASH_REMATCH[2]}"
+    fi
+    printf '%s' "${PLUGIN_ROOT_HINT}" > "scripts/.long-task-plugin-root"
 fi
 
 # Escape string for JSON embedding using bash parameter substitution.

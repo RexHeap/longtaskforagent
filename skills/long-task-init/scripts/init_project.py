@@ -295,6 +295,14 @@ def main():
     if os.path.isfile(_hint_file):
         with open(_hint_file, encoding='utf-8') as _hf:
             _hint = _hf.read().strip()
+        # Defensive: normalize Git Bash POSIX paths to Windows paths.
+        # Git Bash writes /c/Users/... or c/Users/... (missing colon); Python on
+        # Windows needs C:/Users/... for os.path.isdir() to succeed.
+        if sys.platform == 'win32' and _hint:
+            import re as _re
+            _m = _re.match(r'^/?([a-zA-Z])/(.*)', _hint)
+            if _m:
+                _hint = _m.group(1).upper() + ':/' + _m.group(2)
         _PLUGIN_ROOT = _hint if (_hint and os.path.isdir(_hint)) else \
             os.path.dirname(os.path.dirname(os.path.dirname(_THIS_DIR)))
     else:
