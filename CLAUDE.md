@@ -12,13 +12,13 @@ The skill system follows the **superpowers architectural pattern**: 12 independe
 
 ### Initialize a new long-task project
 ```bash
-python long-task-agent/scripts/init_project.py <project-name> --path <output-dir>
+python long-task-agent/skills/long-task-init/scripts/init_project.py <project-name> --path <output-dir>
 
 # With language preset (auto-fills test/coverage/mutation tools):
-python long-task-agent/scripts/init_project.py <project-name> --path <output-dir> --lang python
+python long-task-agent/skills/long-task-init/scripts/init_project.py <project-name> --path <output-dir> --lang python
 
 # With custom thresholds:
-python long-task-agent/scripts/init_project.py <project-name> --path <output-dir> --lang java \
+python long-task-agent/skills/long-task-init/scripts/init_project.py <project-name> --path <output-dir> --lang java \
   --line-cov 85 --branch-cov 75 --mutation-score 70
 ```
 
@@ -85,7 +85,7 @@ python -m pytest tests/test_validate_increment_request.py
 python -m pytest tests/test_validate_st_cases.py
 ```
 
-> **Path note**: the `python long-task-agent/scripts/...` paths above are consumer-facing (run from the target project root after plugin install). When developing in this repo, replace `long-task-agent/` with `./` or omit it entirely.
+> **Path note**: the `python long-task-agent/skills/long-task-init/scripts/...` paths above are consumer-facing (run from the target project root after plugin install). When developing in this repo, replace `long-task-agent/` with `./` or omit it entirely.
 
 ### Shortcut commands
 - `/long-task:requirements` — Start requirements elicitation and SRS generation
@@ -346,6 +346,8 @@ long-task-agent/
 │   ├── long-task-design/SKILL.md      # Phase 0c: Design (takes SRS + UCD as input)
 │   ├── long-task-init/                # Phase 1: Initialization (reads SRS + UCD + design)
 │   │   ├── SKILL.md
+│   │   ├── scripts/
+│   │   │   └── init_project.py        # Project scaffolding (run as `python scripts/init_project.py`)
 │   │   └── references/
 │   │       └── init-script-recipes.md # Environment bootstrap templates (conda, venv, nvm, etc.)
 │   ├── long-task-work/               # Phase 2: Worker orchestrator
@@ -399,7 +401,6 @@ long-task-agent/
 │   ├── run-hook.cmd                   # Cross-platform polyglot wrapper for bash hooks
 │   └── (port_guard.py, session_cleanup.py removed — service lifecycle managed via env-guide.md)
 ├── scripts/
-│   ├── init_project.py                # Project scaffolding
 │   ├── get_tool_commands.py           # Tech stack → CLI commands lookup
 │   ├── validate_features.py           # Feature list validation
 │   ├── validate_guide.py              # Guide structural validation

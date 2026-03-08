@@ -22,7 +22,7 @@ Feature schema supports optional UI fields:
 - UI features must have at least one verification_step prefixed with "[devtools]"
 
 Usage:
-    python init_project.py <project-name> [--path <output-dir>]
+    python scripts/init_project.py <project-name> [--path <output-dir>]
            [--lang <language>] [--test-framework <framework>]
            [--coverage-tool <tool>] [--mutation-tool <tool>]
            [--line-cov <0-100>] [--branch-cov <0-100>] [--mutation-score <0-100>]
@@ -284,7 +284,11 @@ def main():
     scripts_dir = os.path.join(out_dir, "scripts")
     os.makedirs(scripts_dir, exist_ok=True)
 
-    plugin_scripts_dir = os.path.dirname(os.path.abspath(__file__))
+    # Navigate from skills/long-task-init/scripts/ up to plugin root, then into scripts/
+    _THIS_DIR = os.path.dirname(os.path.abspath(__file__))  # skills/long-task-init/scripts/
+    _PLUGIN_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(_THIS_DIR)))  # plugin root
+    plugin_scripts_dir = os.path.join(_PLUGIN_ROOT, "scripts")
+
     helper_scripts = [
         "validate_features.py",
         "check_configs.py",
@@ -292,6 +296,8 @@ def main():
         "validate_guide.py",
         "get_tool_commands.py",
         "validate_st_cases.py",
+        "validate_increment_request.py",
+        "check_st_readiness.py",
     ]
     for script_name in helper_scripts:
         src = os.path.join(plugin_scripts_dir, script_name)
@@ -314,7 +320,7 @@ def main():
     # docs/templates dir — copy ST case template
     templates_dir = os.path.join(out_dir, "docs", "templates")
     os.makedirs(templates_dir, exist_ok=True)
-    plugin_templates_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "docs", "templates")
+    plugin_templates_dir = os.path.join(_PLUGIN_ROOT, "docs", "templates")
     st_template_src = os.path.join(plugin_templates_dir, "st-case-template.md")
     st_template_dst = os.path.join(templates_dir, "st-case-template.md")
     if os.path.exists(st_template_src) and os.path.abspath(st_template_src) != os.path.abspath(st_template_dst):

@@ -15,7 +15,7 @@ import subprocess
 import sys
 import tempfile
 
-SCRIPT_PATH = os.path.join(os.path.dirname(__file__), "..", "scripts", "init_project.py")
+SCRIPT_PATH = os.path.join(os.path.dirname(__file__), "..", "skills", "long-task-init", "scripts", "init_project.py")
 
 
 def run_init(project_name, output_dir, extra_args=None):
