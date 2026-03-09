@@ -57,6 +57,7 @@ You MUST create a TodoWrite task for each step and complete them in order:
      - Direct coverage report command
      - These replace the now-removed test.sh/mutate.sh wrappers — Claude runs these directly
    - **Must include `Service Commands` section** (only if project has server processes): reference `env-guide.md` as the authoritative source for start/stop/restart commands; list health check URLs; include reminder about the Restart Protocol
+   - **Must include `Config Management` section**: describe how to add/update a config value for this project (e.g., "append `KEY=value` to `.env`" for dotenv projects, "set `key=value` in `application.properties`" for Spring Boot projects, "export KEY=value" for system-env-only projects). This section is referenced by the Worker Config Gate when prompting users for missing values.
    - Validate:
      ```bash
      python scripts/validate_guide.py long-task-guide.md --feature-list feature-list.json
@@ -165,6 +166,22 @@ You MUST create a TodoWrite task for each step and complete them in order:
    - API keys, service URLs → type `env`
    - Config files, certificates → type `file`
    - Link each to features via `required_by`; provide `check_hint` with setup instructions
+9b. **Generate `scripts/check_configs.py`** — project-specific config checker (LLM-generated, not copied from plugin):
+    - Analyze the project's config format based on `tech_stack.language` and the design doc:
+      - Python + `.env` pattern → use `load_dotenv`-style KEY=VALUE parsing
+      - Java/Spring → parse `src/main/resources/application.properties` or `application.yml`
+      - Node.js → read `.env` or `config/` directory
+      - Go / Rust → read TOML / YAML config files, or rely on system environment
+      - Any project that relies solely on system environment variables → no file loading needed
+    - Generate a script with this **standardized interface**:
+      - Usage: `python scripts/check_configs.py feature-list.json [--feature <id>]`
+      - Reads `required_configs[]` from `feature-list.json`
+      - Loads config values using the project-native format (hardcoded for this project)
+      - Checks each `env`-type config via `os.environ`, each `file`-type config via `os.path.exists`
+      - Prints each missing config with its `name` and `check_hint`
+      - Exit 0 = all required configs present; Exit 1 = one or more missing
+    - **No `--dotenv` or format flag needed** — the loading logic is built in for this project
+    - The plugin's `scripts/check_configs.py` is available as a reference template if useful
 10. **Generate `.env.example`** — from `required_configs`:
     - For each `env`-type config, write a commented template line:
       ```
@@ -173,8 +190,8 @@ You MUST create a TodoWrite task for each step and complete them in order:
       # Required by features: <required_by ids>
       <KEY>=
       ```
-    - Add `.env` to `.gitignore` (`.env.example` is safe to commit; `.env` contains secrets)
-    - This template helps users know which values to fill in; the Worker Config Gate will prompt for missing values and store them in `.env`
+    - Add secrets config files to `.gitignore` (e.g., `.env`); `.env.example` is safe to commit
+    - This template lists the required env vars; users load them via whichever config format the project uses; the Worker Config Gate will prompt for missing values
 11. **Validate**:
     ```bash
     python scripts/validate_features.py feature-list.json

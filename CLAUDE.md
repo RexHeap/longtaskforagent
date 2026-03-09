@@ -37,7 +37,6 @@ python long-task-agent/scripts/validate_guide.py long-task-guide.md --feature-li
 ```bash
 python long-task-agent/scripts/check_configs.py feature-list.json
 python long-task-agent/scripts/check_configs.py feature-list.json --feature 3
-python long-task-agent/scripts/check_configs.py feature-list.json --feature 3 --dotenv .env
 ```
 
 ### Check Chrome DevTools MCP availability (for UI features)
@@ -206,7 +205,7 @@ using-long-task (router)
 
 ### Critical Rules
 
-- **Config gate before planning**: Never plan or code when required configs are missing; load `.env` first, prompt user for missing values via text input, save to `.env`
+- **Config gate before planning**: Never plan or code when required configs are missing; load the project config first (per `long-task-guide.md` Config Management section), prompt user for missing values via text input, save to the appropriate config file
 - **Requirements before UCD/design**: Run requirements elicitation; no UCD/design until SRS approved
 - **UCD before design (UI projects)**: Run UCD style guide generation; no design until UCD approved (auto-skips for non-UI projects)
 - **Design before implementation**: Run design phase; no coding until design approved

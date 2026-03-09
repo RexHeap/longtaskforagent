@@ -27,7 +27,7 @@ python scripts/check_st_readiness.py feature-list.json
 
 - All features have `"status": "passing"` — if any failing, invoke `long-task:long-task-work` instead
 - SRS document exists (`docs/plans/*-srs.md`); Design document exists (`docs/plans/*-design.md`)
-- Load `.env` if it exists
+- Load config values if applicable — activate environment per `long-task-guide.md`; if the project uses a file-based config, ensure it is sourced before running the checks
 - **Start ST runtime services**: Start services using commands from `env-guide.md` (skip if CLI/library only)
   - Read `env-guide.md` — use "Start All Services" section; run each command with output redirect:
     ```bash
@@ -237,7 +237,7 @@ Present the ST report summary and Go/No-Go recommendation to the user via `AskUs
 ## Integration
 
 **Called by:** `using-long-task` (when feature-list.json exists AND all features passing), or `long-task-work` (Step 14 when no failing features remain)
-**Reads:** `feature-list.json`, `docs/plans/*-srs.md`, `docs/plans/*-design.md`, `docs/plans/*-ucd.md` (if UI), `docs/test-cases/feature-*.md` (per-feature ST from `long-task-feature-st`), `task-progress.md`, `.env`
+**Reads:** `feature-list.json`, `docs/plans/*-srs.md`, `docs/plans/*-design.md`, `docs/plans/*-ucd.md` (if UI), `docs/test-cases/feature-*.md` (per-feature ST from `long-task-feature-st`), `task-progress.md`, project config file (if applicable)
 **May invoke:** `long-task:long-task-work` (if Critical/Major defects found → fix loop)
 **Produces:** `docs/plans/YYYY-MM-DD-st-plan.md`, `docs/plans/YYYY-MM-DD-st-report.md`
 **Read on-demand (via Read tool, NOT Skill tool):** `references/st-recipes.md`

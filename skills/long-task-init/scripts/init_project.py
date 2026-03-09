@@ -311,7 +311,6 @@ def main():
 
     helper_scripts = [
         "validate_features.py",
-        "check_configs.py",
         "check_devtools.py",
         "validate_guide.py",
         "get_tool_commands.py",

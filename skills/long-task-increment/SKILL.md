@@ -189,7 +189,8 @@ Update supporting files as needed:
 
 - **`long-task-guide.md`**: If new tools, frameworks, or patterns were introduced → regenerate or update relevant sections; re-validate with `python scripts/validate_guide.py long-task-guide.md --feature-list feature-list.json`
 - **`init.sh` / `init.ps1`**: If new dependencies were added → update bootstrap scripts (keep idempotent)
-- **`.env.example`**: If new `required_configs` of type `env` → append template lines
+- **`.env.example`**: If new `required_configs` of type `env` → append template lines (this is the canonical env-var reference template regardless of the project's actual config format)
+- **`scripts/check_configs.py`**: If new `required_configs` are added → regenerate or update the project-specific checker to include the new configs
 
 ### 8. Finalize
 
