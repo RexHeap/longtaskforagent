@@ -22,11 +22,12 @@ You MUST create a TodoWrite task for each of these items and complete them in or
 1. **Explore project context** — read existing docs, code, constraints; detect SRS template
 2. **Structured elicitation** — ask clarifying questions one at a time, challenge each requirement
 3. **Classify requirements** — functional / NFR / constraint / assumption / interface / exclusion
-4. **Write requirements** — apply EARS templates, assign IDs, write acceptance criteria
+4. **Write requirements** — apply EARS templates, assign IDs, write acceptance criteria, generate diagrams
 5. **Validate SRS** — check 8 quality attributes, detect anti-patterns, verify testability
-6. **Present & approve SRS** — section-by-section for non-trivial projects
-7. **Save SRS document** — `docs/plans/YYYY-MM-DD-<topic>-srs.md` and commit
-8. **Transition to UCD** — **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-ucd` (it auto-skips to design if no UI features in SRS)
+6. **SRS Compliance Review** — dispatch srs-reviewer subagent; gate: all R/A/C/S/D checks PASS before proceeding
+7. **Present & approve SRS** — section-by-section for non-trivial projects
+8. **Save SRS document** — `docs/plans/YYYY-MM-DD-<topic>-srs.md` and commit
+9. **Transition to UCD** — **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-ucd` (it auto-skips to design if no UI features in SRS)
 
 **The terminal state is invoking long-task-ucd.** Do NOT invoke any other skill.
 
@@ -131,6 +132,32 @@ Apply the EARS (Easy Approach to Requirements Syntax) template to each functiona
 - **Priority** — Must / Should / Could / Won't (MoSCoW)
 - **Source** — which stakeholder need or user story this traces to
 
+### 4c. Generate Diagrams
+
+After all requirements are written, generate two Mermaid visual aids and place them in the SRS template sections reserved for them.
+
+#### Use Case View (place in Section 3.1 of the SRS)
+
+Generate one `graph LR` diagram with:
+- All actors from Section 3 as external nodes — use ellipse syntax: `Actor((Name))`
+- All FR-xxx titles as use case nodes inside a `subgraph System Boundary` enclosure
+- One directed edge per actor-to-use-case participation implied by the acceptance criteria
+- Every actor must have at least one edge; every FR must appear as a use case node
+
+#### Process Flows (place in Section 4.1 of the SRS)
+
+Generate one `flowchart TD` per functional area. A functional area qualifies if it has:
+- 3+ sequential steps, OR
+- At least one decision/branching node in its acceptance criteria
+
+Rules per diagram:
+- Start node: `([Start: <trigger>])`, End node: `([End: <outcome>])` — rounded stadium style
+- Decision node: diamond `{condition?}`, with `-- YES -->` and `-- NO -->` labeled branches
+- Every error/boundary case from acceptance criteria must appear as a branch path
+- Use a `####` subheading naming each workflow (e.g., `#### Flow: User Registration`)
+
+Scope: one combined flow if the SRS has ≤4 requirements with no branching; one flow per functional area if the SRS has ≥5 requirements across 2+ areas.
+
 ## Step 5: Validate SRS Quality
 
 Run a systematic quality check against the **8 quality attributes** (IEEE 830 / ISO 29148):
@@ -172,7 +199,58 @@ Scan the full SRS for these anti-patterns and fix before presenting:
 - Glossary covers all domain-specific terms used in requirements
 - Out-of-Scope section explicitly lists deferred features
 
-## Step 6: Present & Approve SRS
+## Step 6: SRS Compliance Review
+
+Dispatch a subagent to independently verify the SRS against ISO/IEC/IEEE 29148 standards and diagram requirements before presenting to the user. This is mandatory — self-validation in Step 5 is not a substitute.
+
+### 6a. Dispatch SRS Reviewer Subagent
+
+```
+Task(
+  subagent_type="general-purpose",
+  prompt="""
+  You are an SRS compliance reviewer aligned with ISO/IEC/IEEE 29148.
+  Read the reviewer prompt at: skills/long-task-requirements/prompts/srs-reviewer-prompt.md
+
+  Project context:
+  {project_context}
+
+  Full SRS draft (all sections):
+  {srs_draft}
+
+  Requirement ID list:
+  {requirement_id_list}
+
+  Perform the review following the prompt exactly.
+  """
+)
+```
+
+### 6b. Review Gate Logic
+
+**ALL checks must PASS to proceed to Step 7:**
+- Group R (R1-R8): quality attributes — every requirement passes all 8 checks
+- Group A (A1-A6): anti-patterns — none found in the full SRS
+- Group C (C1-C5): completeness — all cross-checks confirmed
+- Group S (S1-S4): structural compliance — all required sections present
+- Group D (D1-D4): diagrams — Use Case View and Process Flows present and populated
+
+**On FAIL:**
+1. Fix all flagged issues in the SRS draft
+2. Re-dispatch the subagent (Cycle 2) with the revised draft
+3. If Cycle 2 still has failures → use `AskUserQuestion` with:
+   - Table of remaining failures (check ID, location, issue description)
+   - Summary of fixes attempted in each cycle
+   - Request for user direction (fix, waive, or restructure)
+
+**Maximum: 2 automated cycles.** Never attempt Cycle 3 without user input.
+
+After all groups PASS, record the review outcome in the SRS header:
+```markdown
+<!-- SRS Review: PASS after N cycle(s) — YYYY-MM-DD -->
+```
+
+## Step 7: Present & Approve SRS
 
 For non-trivial projects, present section by section and get approval per section:
 
@@ -186,7 +264,7 @@ Present each section. Wait for user feedback. Incorporate changes before moving 
 
 **For simple projects** (< 5 functional requirements): combine all sections into a single approval step.
 
-## Step 7: Save SRS Document
+## Step 8: Save SRS Document
 
 Save the approved SRS to `docs/plans/YYYY-MM-DD-<topic>-srs.md`.
 
@@ -199,7 +277,7 @@ Read the template found in Step 1 (user-specified or default `docs/templates/srs
 4. For uncovered template sections: mark "[Not applicable]"
 5. For approved content without matching template section: append as "Additional Notes"
 
-## Step 8: Transition to UCD
+## Step 9: Transition to UCD
 
 Once the SRS document is saved and committed:
 

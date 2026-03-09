@@ -23,6 +23,26 @@
 |---------|----------------|-----------|--------------|
 [Omit if no UI / end-user features]
 
+### 3.1 Use Case View
+
+```mermaid
+graph LR
+    %% Replace this placeholder with actual content during Step 4c
+    %% Actors: use Actor((Name)) syntax as external nodes
+    %% Use cases: place inside subgraph System Boundary
+    %% Edges: Actor --> UseCaseNode for each participation
+
+    Actor1((Persona Name))
+    subgraph System Boundary
+        UC1[FR-001: Use Case Title]
+        UC2[FR-002: Use Case Title]
+    end
+    Actor1 --> UC1
+    Actor1 --> UC2
+```
+
+[Omit this section if no user-facing functional requirements exist]
+
 ## 4. Functional Requirements
 
 ### FR-001: <Title>
@@ -33,6 +53,35 @@
 - Given <error context>, when <action>, then <error handling>
 
 [Repeat for each functional requirement]
+
+### 4.1 Process Flows
+
+[One flowchart per functional area with 3+ steps or branching logic — generated during Step 4c]
+
+#### Flow: <Workflow Name>
+
+```mermaid
+flowchart TD
+    %% Replace this placeholder with actual content during Step 4c
+    %% Start/End: ([label]) rounded stadium nodes
+    %% Decisions: {condition?} with -- YES --> and -- NO --> labeled branches
+    %% Include error/boundary paths from acceptance criteria
+
+    S([Start: trigger])
+    D{Decision?}
+    B1[Action on YES]
+    B2[Action on NO]
+    E([End: outcome])
+
+    S --> D
+    D -- YES --> B1
+    D -- NO --> B2
+    B1 --> E
+    B2 --> E
+```
+
+[Add additional #### Flow sections for each distinct functional area]
+[Omit this section if all requirements are single-step with no branching]
 
 ## 5. Non-Functional Requirements
 | ID | Category (ISO 25010) | Requirement | Measurable Criterion | Measurement Method |
