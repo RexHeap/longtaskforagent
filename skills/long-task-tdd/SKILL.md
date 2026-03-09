@@ -99,7 +99,35 @@ Imagine 2-3 plausible wrong implementations:
 
 Would the test **fail** for each? If NO for most → rewrite.
 
-**Rule 5: UI-Specific Test Rules** (when `"ui": true`)
+**Rule 5: Test Layer Rule — Real Test Cases Required**
+
+Each feature's automated tests MUST cover two layers. Both are mandatory:
+
+| Layer | Purpose | Mock policy | Minimum |
+|-------|---------|-------------|---------|
+| **Unit (UT)** | Individual functions/classes | Mock only at system boundaries (external HTTP, third-party APIs, file system, clock); use real or in-memory implementations for internal logic | ≥ 1 test exercising core logic with real internal dependencies (no mocking internal components) |
+| **Integration** | Components working against real infrastructure | NO mock for the primary dependency — use real test DB, real running service, or real file system | ≥ 1 test per feature that touches external systems |
+
+**Integration test exception** — if the feature has absolutely no external dependencies (pure computation, no IO, no DB, no network):
+- State explicitly in the test file:
+  ```python
+  # [no integration test] — pure function, no external I/O
+  ```
+
+**Label tests by layer** to enable feature-ST and ST report tracking:
+```python
+# [unit] — uses in-memory store
+def test_user_validation_logic():
+    ...
+
+# [integration] — uses real test database
+def test_user_persisted_to_db():
+    ...
+```
+
+Reference: `testing-anti-patterns.md` Anti-Pattern #1 (mock only external services, not internal logic) and Anti-Pattern #3 (mock at system boundaries, not internal layers).
+
+**Rule 6: UI-Specific Test Rules** (when `"ui": true`)
 
 - **UI Pre-condition (verify before first [devtools] step):**
   Before any Chrome DevTools MCP testing, verify the application is reachable:

@@ -177,6 +177,11 @@ Examples: `ST-FUNC-005-001`, `ST-UI-005-002`, `ST-SEC-012-001`
 
 **Acceptance-level focus:** Test cases confirm the implementation matches requirements from a user/system perspective — not duplicating unit test assertions. Focus on behavioral scenarios, integration paths, and end-to-end workflows.
 
+**Test type labeling (real/mock)** — for each derived test case, set the `Test Type` metadata field:
+- Mark as `Real` if the test case executes against a real running system (real DB, real HTTP service, real browser via Chrome DevTools MCP, real file system)
+- Mark as `Mock` only if the test case's primary execution path uses a mock or stub service
+- Feature-ST test cases executed against a running service (Step 7 starts services before execution) are **always `Real`** — they connect to real services
+
 **Black-box constraint:** Expected results must be derivable solely from the SRS (verification_steps, Given/When/Then, NFR thresholds) and the observable interface. If the expected result cannot be determined without reading implementation code, raise it as a specification gap via `AskUserQuestion`.
 
 ### 4. UI Test Case Requirements (only if `"ui": true`)
@@ -257,6 +262,10 @@ Since implementation code already exists (TDD and Quality Gates are complete), e
 2. For **non-UI test cases**: verify by running relevant test commands or manual checks against the running system
 3. For **UI test cases**: execute via Chrome DevTools MCP following the step tables — see `prompts/e2e-scenario-prompt.md` for MCP tool mapping
 4. Update the traceability matrix `结果` column to `PASS` or `FAIL` for each case
+4b. Update the **Real Test Case Execution Summary** table in the test case document:
+   - Count all `Real` cases from the traceability matrix and their PASS/FAIL status
+   - Fill in the summary table (total / passed / failed / pending)
+   - Any `Real` FAIL is a blocking failure — same consequence as any other test case failure
 5. **Stop services** per Service Management cleanup above
 
 **If any test case FAILS:**

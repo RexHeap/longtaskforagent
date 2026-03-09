@@ -187,9 +187,9 @@ Before writing, verify: every SRS requirement appears in RTM; every NFR has a me
 Generate `docs/plans/YYYY-MM-DD-st-report.md` with these sections:
 1. **Executive Summary** — 1-3 sentences: overall quality assessment and release recommendation
 2. **Requirements Traceability Matrix** — full RTM table with Feature ST status, System ST category, result, evidence; coverage count (X/Y requirements, Z%); list any gaps
-3. **Test Execution Summary** — table: category, tests run, passed, failed, skipped, notes (one row per category from Step 2a)
+3. **Test Execution Summary** — table: category, tests run, passed, failed, skipped, notes (one row per category from Step 2a); include a final row **Real Test Cases** — aggregate `Real` test case counts (total / passed / failed) from all feature ST documents (`docs/test-cases/feature-*.md` Real Test Case Execution Summary tables)
 4. **Defect Summary** — table: severity, category, description, status (fixed/deferred), fix reference; totals; open Critical/Major count (must be 0 for Go)
-5. **Quality Metrics** — line/branch/mutation coverage vs thresholds, total test count
+5. **Quality Metrics** — line/branch/mutation coverage vs thresholds, total test count; real test cases: total / passed / failed (aggregated from all `docs/test-cases/feature-*.md` Real Test Case Execution Summary tables)
 6. **Risk Assessment** — residual risks with likelihood, impact, mitigation
 7. **Recommendations** — post-release monitoring, known limitations, suggested improvements
 
@@ -230,6 +230,7 @@ Present the ST report summary and Go/No-Go recommendation to the user via `AskUs
 - **Defect severity is non-negotiable** — Critical/Major defects block release; no exceptions
 - **ALL bugs must be fixed** — Any bug found in ST testing (frontend, backend, integration) MUST be fixed before release. There is no "not my code" exemption.
 - **Re-test after fix** — never assume a fix works; re-run affected test categories
+- **Real test cases must pass** — any failed `Real` test case in the ST report's Real Test Cases row is an unresolved defect that blocks a Go verdict
 - **Exploratory testing is mandatory** — scripted tests cannot find everything
 - **ST report before verdict** — document first, then decide; never skip the report
 - **No new features during ST** — ST tests the integrated system as-is

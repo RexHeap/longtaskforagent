@@ -85,6 +85,9 @@ ST-{CATEGORY}-{FEATURE_ID}-{SEQ}
 - **类别**: functional / boundary / ui / security / accessibility / performance
 - **已自动化**: Yes / No
 - **测试引用**: {test_file::test_name 或 N/A}
+- **Test Type**: Real / Mock
+  - Real = executed against a real running environment (real DB, real HTTP service, real browser via Chrome DevTools MCP, real file system)
+  - Mock = primary dependency is a mock/stub implementation
 ```
 
 ## Traceability Matrix
@@ -92,11 +95,27 @@ ST-{CATEGORY}-{FEATURE_ID}-{SEQ}
 ```markdown
 ## 可追溯矩阵
 
-| 用例 ID | 关联需求 | verification_step | 自动化测试 | 结果 |
-|---------|----------|-------------------|-----------|------|
-| ST-FUNC-{id}-001 | FR-xxx | verification_step[0] | test_xxx | PENDING |
-| ST-FUNC-{id}-002 | FR-xxx | verification_step[1] | test_xxx | PENDING |
-| ... | ... | ... | ... | ... |
+| 用例 ID | 关联需求 | verification_step | 自动化测试 | Test Type | 结果 |
+|---------|----------|-------------------|-----------|---------|------|
+| ST-FUNC-{id}-001 | FR-xxx | verification_step[0] | test_xxx | Real | PENDING |
+| ST-FUNC-{id}-002 | FR-xxx | verification_step[1] | test_xxx | Real | PENDING |
+| ... | ... | ... | ... | ... | ... |
+```
+
+## Real Test Case Execution Summary
+
+```markdown
+## Real Test Case Execution Summary
+
+| Metric | Count |
+|--------|-------|
+| Total Real Test Cases | N |
+| Passed | N |
+| Failed | N |
+| Pending | N |
+
+> Real test cases = test cases with Test Type `Real` (executed against a real running environment, not Mock).
+> Any Real test case FAIL blocks the feature from being marked `"passing"` — must be fixed and re-executed.
 ```
 
 ---
