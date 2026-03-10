@@ -235,15 +235,44 @@ Task(
 - Group S (S1-S4): structural compliance — all required sections present
 - Group D (D1-D4): diagrams — Use Case View and Process Flows present and populated
 
-**On FAIL:**
-1. Fix all flagged issues in the SRS draft
-2. Re-dispatch the subagent (Cycle 2) with the revised draft
-3. If Cycle 2 still has failures → use `AskUserQuestion` with:
-   - Table of remaining failures (check ID, location, issue description)
-   - Summary of fixes attempted in each cycle
-   - Request for user direction (fix, waive, or restructure)
+**On FAIL — two-track resolution:**
 
-**Maximum: 2 automated cycles.** Never attempt Cycle 3 without user input.
+**Track 1: USER-INPUT items → ask immediately**
+
+Read the reviewer's "Clarification Questions" table. If any rows are present (USER-INPUT items exist):
+
+Use `AskUserQuestion` with a targeted questionnaire — do NOT dump the full review report. Format:
+```
+The SRS needs clarification on a few points before I can finalize it. Please answer:
+
+1. [FR-xxx] [Issue in plain language]
+   Your requirement says "[exact phrase]". What is the correct value?
+   (e.g., [example format/unit])
+
+2. [FR-yyy] [Next issue]
+   ...
+```
+
+**Do NOT guess or invent answers. WAIT for the user's response before proceeding.**
+
+After receiving answers: incorporate them into the SRS draft.
+
+**Track 2: LLM-FIXABLE items → auto-fix**
+
+Fix all LLM-FIXABLE items in parallel: split compound requirements, add actors, populate sections, generate diagrams, assign IDs. Apply these together with any user answers from Track 1.
+
+**Re-dispatch reviewer (Cycle 2)**
+
+Re-dispatch the subagent with the revised draft. If Cycle 2 PASS → proceed to Step 7.
+
+**If Cycle 2 still fails:**
+- New USER-INPUT items found → use `AskUserQuestion` again with the same targeted format
+- Only LLM-FIXABLE items remain after 2 cycles → use `AskUserQuestion` with:
+  - Table of remaining failures (check ID, location, issue description)
+  - Summary of fixes attempted
+  - Request for user direction (fix, waive, or restructure)
+
+**Maximum: 2 re-dispatch cycles.** Never attempt Cycle 3 without user input.
 
 After all groups PASS, record the review outcome in the SRS header:
 ```markdown

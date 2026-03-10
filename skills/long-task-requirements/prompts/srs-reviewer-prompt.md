@@ -24,13 +24,14 @@ Before filling any rubric, list at least 5 potential compliance issues across al
 - Which requirement ID or section is affected
 - What was expected vs. what was found
 - Severity: Critical / Important / Minor
+- **Resolution-Type**: `LLM-FIXABLE` or `USER-INPUT` (see Classification Heuristics at bottom)
 
 You MUST list 5+ items before proceeding to Step 2. If you genuinely cannot find 5 real issues, list the real issues plus areas where compliance could be strengthened.
 
 ### Step 2: Challenge Your Findings
 
 For each issue from Step 1:
-- **Real issue** → keep with severity
+- **Real issue** → keep with severity and Resolution-Type
 - **False positive** → explain why with evidence from the SRS text
 
 ### Step 3: Fill the Scoring Rubric
@@ -42,13 +43,13 @@ Fill ALL five check groups below. Every check gets YES or NO with evidence.
 
 ### Issues Found (Steps 1-2)
 
-| # | Dimension | Issue | Real/False Positive | Severity | Affected Requirement/Section |
-|---|-----------|-------|---------------------|----------|------------------------------|
-| 1 | | | | | |
-| 2 | | | | | |
-| 3 | | | | | |
-| 4 | | | | | |
-| 5 | | | | | |
+| # | Dimension | Issue | Real/False Positive | Severity | Affected Requirement/Section | Resolution-Type |
+|---|-----------|-------|---------------------|----------|------------------------------|-----------------|
+| 1 | | | | | | |
+| 2 | | | | | | |
+| 3 | | | | | | |
+| 4 | | | | | | |
+| 5 | | | | | | |
 
 ### Group R: Per-Requirement Quality Checks (R1-R8)
 
@@ -127,12 +128,26 @@ Scan the full SRS text. Each anti-pattern found anywhere = NO for that check.
 | S: Structural Compliance | S1-S4 | | |
 | D: Diagram Presence & Validity | D1-D4 | | |
 
+### Clarification Questions (USER-INPUT items only)
+
+List one row per USER-INPUT issue that requires stakeholder input. Leave this table empty (write "None") if all failing issues are LLM-FIXABLE.
+
+| # | Requirement/Section | Issue Summary | Question for User |
+|---|---------------------|---------------|-------------------|
+| 1 | | | |
+
+**Question format rules**:
+- Cite the exact requirement ID and the offending phrase in quotes
+- State what type of answer is expected (number+unit, specific value, option A/B/C)
+- Provide an example format: e.g., "e.g., p95 < X ms under Y concurrent users"
+- One question per row — do not bundle multiple issues into one question
+
 ### Overall Verdict: PASS / FAIL
 
 If FAIL, list all required fixes:
-| Check | Requirement/Section | Issue | Required Fix |
-|-------|---------------------|-------|--------------|
-| Rx | FR-xxx | [what is wrong] | [minimal change to fix] |
+| Check | Requirement/Section | Issue | Required Fix | Resolution-Type |
+|-------|---------------------|-------|--------------|-----------------|
+| Rx | FR-xxx | [what is wrong] | [minimal change to fix] | LLM-FIXABLE / USER-INPUT |
 ```
 
 ### Step 4: State the Verdict
@@ -162,3 +177,31 @@ If PASS:
 - **IFR section (Section 6) is exempt from A3** — interface requirements legitimately use technical terms (REST, JSON, HTTP)
 - **"[Not applicable]" with justification is acceptable** for any section — mark the S2 check YES if all absent sections are explicitly marked and explained
 - **Skip D checks only if SRS has zero user-facing FRs** — if any FR involves user interaction, diagrams are mandatory
+
+## Issue Classification Heuristics
+
+Use these rules to assign `Resolution-Type` to every issue in Steps 1-2.
+
+**Always USER-INPUT** (never auto-fix — domain knowledge required):
+- Unquantified quality attributes used as requirements: "fast", "scalable", "reliable", "easy", "intuitive" without a numeric threshold → ask for the actual metric (R2/A1)
+- TBD/TBC/placeholder text in requirement content → ask for the actual value (A5)
+- Out-of-scope decisions: what is excluded vs. deferred is a business decision → ask the user (C5)
+- Conflicting Must-level priorities: only the user can reconcile priority disputes (R5)
+- Missing stakeholder traceability: only the user can confirm which stakeholder need a requirement serves (R1)
+
+**Usually USER-INPUT** (classify as USER-INPUT unless clear from elicitation context):
+- Missing error/boundary cases where the failure behavior involves a business rule (A6, C1) — e.g., "what happens when a payment fails?" requires user input; "what happens when an invalid email is submitted?" can often be inferred
+- Unclear acceptance criteria where "correct behavior" is defined by business domain knowledge
+
+**Always LLM-FIXABLE** (structural/syntactic — no domain knowledge required):
+- Compound requirement splitting (A2): mechanically split on "and"/"or" into separate requirements
+- Design leakage rewrite (A3): rephrase implementation vocabulary as observable behavior using existing context
+- Passive without agent (A4): add "The system shall" or the named actor
+- Missing unique IDs (R8): assign from the sequence established in the SRS
+- Section structure: auto-populate missing sections with "[Not applicable]" (S2-S4)
+- Traceability matrix: auto-populate from the requirement ID list (S3)
+- Diagram generation (D1-D4): generate from existing actor and FR lists in the SRS
+- NFR measurement method addition (C3): add "measured via [standard tool]" only when the threshold is already user-specified
+
+**NEVER INVENT domain values**:
+Do NOT supply a number, name, or business rule where one was not stated by the user or directly implied by the accepted elicitation context. If the SRS says "fast" and no threshold was given during elicitation, the only correct Resolution-Type is USER-INPUT — not inventing "200ms".
