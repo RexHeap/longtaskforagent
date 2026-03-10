@@ -129,6 +129,21 @@ def validate(path: str) -> tuple[list[str], list[str]]:
     if st_case_example is not None and not isinstance(st_case_example, str):
         errors.append(f"st_case_example_path must be a string, got {type(st_case_example).__name__}")
 
+    # Validate real_test config if present (root-level)
+    real_test = data.get("real_test")
+    if real_test is not None:
+        if not isinstance(real_test, dict):
+            errors.append("real_test must be an object")
+        else:
+            for field in ["marker_pattern", "test_dir"]:
+                val = real_test.get(field)
+                if val is None or not isinstance(val, str) or not val.strip():
+                    errors.append(f"real_test.{field} must be a non-empty string")
+            mock_patterns = real_test.get("mock_patterns")
+            if mock_patterns is not None:
+                if not isinstance(mock_patterns, list) or not all(isinstance(p, str) for p in mock_patterns):
+                    errors.append("real_test.mock_patterns must be an array of strings")
+
     # Validate required_configs if present
     required_configs = data.get("required_configs")
     if required_configs is not None:
@@ -421,6 +436,10 @@ def main():
             lang = ts.get("language", "N/A")
             if lang != "TODO":
                 summary += f" | Language: {lang}"
+
+        # Show real test config status
+        rt = data.get("real_test")
+        summary += f" | Real test config: {'yes' if rt else 'no'}"
 
         if warnings:
             summary += f" | {len(warnings)} warning(s)"

@@ -277,6 +277,27 @@ Low-value assertion patterns (for counting):
 
 **Relationship to other anti-patterns**: This is more specific than #9 (assertion-free tests) and #11 (gaming coverage). A test can have assertions and still be low-value if those assertions only verify existence/type. Mutation testing (#12) catches some but not all low-value assertions — the 20% ratio rule provides an additional check during test writing.
 
+### 15. All-Mock Real Test (Mock Label Laundering)
+
+**Symptom**: A test is marked as a real test (via marker, naming, or label), but the function body mocks the primary external dependency it claims to verify.
+
+**Example (BAD — Python)**:
+```python
+@pytest.mark.real_test
+def test_real_db_connection(mock_session):  # mock_session replaces real connection!
+    repo = UserRepository(mock_session)
+    repo.save(User(name="Alice"))
+    mock_session.add.assert_called_once()  # Testing the mock, not the real DB
+```
+
+**Why it fails**: The real test label creates the appearance of real-infrastructure testing while the test body is entirely mock-driven. ORM mapping errors, connection string issues, SQL schema changes — none will ever be caught. `check_real_tests.py` will grep the mock keyword and report a WARN.
+
+**Fix**: Real test function body MUST NOT mock the primary dependency it verifies.
+
+**Detection**: `python scripts/check_real_tests.py feature-list.json` — mock warning list.
+
+**Relationship**: This anti-pattern is what Rule 5a prevents at TDD Red, and what Gate 0 in `long-task-quality/SKILL.md` enforces via script + LLM sampling.
+
 ## Quick Reference: Test Writing Checklist
 
 Before marking a test as complete:
@@ -289,6 +310,9 @@ Before marking a test as complete:
 - [ ] Test tests behavior, not implementation details
 - [ ] No test-only methods added to production code
 - [ ] Mocks are at boundaries, not internal layers
+- [ ] Test file contains real tests discoverable by check_real_tests.py (Rule 5a)
+- [ ] check_real_tests.py reports no mock warnings (or warnings reviewed as non-primary-dep mocks)
+- [ ] If pure-function exemption claimed: verified against design section (no external I/O)
 - [ ] No low-value assertions (None checks, isinstance, import, len>0, key-in-dict, truthiness)
 - [ ] Low-value assertion ratio <= 20% of total assertions
 - [ ] Each assertion would fail for a plausible wrong implementation ("wrong implementation" test)

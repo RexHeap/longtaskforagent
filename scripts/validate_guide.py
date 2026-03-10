@@ -57,6 +57,8 @@ REQUIRED_SECTIONS = [
      [r"persist", r"save.*state", r"git.*commit", r"task-progress"]),
     ("Critical Rules",
      [r"critical\s*rule", r"iron\s*rule", r"must\s*never"]),
+    ("Real Test Convention",
+     [r"real\s*test\s*convention", r"real.test.identification", r"real.test.marker"]),
 ]
 
 

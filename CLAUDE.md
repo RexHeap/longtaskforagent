@@ -67,6 +67,13 @@ python long-task-agent/scripts/get_tool_commands.py feature-list.json
 python long-task-agent/scripts/get_tool_commands.py feature-list.json --json
 ```
 
+### Check real test compliance
+```bash
+python long-task-agent/scripts/check_real_tests.py feature-list.json
+python long-task-agent/scripts/check_real_tests.py feature-list.json --feature 3
+python long-task-agent/scripts/check_real_tests.py feature-list.json --json
+```
+
 ### Run tests
 ```bash
 # Run all tests (from this repo's root)
@@ -82,6 +89,7 @@ python -m pytest tests/test_check_st_readiness.py
 python -m pytest tests/test_get_tool_commands.py
 python -m pytest tests/test_validate_increment_request.py
 python -m pytest tests/test_validate_st_cases.py
+python -m pytest tests/test_check_real_tests.py
 ```
 
 > **Path note**: the `python long-task-agent/skills/long-task-init/scripts/...` paths above are consumer-facing (run from the target project root after plugin install). When developing in this repo, replace `long-task-agent/` with `./` or omit it entirely.
@@ -406,6 +414,7 @@ long-task-agent/
 │   ├── check_configs.py               # Required config checking
 │   ├── check_devtools.py              # Chrome DevTools MCP checking
 │   ├── check_st_readiness.py          # System testing readiness checking
+│   ├── check_real_tests.py            # Real test verification (existence + mock grep)
 │   ├── validate_increment_request.py  # Increment request signal validation
 │   └── validate_st_cases.py          # ST test case document validation
 ├── tests/
@@ -416,6 +425,7 @@ long-task-agent/
 │   ├── test_validate_guide.py
 │   ├── test_check_devtools.py
 │   ├── test_check_st_readiness.py
+│   ├── test_check_real_tests.py
 │   ├── test_validate_increment_request.py
 │   └── test_validate_st_cases.py
 ```

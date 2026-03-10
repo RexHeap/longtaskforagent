@@ -33,7 +33,7 @@ You MUST create a TodoWrite task for each step and complete them in order:
    - `<language>` — one of `python|java|typescript|c|cpp` from the design doc tech stack
    - Use `--line-cov`, `--branch-cov`, `--mutation-score` to override thresholds (defaults: 90/80/80)
    - Creates: `feature-list.json`, `CLAUDE.md` (appended), `task-progress.md`, `RELEASE_NOTES.md`, `examples/`, `docs/plans/`
-   - Auto-copies helper scripts (`validate_features.py`, `check_configs.py`, `check_devtools.py`, `validate_guide.py`, `get_tool_commands.py`, `validate_st_cases.py`, `validate_increment_request.py`, `check_st_readiness.py`) into project `scripts/`
+   - Auto-copies helper scripts (`validate_features.py`, `check_configs.py`, `check_devtools.py`, `check_real_tests.py`, `validate_guide.py`, `get_tool_commands.py`, `validate_st_cases.py`, `validate_increment_request.py`, `check_st_readiness.py`) into project `scripts/`
 3. **Verify `tech_stack` and `quality_gates`** in `feature-list.json`:
    - Confirm `language`, `test_framework`, `coverage_tool`, `mutation_tool` match the design doc
    - Adjust `quality_gates` thresholds if needed (defaults: line 90%, branch 80%, mutation 80%)
@@ -41,6 +41,10 @@ You MUST create a TodoWrite task for each step and complete them in order:
      ```bash
      python scripts/get_tool_commands.py feature-list.json
      ```
+   - Verify `real_test` config in feature-list.json:
+     - `marker_pattern` matches the project's chosen real test identification method
+     - `mock_patterns` covers the project's mock framework keywords
+     - `test_dir` points to the correct test directory
 4. **Generate `long-task-guide.md`** — Create a project-tailored Worker session guide:
    - Read these files for reference:
      - `skills/long-task-work/SKILL.md` — Worker workflow
@@ -58,6 +62,7 @@ You MUST create a TodoWrite task for each step and complete them in order:
      - These replace the now-removed test.sh/mutate.sh wrappers — Claude runs these directly
    - **Must include `Service Commands` section** (only if project has server processes): reference `env-guide.md` as the authoritative source for start/stop/restart commands; list health check URLs; include reminder about the Restart Protocol
    - **Must include `Config Management` section**: describe how to add/update a config value for this project (e.g., "append `KEY=value` to `.env`" for dotenv projects, "set `key=value` in `application.properties`" for Spring Boot projects, "export KEY=value" for system-env-only projects). This section is referenced by the Worker Config Gate when prompting users for missing values.
+   - **Must include `Real Test Convention` section**: identification method (marker/folder/naming, adapted to project language), run command to execute only real tests, example real test for this project's tech stack
    - Validate:
      ```bash
      python scripts/validate_guide.py long-task-guide.md --feature-list feature-list.json

@@ -30,7 +30,7 @@ You are a spec and design compliance reviewer. Your job is to verify that an imp
 ### Step 1: Find Issues First (MANDATORY — minimum 5)
 
 List at least 5 potential compliance issues across all applicable dimensions. For each:
-- **Dimension**: Spec / Design / Plan / UCD
+- **Dimension**: Spec / Design / Plan / UCD / Real-Test
 - Which requirement, design element, plan task, or style token is affected
 - What was expected vs what was implemented
 - Severity: Critical / Important / Minor
@@ -88,6 +88,17 @@ For each issue from Step 1:
 | P2 | Files created/modified match the plan's file list? | | [cite file list from plan vs git diff] |
 | P3 | Design alignment section in plan is honored? | | [cite class structure, interaction flow, deps from plan] |
 
+### Real Test Compliance Rubric
+
+| # | Check | YES/NO | Evidence |
+|---|-------|--------|----------|
+| R1 | `check_real_tests.py` output shows ≥1 real test for this feature? | | [cite script output] |
+| R2 | Script mock warnings reviewed — none targeting primary dependency? | | [cite Gate 0 review conclusion] |
+| R3 | All real tests PASS (Gate 0 Step 3 execution result)? | | [cite Gate 0 execution evidence] |
+
+- Any NO in R1-R3 → FAIL (real test violation)
+- Pure-function exemption: if {design_section} confirms no external I/O, R1-R3 are auto-YES
+
 ### UCD Compliance Rubric (UI features only — skip if feature has "ui": false or no UCD document)
 
 | # | Check | YES/NO | Evidence |
@@ -100,6 +111,7 @@ For each issue from Step 1:
 **Verdict rules**:
 - Any NO in S1-S5 → FAIL (spec violation)
 - Any NO in D1-D5 → FAIL (design violation)
+- Any NO in R1-R3 → FAIL (real test violation)
 - Any NO in U1-U4 → FAIL (UCD violation, for ui:true features only)
 - Any NO in P1-P3 → Important finding (must fix, but does not block Stage 2)
 ```
@@ -130,3 +142,4 @@ For each violation, be precise:
 - **Version mismatches are Critical** — using a different library version than the design specifies is a Critical issue unless explicitly approved
 - **UCD token mismatches are Important** — using hardcoded color/font values instead of UCD tokens is an Important issue; using wrong token values is Critical
 - **Skip UCD rubric entirely** if the feature has `"ui": false` or no UCD document exists — do NOT mark U1-U4 as NO just because UCD is absent
+- **Real test compliance references script output** — R1-R3 evidence MUST come from check_real_tests.py and Gate 0 execution records, not LLM visual scanning alone

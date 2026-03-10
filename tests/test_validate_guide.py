@@ -91,6 +91,10 @@ NEVER mark "passing" without fresh evidence — run tests, read output
 1. git commit
 2. Update task-progress.md
 
+### Real Test Convention
+Real test marker: @pytest.mark.real_test
+Run real tests only: pytest -m real_test
+
 ## Critical Rules
 - NEVER write implementation before tests
 - NEVER mark passing without evidence
@@ -232,6 +236,9 @@ Add runnable example in examples/ directory.
 
 ### Save state
 git commit, update task-progress.md.
+
+### Real test identification
+Real test marker convention for this project.
 
 ## Critical Rules
 - Must never skip TDD

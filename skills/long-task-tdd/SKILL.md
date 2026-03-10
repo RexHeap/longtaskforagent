@@ -127,6 +127,40 @@ def test_user_persisted_to_db():
 
 Reference: `testing-anti-patterns.md` Anti-Pattern #1 (mock only external services, not internal logic) and Anti-Pattern #3 (mock at system boundaries, not internal layers).
 
+**Mandatory test writing order in TDD Red:**
+1. Analyze verification_steps + {srs_section} + {design_section} to identify external dependencies
+2. **Write Real Tests first** (see Rule 5a) — verify external dependency connectivity
+3. Then write regular UT tests (happy path / error / boundary / security)
+4. Run all tests → confirm all FAIL
+
+**Rule 5a: Real Test Standalone Section (mandatory)**
+
+Every feature with external dependencies MUST have identifiable real tests in its test file(s). The specific marking mechanism is determined by the project language and test framework (documented in `long-task-guide.md` Real Test Convention section), but MUST satisfy these invariants:
+
+| Invariant | Description |
+|-----------|-------------|
+| **Discoverable** | Real tests MUST be findable by `feature-list.json` `real_test.marker_pattern` via `check_real_tests.py` |
+| **Isolatable** | Real tests MUST be runnable independently from regular UTs (via marker filter, folder separation, or naming convention) |
+| **No mock on primary dep** | Real test body MUST NOT mock the primary external dependency it verifies; `real_test.mock_patterns` defines detectable mock keywords |
+| **High-value assertions** | MUST NOT merely verify "no exception"; MUST assert actual return values, state changes, data persistence |
+| **Test infrastructure** | Use project test environment (.env.test, test DB, localhost test server) — never production resources |
+
+**Minimum ≥1 real test per external dependency type:**
+
+| Dependency type | Real test verifies |
+|-----------------|-------------------|
+| Config / secrets | Can read values from real config file / env vars |
+| Database / store | Can connect to real test DB, perform read/write |
+| File system | Can read/write real files (beyond trivial tmp_path) |
+| HTTP / network | Can send request to real test server and get response |
+| Third-party SDK | Can call sandbox / test environment API |
+
+**Pure-function exemption**: If the feature has no external dependencies (pure computation, no I/O), declare explicitly in a test file comment, confirmed by {design_section} during Gate 0.
+
+**Verification**: `python scripts/check_real_tests.py feature-list.json` — mechanical scan + grep, not LLM self-check.
+
+Reference: `testing-anti-patterns.md` Anti-Pattern #15 (all-mock real test / mock label laundering).
+
 **Rule 6: UI-Specific Test Rules** (when `"ui": true`)
 
 - **UI Pre-condition (verify before first [devtools] step):**
@@ -154,6 +188,12 @@ See `references/ui-error-detection.md` for the full detection script and integra
 Run the test suite. **All tests must FAIL.** If any test passes → it tests nothing useful, rewrite it.
 
 **Running tests**: Activate environment per `long-task-guide.md` → run test command from `python scripts/get_tool_commands.py feature-list.json` directly. If tool is missing or environment not activated: diagnose root cause, run `init.sh` if needed, escalate to user if still failing. **Never skip.**
+
+**Real Test Verification (before proceeding to Green):**
+Run `python scripts/check_real_tests.py feature-list.json --feature {id}` and confirm:
+1. Real test count > 0 (or pure-function exemption declared)
+2. No mock warnings (or LLM reviewed and confirmed warnings are not on primary dependency)
+If script reports FAIL → STOP, write real tests before proceeding.
 
 ## Step 2: TDD Green — Minimal Implementation
 
@@ -198,7 +238,7 @@ Clean up while keeping tests green:
 4. **Gaming coverage** — Assert-free tests exercise code without verifying correctness. Coverage ≠ quality.
 5. **Low-value assertions** — `assertNotNull` / `isinstance` / `len>0` without checking actual values. Max 20% of total.
 
-Full catalog of 14 anti-patterns: Read `skills/long-task-tdd/testing-anti-patterns.md`.
+Full catalog of 15 anti-patterns: Read `skills/long-task-tdd/testing-anti-patterns.md`.
 
 ## Integration
 
