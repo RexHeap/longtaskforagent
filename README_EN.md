@@ -235,13 +235,17 @@ python long-task-agent/scripts/get_tool_commands.py feature-list.json
 
 ---
 
-## Validation & Safety Scripts
+## Automated Workflow Scripts
 
-The plugin includes a suite of validation scripts to prevent common failures:
+### auto_loop.py - Uninterrupted Execution Guarantee
 
-### auto_loop.py
+The `auto_loop.py` script is the core component for **ensuring uninterrupted execution** of long-task workflows. It automates multi-feature development by repeatedly calling Claude Code until all active features pass or a termination condition is met.
 
-The `auto_loop.py` script automates long-task feature development by repeatedly calling Claude Code until all active features pass.
+**Core Value:**
+- 🔄 **Automated Iteration** - No manual repetition needed, the script automatically advances the workflow
+- ⏸️ **Graceful Interruption** - Supports two-level Ctrl+C interruption, ensuring current work is not lost
+- 🛡️ **Error Detection** - Automatically identifies unrecoverable errors like context limits and rate limits
+- 📊 **Status Tracking** - Real-time display of feature pass status
 
 **Usage:**
 ```bash
@@ -268,7 +272,11 @@ python scripts/auto_loop.py feature-list.json --prompt "continue"
 - 3: Unrecoverable error detected (context limit, rate limit, etc.)
 - 130: Interrupted by user (Ctrl+C)
 
-### Other Scripts
+---
+
+## Validation & Safety Scripts
+
+The plugin includes a suite of validation scripts to prevent common failures:
 
 | Script | Purpose |
 |--------|---------|
