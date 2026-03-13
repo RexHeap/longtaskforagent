@@ -214,19 +214,19 @@ Use OpenCode's native `skill` tool to load a specific skill:
 use skill tool to load long-task/long-task-work
 ```
 
-### Shortcut Command Equivalents
+### Phase Skill Invocations
 
-Claude Code shortcut commands map to direct skill invocations in OpenCode:
+Invoke each phase skill directly in OpenCode:
 
-| Claude Code | OpenCode Equivalent |
-|-------------|---------------------|
-| `/long-task:requirements` | `use skill long-task/long-task-requirements` |
-| `/long-task:ucd` | `use skill long-task/long-task-ucd` |
-| `/long-task:design` | `use skill long-task/long-task-design` |
-| `/long-task:init` | `use skill long-task/long-task-init` |
-| `/long-task:work` | `use skill long-task/long-task-work` |
-| `/long-task:st` | `use skill long-task/long-task-st` |
-| `/long-task:increment` | `use skill long-task/long-task-increment` |
+| Phase | OpenCode Invocation |
+|-------|---------------------|
+| Requirements (Phase 0a) | `use skill long-task/long-task-requirements` |
+| UCD Style Guide (Phase 0b) | `use skill long-task/long-task-ucd` |
+| Design (Phase 0c) | `use skill long-task/long-task-design` |
+| Init (Phase 1) | `use skill long-task/long-task-init` |
+| Worker (Phase 2) | `use skill long-task/long-task-work` |
+| System Testing (Phase 3) | `use skill long-task/long-task-st` |
+| Increment (Phase 1.5) | `use skill long-task/long-task-increment` |
 
 ## Auto-Loop (Unattended Development)
 

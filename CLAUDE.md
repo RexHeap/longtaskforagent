@@ -94,16 +94,6 @@ python -m pytest tests/test_check_real_tests.py
 
 > **Path note**: the `python long-task-agent/skills/long-task-init/scripts/...` paths above are consumer-facing (run from the target project root after plugin install). When developing in this repo, replace `long-task-agent/` with `./` or omit it entirely.
 
-### Shortcut commands
-- `/long-task:requirements` — Start requirements elicitation and SRS generation
-- `/long-task:ucd` — Start UCD style guide generation (requires approved SRS with UI features)
-- `/long-task:design` — Start design phase (requires approved SRS + UCD if UI project)
-- `/long-task:init` — Initialize a project after design approval
-- `/long-task:work` — Start a Worker cycle
-- `/long-task:st` — Run system testing (requires all features passing)
-- `/long-task:increment` — Start incremental requirements development (requires existing project)
-- `/long-task:status` — Check project progress
-
 ## Architecture
 
 ### 12-Skill System
@@ -227,8 +217,8 @@ using-long-task (router)
 - **One feature per cycle**: Prevents context exhaustion
 - **UI features require Chrome DevTools MCP testing**: Mark with `"ui": true`
 - **System testing before release**: When all features pass, run ST phase (regression, integration, E2E, NFR, exploratory); no release without Go verdict
-- **Incremental changes via increment skill only**: Never manually edit feature-list.json to add/modify/deprecate features; use `/long-task:increment` for audited, tracked changes
-- **verification_steps immutable in Worker**: Only the increment skill can update verification_steps; Worker must use `/long-task:increment` for requirement changes
+- **Incremental changes via increment skill only**: Never manually edit feature-list.json to add/modify/deprecate features; use the `long-task-increment` skill for audited, tracked changes
+- **verification_steps immutable in Worker**: Only the increment skill can update verification_steps; Worker must invoke the `long-task-increment` skill for requirement changes
 - **ST acceptance test cases after Quality Gates**: Generate and execute ISO/IEC/IEEE 29119 acceptance test cases per feature after TDD and Quality Gates; test cases validate implementation against requirements
 - **Deprecated features excluded**: Worker skips deprecated features; ST readiness ignores them; routing counts only active features
 - **Service lifecycle via env-guide.md**: All service start/stop/restart operations use the commands in `env-guide.md`. No implicit hook-based cleanup exists. Always follow the 4-step Restart Protocol between test cycles. Always capture the first 30 lines of startup output to extract PID/port.
@@ -393,15 +383,6 @@ long-task-agent/
 │       ├── srs-template.md            # Default SRS template (ISO 29148)
 │       ├── design-template.md         # Default design document template
 │       └── st-case-template.md        # Default ST test case template (ISO/IEC/IEEE 29119-3)
-├── commands/                          # User shortcut commands
-│   ├── requirements.md                # /long-task:requirements
-│   ├── ucd.md                         # /long-task:ucd
-│   ├── design.md                      # /long-task:design
-│   ├── init.md                        # /long-task:init
-│   ├── work.md                        # /long-task:work
-│   ├── st.md                          # /long-task:st
-│   ├── increment.md                   # /long-task:increment
-│   └── status.md                      # /long-task:status
 ├── hooks/
 │   ├── hooks.json                     # Plugin-level hook config (SessionStart only — port-guard and session-cleanup removed)
 │   ├── session-start                  # Inject using-long-task + phase detection (bash)

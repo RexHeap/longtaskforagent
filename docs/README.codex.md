@@ -42,7 +42,7 @@ Codex discovers skills by scanning `~/.agents/skills/` for directories containin
 ## Limitations on Codex
 
 - **No hooks system**: The `hooks/` directory is Claude Code-specific. On Codex, context injection must be done manually or via the SKILL.md description.
-- **No Skill tool**: Commands like `/long-task:init` are Claude Code-specific. On Codex, invoke the skill by describing the task.
+- **No Skill tool**: Skill invocations (e.g., `long-task:long-task-init`) are Claude Code-specific. On Codex, invoke the skill by describing the task.
 - **Subagent dispatch**: Codex uses its own task dispatch mechanism. Adapt the `agents/prompts/*.md` templates to Codex's agent API.
 
 ## Verification

@@ -185,7 +185,7 @@ Create runnable examples in `examples/` demonstrating the completed feature.
 - **Sub-skills are non-negotiable** — ST Test Cases, TDD, Quality, Compliance Review MUST be invoked via Skill tool
 - **Config gate before planning** — never plan or code when required configs are missing
 - **Never mark "passing" without fresh evidence** — run tests, read output, then mark
-- **Never remove or edit `verification_steps` in Worker** — use `/long-task:increment` for requirement changes
+- **Never remove or edit `verification_steps` in Worker** — use the `long-task-increment` skill for requirement changes
 - **Systematic debugging only** — on error, read `references/systematic-debugging.md`; trace root cause, never guess-and-fix
 - **Update RELEASE_NOTES.md after every git commit**
 - **Always commit + update progress before ending session** — bridges context gap
@@ -206,10 +206,10 @@ Create runnable examples in `examples/` demonstrating the completed feature.
 | "I'll update release notes at the end" | Update after every commit. |
 | "Mutation score is probably OK" | Run mutation tests and read the report. |
 | "The UI looks correct to me" | Run automated detection + EXPECT/REJECT. |
-| "ST test case failed but the code is fine" | Report to user. No bypass. Fix code or use `/long-task:increment` to modify test case. |
+| "ST test case failed but the code is fine" | Report to user. No bypass. Fix code or use the `long-task-increment` skill to modify test case. |
 | "Port is busy, let me kill manually" | Use env-guide.md "Stop All Services" (port fallback) to kill it, then restart via env-guide.md Start — update env-guide.md if the command needed correction. |
 | "Environment is down, skip ST cases" | BLOCKED, not skipped. Fix environment or ask user. |
-| "I need to change the verification_steps" | Use `/long-task:increment` — Worker cannot modify them. |
+| "I need to change the verification_steps" | Invoke the `long-task-increment` skill — Worker cannot modify them. |
 | "This deprecated feature still needs work" | Skip it. Deprecated features are excluded. |
 | "Backend isn't ready but I'll mock it for now" | Dependency check exists for a reason. Develop backend features first. |
 | "I'll skip the dependency check this once" | Never skip. Reorder features so deps are satisfied. |

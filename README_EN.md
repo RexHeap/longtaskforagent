@@ -34,18 +34,6 @@ The system will automatically enter the **Requirements phase**, helping you refi
 Requirements → UCD (if UI) → Design → Init → Worker cycles → System Testing
 ```
 
-Or use shortcut commands to jump directly to the corresponding phase:
-
-```
-/long-task:requirements  — Start requirements elicitation
-/long-task:ucd           — Generate UCD style guide
-/long-task:design        — Start design phase
-/long-task:init          — Initialize project after design approval
-/long-task:work          — Start feature development
-/long-task:st            — Run system testing
-/long-task:increment     — Incremental development (add new features)
-```
-
 ### OpenCode Users
 
 If you use [OpenCode](https://opencode.ai) instead of Claude Code, install with a single command:
@@ -285,7 +273,7 @@ The plugin includes a suite of validation scripts to prevent common failures:
 | Post-implementation review | None | Automated spec & design compliance review |
 | System testing | Manual QA | IEEE 829-aligned with RTM, Go/No-Go verdict |
 | Adding features post-launch | Edit code directly | Impact analysis, tracked waves, document updates |
-| Project state visibility | Read the code | `task-progress.md` + `feature-list.json` + `/long-task:status` |
+| Project state visibility | Read the code | `task-progress.md` + `feature-list.json` |
 
 ---
 

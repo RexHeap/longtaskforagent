@@ -207,7 +207,7 @@ For `"ui": true` features, UI category test cases **MUST** be generated and **CA
    - "This is a frontend bug" — **ALL bugs must be fixed**
    - "This is a backend bug" — **ALL bugs must be fixed**
    - "Env temporarily unavailable" — BLOCKED, not skipped
-   - "Case might be wrong" — use `/long-task:increment` to modify, don't skip
+   - "Case might be wrong" — use the `long-task-increment` skill to modify, don't skip
    All failures must be recorded in `task-progress.md`.
 5. **Environment cleanup**: Services are stopped after testing completes.
 

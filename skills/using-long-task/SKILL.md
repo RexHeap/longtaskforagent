@@ -118,7 +118,7 @@ These thoughts mean STOP — you're rationalizing:
 | "This UI is too simple for a style guide" | Even simple UIs need tokens. UCD can be lightweight. |
 | "All features pass, we can ship" | Feature tests ≠ system tests. Run ST phase first. |
 | "System testing is overkill" | Integration bugs, NFR failures, and workflow gaps hide until ST. |
-| "I'll just add features to the JSON directly" | Use `/long-task:increment` for tracked, audited changes. |
+| "I'll just add features to the JSON directly" | Invoke the `long-task-increment` skill for tracked, audited changes. |
 | "The requirement change is small, no need for impact analysis" | Increment skill catches hidden dependencies. |
 
 ## Skill Priority

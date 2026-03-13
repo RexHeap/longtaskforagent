@@ -270,7 +270,7 @@ Since implementation code already exists (TDD and Quality Gates are complete), e
 
 **If any test case FAILS:**
 - Report to user via `AskUserQuestion` with: failed case ID, step details, actual vs expected
-- Options: fix code and re-execute / modify test case via `/long-task:increment` / terminate cycle
+- Options: fix code and re-execute / modify test case via the `long-task-increment` skill / terminate cycle
 - A failure here blocks the feature from proceeding to Review
 
 **If all test cases PASS:**
@@ -303,7 +303,7 @@ Always start from a known-clean state. Do not assume services are already runnin
 - Must report to user via `AskUserQuestion`:
   - Failed case ID(s), failed step number, actual vs expected
   - Bug category (frontend/backend/integration)
-  - Options: fix code and re-execute / modify test case via `/long-task:increment` / terminate
+  - Options: fix code and re-execute / modify test case via the `long-task-increment` skill / terminate
 - **No bypass allowed** for any reason:
   - "Simple feature" — still needs test cases
   - "UI tests are complex" — **UI test cases CANNOT be skipped; use Chrome DevTools MCP**
@@ -311,7 +311,7 @@ Always start from a known-clean state. Do not assume services are already runnin
   - "This is a frontend bug, not my code" — **ALL bugs must be fixed**
   - "This is a backend bug, let someone else fix it" — **ALL bugs must be fixed**
   - "Environment temporarily unavailable" — BLOCKED, not skipped
-  - "Test case might be wrong" — use `/long-task:increment` to modify, don't skip
+  - "Test case might be wrong" — use the `long-task-increment` skill to modify, don't skip
 - All failures MUST be recorded in `task-progress.md`
 
 ## Critical Rules
@@ -319,7 +319,7 @@ Always start from a known-clean state. Do not assume services are already runnin
 - **Requirements-driven**: Test cases derive from SRS/Design, validating implementation against requirements — not duplicating unit test assertions
 - **Black-box only**: Expected results must be derivable from SRS and the observable interface alone — no reading implementation code
 - **Complete after Quality Gates**: All test cases must be written, validated, and executed after TDD and quality gates pass
-- **Immutable after generation**: Test case documents are written and executed in this step and not modified during Review. Changes require `/long-task:increment`
+- **Immutable after generation**: Test case documents are written and executed in this step and not modified during Review. Changes require the `long-task-increment` skill
 - **Traceability mandatory**: Every test case traces to a requirement; every verification_step traces to a test case
 - **UI consolidation**: For UI features, this skill consolidates functional, UCD compliance, and accessibility testing into unified test cases
 - **Template flexibility**: Users can override the default ISO/IEC/IEEE 29119 template with custom templates and style examples

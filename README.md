@@ -34,18 +34,6 @@
 需求 → UCD (如有UI) → 设计 → 初始化 → 工作循环 → 系统测试
 ```
 
-或使用快捷命令直接跳转到对应阶段：
-
-```
-/long-task:requirements  — 启动需求收集
-/long-task:ucd           — 生成 UCD 风格指南
-/long-task:design        — 启动设计阶段
-/long-task:init          — 设计批准后初始化项目
-/long-task:work          — 启动功能开发
-/long-task:st            — 运行系统测试
-/long-task:increment     — 增量开发（添加新功能）
-```
-
 ### OpenCode 用户
 
 如果您使用 [OpenCode](https://opencode.ai) 而非 Claude Code，一条命令即可安装：
@@ -279,7 +267,7 @@ python long-task-agent/scripts/get_tool_commands.py feature-list.json
 | 实现后审查 | 无 | 自动规范和设计合规性审查 |
 | 系统测试 | 手动 QA | 符合 IEEE 829，带 RTM、Go/No-Go 结论 |
 | 发布后添加功能 | 直接编辑代码 | 影响分析、跟踪波次、文档更新 |
-| 项目状态可见性 | 读代码 | `task-progress.md` + `feature-list.json` + `/long-task:status` |
+| 项目状态可见性 | 读代码 | `task-progress.md` + `feature-list.json` |
 
 ---
 
