@@ -239,8 +239,39 @@ python long-task-agent/scripts/get_tool_commands.py feature-list.json
 
 插件包含一套验证脚本以防止常见故障：
 
+### auto_loop.py
+
+`auto_loop.py` 脚本通过重复调用 Claude Code 自动化长时间任务特性开发，直到所有活动特性通过。
+
+**使用方法：**
+```bash
+python scripts/auto_loop.py feature-list.json
+python scripts/auto_loop.py feature-list.json --max-iterations 30
+python scripts/auto_loop.py feature-list.json --cooldown 10
+python scripts/auto_loop.py feature-list.json --prompt "继续"
+```
+
+**参数说明：**
+- `feature_list`: feature-list.json 的路径（必需）
+- `--max-iterations`: 最大迭代次数（默认：50）
+- `--cooldown`: 迭代之间的等待秒数（默认：5）
+- `--prompt`: 每次迭代发送的提示（默认：继续）
+
+**中断处理：**
+- **第1次 Ctrl+C**: 优雅停止 - 完成当前迭代，然后停止
+- **第2次 Ctrl+C**: 强制终止 - 立即终止子进程
+
+**退出代码：**
+- 0: 所有特性通过
+- 1: 错误或达到最大迭代次数
+- 2: claude 命令失败
+- 3: 检测到不可恢复的错误（上下文限制、速率限制等）
+- 130: 用户中断（Ctrl+C）
+
+### 其他脚本
+
 | 脚本 | 用途 |
-|--------|---------|
+|------|------|
 | `validate_features.py` | 验证 `feature-list.json` 模式和数据完整性 |
 | `validate_guide.py` | 验证 `long-task-guide.md` 结构完整性 |
 | `check_configs.py` | 在功能工作前验证所需的环境配置 |
@@ -249,8 +280,8 @@ python long-task-agent/scripts/get_tool_commands.py feature-list.json
 | `validate_increment_request.py` | 验证增量请求信号文件 |
 | `validate_st_cases.py` | 验证 ST 测试用例文档（ISO/IEC/IEEE 29119） |
 | `get_tool_commands.py` | 将技术栈映射到 CLI 命令 |
+| `check_real_tests.py` | 验证真实测试存在性和 mock 检测 |
 | `analyze-tokens.py` | 从生成的图像分析 UCD 设计令牌 |
-| `auto_loop.py` | 多功能会话的自动化工作流运行器 |
 
 ---
 

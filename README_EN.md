@@ -239,18 +239,49 @@ python long-task-agent/scripts/get_tool_commands.py feature-list.json
 
 The plugin includes a suite of validation scripts to prevent common failures:
 
+### auto_loop.py
+
+The `auto_loop.py` script automates long-task feature development by repeatedly calling Claude Code until all active features pass.
+
+**Usage:**
+```bash
+python scripts/auto_loop.py feature-list.json
+python scripts/auto_loop.py feature-list.json --max-iterations 30
+python scripts/auto_loop.py feature-list.json --cooldown 10
+python scripts/auto_loop.py feature-list.json --prompt "continue"
+```
+
+**Parameters:**
+- `feature_list`: Path to feature-list.json (required)
+- `--max-iterations`: Maximum number of iterations (default: 50)
+- `--cooldown`: Seconds to wait between iterations (default: 5)
+- `--prompt`: Prompt to send each iteration (default: 继续)
+
+**Interrupt Handling:**
+- **1st Ctrl+C**: Graceful stop - finish current iteration, then stop
+- **2nd Ctrl+C**: Force kill - terminate child process immediately
+
+**Exit Codes:**
+- 0: All features passing
+- 1: Error or max iterations reached
+- 2: claude command failed
+- 3: Unrecoverable error detected (context limit, rate limit, etc.)
+- 130: Interrupted by user (Ctrl+C)
+
+### Other Scripts
+
 | Script | Purpose |
 |--------|---------|
-| `validate_features.py` | Validates `feature-list.json` schema and data integrity |
-| `validate_guide.py` | Validates `long-task-guide.md` structural completeness |
-| `check_configs.py` | Verifies required environment configs before feature work |
-| `check_devtools.py` | Verifies Chrome DevTools MCP availability for UI features |
-| `check_st_readiness.py` | Confirms all features pass before system testing |
-| `validate_increment_request.py` | Validates increment request signal file |
-| `validate_st_cases.py` | Validates ST test case document (ISO/IEC/IEEE 29119) |
-| `get_tool_commands.py` | Maps tech stack to CLI commands |
-| `analyze-tokens.py` | Analyzes UCD design tokens from generated images |
-| `auto_loop.py` | Automated workflow runner for multi-feature sessions |
+| `validate_features.py` | Validate `feature-list.json` schema and data integrity |
+| `validate_guide.py` | Validate `long-task-guide.md` structural integrity |
+| `check_configs.py` | Verify required environment configs before feature work |
+| `check_devtools.py` | Verify Chrome DevTools MCP availability for UI features |
+| `check_st_readiness.py` | Confirm all features passing before system testing |
+| `validate_increment_request.py` | Validate increment request signal file |
+| `validate_st_cases.py` | Validate ST test case documents (ISO/IEC/IEEE 29119) |
+| `get_tool_commands.py` | Map tech stack to CLI commands |
+| `check_real_tests.py` | Verify real test existence and mock detection |
+| `analyze-tokens.py` | Analyze UCD design tokens from generated images |
 
 ---
 
