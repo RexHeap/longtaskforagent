@@ -25,7 +25,7 @@ Then install the plugin from this marketplace:
 After launching Claude Code, simply tell it what you want to build:
 
 ```
-> I want to build a weather query mini-app. use `long task skill`.
+> I want to build a GitHub trending projects weekly report system. use `long task skill`.
 ```
 
 The system will automatically enter the **Requirements phase**, helping you refine requirements through structured questioning and ultimately generate a standardized SRS document. The subsequent workflow is fully automated:
@@ -33,6 +33,12 @@ The system will automatically enter the **Requirements phase**, helping you refi
 ```
 Requirements → UCD (if UI) → Design → Init → Worker cycles → System Testing
 ```
+
+[View sample project](https://github.com/suriyel/githubtrends)
+
+![](http://gitee.com/null_161_0561/picpic/raw/master/2021/image-20260313224154726.png)
+
+
 
 ### OpenCode Users
 
@@ -361,11 +367,13 @@ long-task-agent/
 ## Roadmap
 
 - **Parallel Agent Dispatch** — identify independent features and dispatch worker subagents in parallel
-- **Plugin Discovery System** — YAML frontmatter metadata, priority shadowing, marketplace distribution
-- **Auto-Update Mechanism** — version checking with user notification (never auto-apply)
-- **Multi-Platform Support** — Codex (OpenAI) and OpenCode adapter layers
 
 ---
+
+## Acknowledgments
+
+- TDD approach inspired by [superpowers](https://github.com/obra/superpowers)
+- Long task execution reference from Bilibili creator [数字游牧人](https://b23.tv/UUVywob?share_medium=android&share_source=weixin&bbid=XUD7142DB761960E57CD68EE4E71913CF4699&ts=1773413437129)
 
 ## License
 

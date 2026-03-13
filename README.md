@@ -25,7 +25,7 @@
 启动 Claude Code 后，只需告诉它您想构建什么：
 
 ```
-> 我想构建一个天气查询小程序。使用 long task skill。
+> 我想构建一个GitHub 热门项目周报系统。使用 long task skill。
 ```
 
 系统将自动进入**需求阶段**，通过结构化提问帮助您完善需求，最终生成标准化的 SRS 文档。后续工作流程完全自动化：
@@ -33,6 +33,12 @@
 ```
 需求 → UCD (如有UI) → 设计 → 初始化 → 工作循环 → 系统测试
 ```
+
+[点击查看样例项目](https://github.com/suriyel/githubtrends)
+
+![](http://gitee.com/null_161_0561/picpic/raw/master/2021/image-20260313224154726.png)
+
+
 
 ### OpenCode 用户
 
@@ -355,11 +361,13 @@ long-task-agent/
 ## 路线图
 
 - **并行 Agent 调度** — 识别独立功能并并行调度工作子 agent
-- **插件发现系统** — YAML 前置元数据、优先级遮蔽、市场分发
-- **自动更新机制** — 版本检查和用户通知（从不自动应用）
-- **多平台支持** — Codex (OpenAI) 和 OpenCode 适配层
 
 ---
+
+## 鸣谢
+
+- TDD部分借鉴[superpowers](https://github.com/obra/superpowers)
+- long task执行参考自 B站up [数字游牧人](https://b23.tv/UUVywob?share_medium=android&share_source=weixin&bbid=XUD7142DB761960E57CD68EE4E71913CF4699&ts=1773413437129)
 
 ## 许可证
 
