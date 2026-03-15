@@ -30,11 +30,17 @@ import re
 import sys
 
 
+# Default feature reference pattern — {id} is replaced with the feature ID
+# Matches: feature_3, feature:3, feature-3, feature 3, feature#3
+# Uses negative lookahead (?!\d) so feature_1 doesn't match feature_10
+DEFAULT_FEATURE_REF_PATTERN = r"feature[_:\s#-]*{id}(?!\d)"
+
 # Default config used when feature-list.json has no real_test section
 DEFAULT_REAL_TEST_CONFIG = {
     "marker_pattern": "real_test",
     "mock_patterns": ["mock\\.patch", "MagicMock", "mocker\\.patch", "@patch"],
     "test_dir": "tests",
+    "feature_ref_pattern": DEFAULT_FEATURE_REF_PATTERN,
 }
 
 # File extensions to scan per language
@@ -266,6 +272,65 @@ def check_mock_usage(real_tests, mock_patterns, test_files_content_cache):
     return warnings
 
 
+def build_feature_ref_regex(pattern_template, feature_id):
+    """Build a compiled regex for matching a specific feature ID reference."""
+    pattern = pattern_template.replace("{id}", str(feature_id))
+    try:
+        return re.compile(pattern, re.IGNORECASE)
+    except re.error:
+        return None
+
+
+def associate_real_tests_to_features(
+    real_tests, active_features, feature_ref_pattern, test_files_content_cache
+):
+    """
+    Associate real tests to features by scanning file names and function bodies.
+
+    Scans marker lines, function definitions, docstrings, and comments for
+    feature references matching the feature_ref_pattern (with {id} replaced).
+
+    Returns dict: feature_id → list of associated real test func_names
+    """
+    per_feature = {}
+
+    for feat in active_features:
+        fid = feat.get("id")
+        per_feature[fid] = []
+        ref_re = build_feature_ref_regex(feature_ref_pattern, fid)
+        if not ref_re:
+            continue
+
+        for rt in real_tests:
+            fpath = rt["file"]
+
+            # Check file name
+            fname = os.path.basename(fpath)
+            if ref_re.search(fname):
+                per_feature[fid].append(rt["func_name"])
+                continue
+
+            # Check function body (includes marker line, def line, docstrings, comments)
+            if fpath not in test_files_content_cache:
+                try:
+                    with open(fpath, "r", encoding="utf-8", errors="replace") as fobj:
+                        test_files_content_cache[fpath] = fobj.readlines()
+                except (OSError, IOError):
+                    continue
+
+            lines = test_files_content_cache[fpath]
+            # Scan from marker line through function body end
+            scan_start = min(rt["line_no"] - 1, rt["func_body_start"])
+            body_lines = lines[scan_start:rt["func_body_end"]]
+
+            for line in body_lines:
+                if ref_re.search(line):
+                    per_feature[fid].append(rt["func_name"])
+                    break
+
+    return per_feature
+
+
 def check_real_tests(path, feature_id=None):
     """
     Main check function.
@@ -292,11 +357,14 @@ def check_real_tests(path, feature_id=None):
         "project": "",
         "test_dir": "",
         "marker_pattern": "",
+        "feature_ref_pattern": "",
         "language": "",
         "test_files_scanned": 0,
         "active_features": 0,
         "real_tests": [],
         "mock_warnings": [],
+        "per_feature": {},
+        "features_without_real_tests": [],
         "issues": [],
     }
 
@@ -400,6 +468,33 @@ def check_real_tests(path, feature_id=None):
         for w in mock_warnings
     ]
 
+    # Per-feature real test association
+    feature_ref_pattern = rt_config.get(
+        "feature_ref_pattern", DEFAULT_FEATURE_REF_PATTERN
+    )
+    result["feature_ref_pattern"] = feature_ref_pattern
+
+    if active_features and real_tests:
+        per_feature = associate_real_tests_to_features(
+            real_tests, active_features, feature_ref_pattern, content_cache
+        )
+        result["per_feature"] = {str(k): v for k, v in per_feature.items()}
+        result["features_without_real_tests"] = [
+            fid for fid, tests in per_feature.items() if not tests
+        ]
+
+        # When --feature N is used, require per-feature association
+        if feature_id is not None:
+            matched_ids = [f["id"] for f in active_features]
+            if feature_id in matched_ids and not per_feature.get(feature_id, []):
+                ref_example = feature_ref_pattern.replace("{id}", str(feature_id))
+                result["issues"].append(
+                    f"No real tests associated with feature {feature_id} "
+                    f"(add reference matching: {ref_example})"
+                )
+                result["verdict"] = "FAIL"
+                return result
+
     # Determine verdict
     if mock_warnings:
         result["verdict"] = "WARN"
@@ -439,6 +534,21 @@ def format_text_output(result):
     if not real_tests:
         lines.append("  (none)")
     lines.append("")
+
+    # Per-feature coverage
+    per_feature = result.get("per_feature", {})
+    if per_feature:
+        missing = result.get("features_without_real_tests", [])
+        lines.append("Per-feature real test coverage:")
+        for fid_str in sorted(per_feature.keys(), key=lambda x: int(x)):
+            tests = per_feature[fid_str]
+            fid = int(fid_str)
+            count = len(tests)
+            marker = " ← MISSING" if fid in missing else ""
+            lines.append(f"  Feature {fid}: {count} real tests{marker}")
+            for t in tests:
+                lines.append(f"    - {t}")
+        lines.append("")
 
     # Mock warnings
     mock_warnings = result["mock_warnings"]

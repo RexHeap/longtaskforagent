@@ -248,7 +248,7 @@ class TestFeatureFiltering:
             import pytest
 
             @pytest.mark.real_test
-            def test_real_auth():
+            def test_real_auth_feature_1():
                 assert True
         """)
         fl = make_feature_list(tmp_path, features=[
@@ -314,6 +314,175 @@ class TestJsonOutput:
         assert isinstance(data["real_tests"], list)
         assert len(data["real_tests"]) == 1
         assert data["real_tests"][0]["func_name"] == "test_real_x"
+
+
+class TestPerFeatureAssociation:
+    """Per-feature real test association checking."""
+
+    def test_feature_ref_in_func_name(self, tmp_path):
+        """Function name containing feature_N associates the test."""
+        make_test_file(tmp_path, "test_login.py", """
+            import pytest
+
+            @pytest.mark.real_test
+            def test_real_feature_1_login():
+                assert True
+        """)
+        fl = make_feature_list(tmp_path, features=[
+            {"id": 1, "category": "core", "title": "F1", "description": "d",
+             "priority": "high", "status": "failing",
+             "verification_steps": ["step1"]}
+        ])
+        code, out, _ = run_script(fl, "--feature", "1")
+        assert code == 0
+        assert "Feature 1: 1 real tests" in out
+
+    def test_feature_ref_in_comment(self, tmp_path):
+        """Comment in function body containing feature reference associates the test."""
+        make_test_file(tmp_path, "test_api.py", """
+            import pytest
+
+            @pytest.mark.real_test
+            def test_real_api_call():
+                # feature:2 - verifies API connectivity
+                assert True
+        """)
+        fl = make_feature_list(tmp_path, features=[
+            {"id": 2, "category": "core", "title": "F2", "description": "d",
+             "priority": "high", "status": "failing",
+             "verification_steps": ["step1"]}
+        ])
+        code, out, _ = run_script(fl, "--feature", "2")
+        assert code == 0
+        assert "Feature 2: 1 real tests" in out
+
+    def test_feature_ref_in_filename(self, tmp_path):
+        """File name containing feature_N associates all real tests in it."""
+        make_test_file(tmp_path, "test_feature_3_db.py", """
+            import pytest
+
+            @pytest.mark.real_test
+            def test_real_db_persist():
+                assert True
+        """)
+        fl = make_feature_list(tmp_path, features=[
+            {"id": 3, "category": "core", "title": "F3", "description": "d",
+             "priority": "high", "status": "failing",
+             "verification_steps": ["step1"]}
+        ])
+        code, out, _ = run_script(fl, "--feature", "3")
+        assert code == 0
+        assert "Feature 3: 1 real tests" in out
+
+    def test_no_feature_ref_fails_with_feature_flag(self, tmp_path):
+        """--feature N fails when no real test references feature N."""
+        make_test_file(tmp_path, "test_generic.py", """
+            import pytest
+
+            @pytest.mark.real_test
+            def test_real_generic():
+                assert True
+        """)
+        fl = make_feature_list(tmp_path, features=[
+            {"id": 1, "category": "core", "title": "F1", "description": "d",
+             "priority": "high", "status": "failing",
+             "verification_steps": ["step1"]}
+        ])
+        code, out, _ = run_script(fl, "--feature", "1")
+        assert code == 1
+        assert "No real tests associated with feature 1" in out
+
+    def test_feature_ref_no_cross_match(self, tmp_path):
+        """feature_1 does not match feature_10."""
+        make_test_file(tmp_path, "test_login.py", """
+            import pytest
+
+            @pytest.mark.real_test
+            def test_real_feature_10_something():
+                assert True
+        """)
+        fl = make_feature_list(tmp_path, features=[
+            {"id": 1, "category": "core", "title": "F1", "description": "d",
+             "priority": "high", "status": "failing",
+             "verification_steps": ["step1"]}
+        ])
+        code, out, _ = run_script(fl, "--feature", "1")
+        assert code == 1
+        assert "No real tests associated with feature 1" in out
+
+    def test_global_check_reports_missing_features(self, tmp_path):
+        """Global check (no --feature) reports features without real tests."""
+        make_test_file(tmp_path, "test_auth.py", """
+            import pytest
+
+            @pytest.mark.real_test
+            def test_real_feature_1_auth():
+                assert True
+        """)
+        fl = make_feature_list(tmp_path, features=[
+            {"id": 1, "category": "core", "title": "F1", "description": "d",
+             "priority": "high", "status": "failing",
+             "verification_steps": ["step1"]},
+            {"id": 2, "category": "core", "title": "F2", "description": "d",
+             "priority": "high", "status": "failing",
+             "verification_steps": ["step1"]},
+        ])
+        code, out, _ = run_script(fl)
+        # Global check still PASS (real tests exist overall)
+        assert code == 0
+        assert "Feature 1: 1 real tests" in out
+        assert "Feature 2: 0 real tests" in out
+        assert "MISSING" in out
+
+    def test_per_feature_json_output(self, tmp_path):
+        """JSON output includes per_feature and features_without_real_tests."""
+        make_test_file(tmp_path, "test_feature_1.py", """
+            import pytest
+
+            @pytest.mark.real_test
+            def test_real_db():
+                assert True
+        """)
+        fl = make_feature_list(tmp_path, features=[
+            {"id": 1, "category": "core", "title": "F1", "description": "d",
+             "priority": "high", "status": "failing",
+             "verification_steps": ["step1"]},
+            {"id": 2, "category": "core", "title": "F2", "description": "d",
+             "priority": "high", "status": "failing",
+             "verification_steps": ["step1"]},
+        ])
+        code, out, _ = run_script(fl, "--json")
+        assert code == 0
+        data = json.loads(out)
+        assert "per_feature" in data
+        assert len(data["per_feature"]["1"]) == 1
+        assert data["per_feature"]["2"] == []
+        assert 2 in data["features_without_real_tests"]
+        assert 1 not in data["features_without_real_tests"]
+
+    def test_custom_feature_ref_pattern(self, tmp_path):
+        """Custom feature_ref_pattern is respected."""
+        make_test_file(tmp_path, "test_auth.py", """
+            import pytest
+
+            @pytest.mark.real_test
+            def test_real_auth():
+                # covers: F-001
+                assert True
+        """)
+        fl = make_feature_list(tmp_path, features=[
+            {"id": 1, "category": "core", "title": "F1", "description": "d",
+             "priority": "high", "status": "failing",
+             "verification_steps": ["step1"]}
+        ], real_test={
+            "marker_pattern": "real_test",
+            "mock_patterns": [],
+            "test_dir": "tests",
+            "feature_ref_pattern": r"F-0*{id}(?!\d)"
+        })
+        code, out, _ = run_script(fl, "--feature", "1")
+        assert code == 0
+        assert "Feature 1: 1 real tests" in out
 
 
 class TestEdgeCases:

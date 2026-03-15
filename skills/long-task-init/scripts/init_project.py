@@ -317,6 +317,7 @@ def main():
         "validate_st_cases.py",
         "validate_increment_request.py",
         "check_st_readiness.py",
+        "check_real_tests.py",
     ]
     for script_name in helper_scripts:
         src = os.path.join(plugin_scripts_dir, script_name)
