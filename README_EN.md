@@ -8,6 +8,8 @@
 
 ### 1. Installation
 
+#### Option 1: Claude Code Native Command (Recommended)
+
 In Claude Code, register the marketplace first:
 
 ```bash
@@ -15,6 +17,41 @@ In Claude Code, register the marketplace first:
 ```
 
 Then install the plugin from this marketplace:
+
+```shell
+/plugin install long-task@longtaskforagent
+```
+
+#### Option 2: One-line Installer Script (Supports Non-GitHub Sources)
+
+If you need to install from **GitLab, Gitee, self-hosted Git**, or other non-GitHub sources, use the installer script:
+
+**macOS / Linux:**
+
+```bash
+# Install default marketplace (suriyel/longtaskforagent)
+curl -fsSL https://raw.githubusercontent.com/suriyel/longtaskforagent/main/claude-code/install.sh | bash
+
+# Install from other sources
+curl -fsSL https://raw.githubusercontent.com/suriyel/longtaskforagent/main/claude-code/install.sh | bash -s -- https://gitlab.com/company/plugins.git
+```
+
+**Windows (PowerShell):**
+
+```powershell
+# Install default marketplace (suriyel/longtaskforagent)
+irm https://raw.githubusercontent.com/suriyel/longtaskforagent/main/claude-code/install.ps1 | iex
+
+# Install from other sources
+irm https://raw.githubusercontent.com/suriyel/longtaskforagent/main/claude-code/install.ps1 | iex -Args "https://gitlab.com/company/plugins.git"
+```
+
+The script automatically:
+- Detects Git source type (GitHub/GitLab/Gitee/SSH/local path)
+- Clones the repository to `~/.claude/plugins/marketplaces/<name>/`
+- Updates `known_marketplaces.json` registration
+
+After installation, use Claude Code to install plugins:
 
 ```shell
 /plugin install long-task@longtaskforagent
