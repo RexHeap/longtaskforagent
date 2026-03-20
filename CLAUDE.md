@@ -231,6 +231,7 @@ using-long-task (router)
 | File | Phase | Purpose |
 |------|-------|---------|
 | `docs/plans/*-srs.md` | Requirements | Approved SRS — the WHAT (ISO/IEC/IEEE 29148 aligned) |
+| `docs/plans/*-deferred.md` | Requirements | Deferred requirements backlog — structured tracking for next-round pickup via increment skill |
 | `docs/plans/*-ucd.md` | UCD | Approved UCD style guide — the LOOK (UI projects only; text-to-image prompts, style tokens) |
 | `docs/plans/*-design.md` | Design | Approved design — the HOW |
 | `increment-request.json` | Increment | Signal file triggering incremental requirements (deleted after processing) |
@@ -249,6 +250,7 @@ using-long-task (router)
 | `docs/templates/srs-template.md` | — | Default SRS template (user-customizable) |
 | `docs/templates/design-template.md` | — | Default design document template (user-customizable) |
 | `docs/templates/st-case-template.md` | — | Default ST test case template (ISO/IEC/IEEE 29119-3, user-customizable) |
+| `docs/templates/deferred-backlog-template.md` | — | Default deferred requirements backlog template (user-customizable) |
 
 ### Feature List Schema
 
@@ -387,7 +389,8 @@ long-task-agent/
 │   └── templates/                     # Document templates (user-customizable)
 │       ├── srs-template.md            # Default SRS template (ISO 29148)
 │       ├── design-template.md         # Default design document template
-│       └── st-case-template.md        # Default ST test case template (ISO/IEC/IEEE 29119-3)
+│       ├── st-case-template.md        # Default ST test case template (ISO/IEC/IEEE 29119-3)
+│       └── deferred-backlog-template.md # Default deferred requirements backlog template
 ├── hooks/
 │   ├── hooks.json                     # Plugin-level hook config (SessionStart only — port-guard and session-cleanup removed)
 │   ├── session-start                  # Inject using-long-task + phase detection (bash)
@@ -437,5 +440,5 @@ The `using-long-task` skill is injected at session start and routes to the corre
 Flow: Requirements (SRS) → UCD (UI projects) → Design → Init → Worker cycles → System Testing.
 Incremental development: place `increment-request.json` → Increment skill updates SRS/Design/UCD in place → new features appended → Worker cycles → ST.
 
-Key files: `docs/plans/*-srs.md` (SRS), `docs/plans/*-ucd.md` (UCD style guide), `docs/plans/*-design.md` (design), `feature-list.json` (task inventory), `task-progress.md` (session log), `RELEASE_NOTES.md` (changelog), `docs/test-cases/feature-*.md` (per-feature ST test cases), `docs/plans/*-st-report.md` (ST report), `increment-request.json` (increment signal).
+Key files: `docs/plans/*-srs.md` (SRS), `docs/plans/*-deferred.md` (deferred backlog), `docs/plans/*-ucd.md` (UCD style guide), `docs/plans/*-design.md` (design), `feature-list.json` (task inventory), `task-progress.md` (session log), `RELEASE_NOTES.md` (changelog), `docs/test-cases/feature-*.md` (per-feature ST test cases), `docs/plans/*-st-report.md` (ST report), `increment-request.json` (increment signal).
 <!-- /long-task-agent -->

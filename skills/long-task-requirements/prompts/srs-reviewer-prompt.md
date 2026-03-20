@@ -118,6 +118,18 @@ Scan the full SRS text. Each anti-pattern found anywhere = NO for that check.
 
 **Verdict rule**: ALL D1-D4 must be YES to PASS this group.
 
+### Group G: Granularity Checks (G1-G3)
+
+Verify that functional requirements are appropriately granular for downstream feature decomposition. These checks apply to requirements REMAINING in the SRS after any deferral (Section 4 only — deferred items in the backlog are exempt).
+
+| # | Check | YES/NO | Evidence |
+|---|-------|--------|----------|
+| G1 | No FR references 2+ distinct user roles performing different actions in a single requirement statement | | |
+| G2 | No FR bundles CRUD operations (Create + Read + Update + Delete) into a single requirement — each operation is a separate FR or explicitly justified as atomic | | |
+| G3 | No FR has 4+ acceptance criteria covering distinct behavioral paths — if so, it has been explicitly marked as intentionally coarse (with justification) or decomposed | | |
+
+**Verdict rule**: ALL G1-G3 must be YES to PASS this group. An FR can pass G3 if it has 4+ criteria that are all variants of the SAME behavior (e.g., input validation with multiple invalid formats).
+
 ### Group Verdicts
 
 | Group | Checks | PASS/FAIL | Failing Checks |
@@ -127,6 +139,7 @@ Scan the full SRS text. Each anti-pattern found anywhere = NO for that check.
 | C: Completeness | C1-C5 | | |
 | S: Structural Compliance | S1-S4 | | |
 | D: Diagram Presence & Validity | D1-D4 | | |
+| G: Granularity | G1-G3 | | |
 
 ### Clarification Questions (USER-INPUT items only)
 
@@ -177,6 +190,8 @@ If PASS:
 - **IFR section (Section 6) is exempt from A3** — interface requirements legitimately use technical terms (REST, JSON, HTTP)
 - **"[Not applicable]" with justification is acceptable** for any section — mark the S2 check YES if all absent sections are explicitly marked and explained
 - **Skip D checks only if SRS has zero user-facing FRs** — if any FR involves user interaction, diagrams are mandatory
+- **G checks apply only to Section 4 FRs** — deferred items in the backlog document are exempt from granularity checks
+- **"Intentionally coarse" justification is acceptable for G3** — if the FR explicitly notes that its multiple criteria are variants of a single behavior, mark G3 YES
 
 ## Issue Classification Heuristics
 
@@ -202,6 +217,11 @@ Use these rules to assign `Resolution-Type` to every issue in Steps 1-2.
 - Traceability matrix: auto-populate from the requirement ID list (S3)
 - Diagram generation (D1-D4): generate from existing actor and FR lists in the SRS
 - NFR measurement method addition (C3): add "measured via [standard tool]" only when the threshold is already user-specified
+- Multiple actors in single FR (G1): mechanically split by actor — each actor's distinct actions become separate FRs
+- CRUD bundle (G2): mechanically split into individual operations (Create, Read, Update, Delete) as separate FRs
+
+**Usually USER-INPUT for granularity** (classify as USER-INPUT unless obvious from context):
+- Scenario explosion (G3): when an FR has 4+ acceptance criteria covering distinct paths, ask the user which scenarios are truly independent vs. which are variants of the same behavior
 
 **NEVER INVENT domain values**:
 Do NOT supply a number, name, or business rule where one was not stated by the user or directly implied by the accepted elicitation context. If the SRS says "fast" and no threshold was given during elicitation, the only correct Resolution-Type is USER-INPUT — not inventing "200ms".

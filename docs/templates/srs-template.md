@@ -12,6 +12,8 @@
 
 ### 1.2 Out of Scope
 [What is explicitly EXCLUDED — deferred or not planned]
+[If requirements were deferred during granularity analysis, reference the deferred backlog:
+"Deferred requirements tracked in [deferred backlog](YYYY-MM-DD-<topic>-deferred.md)"]
 
 ## 2. Glossary & Definitions
 | Term | Definition | Do NOT confuse with |

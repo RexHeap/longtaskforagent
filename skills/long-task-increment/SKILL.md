@@ -25,6 +25,7 @@ You MUST create a TodoWrite task for each step and complete them in order:
 - Read approved SRS (`docs/plans/*-srs.md`) — current requirements baseline
 - Read approved design (`docs/plans/*-design.md`) — current architecture
 - If UI project: read UCD style guide (`docs/plans/*-ucd.md`)
+- If exists: read deferred backlog (`docs/plans/*-deferred.md`) — pre-elicited requirements available for pickup (skip re-elicitation for items with complete EARS + acceptance criteria)
 - Read `task-progress.md` — session history
 - Run `git log --oneline -10` — recent context
 - Determine current wave number: `max(wave for all features) + 1` (default to 1 if no wave fields exist)

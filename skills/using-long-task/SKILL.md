@@ -89,6 +89,7 @@ digraph phase_detection {
 | File | Role |
 |------|------|
 | `docs/plans/*-srs.md` | Approved SRS — the WHAT |
+| `docs/plans/*-deferred.md` | Deferred requirements backlog — next-round pickup via increment |
 | `docs/plans/*-ucd.md` | Approved UCD style guide — the LOOK (UI projects only) |
 | `docs/plans/*-design.md` | Approved design — the HOW |
 | `feature-list.json` | Task inventory — the central shared state |

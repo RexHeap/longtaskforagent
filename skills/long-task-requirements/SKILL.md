@@ -24,10 +24,12 @@ You MUST create a TodoWrite task for each of these items and complete them in or
 3. **Classify requirements** — functional / NFR / constraint / assumption / interface / exclusion
 4. **Write requirements** — apply EARS templates, assign IDs, write acceptance criteria, generate diagrams
 5. **Validate SRS** — check 8 quality attributes, detect anti-patterns, verify testability
-6. **SRS Compliance Review** — dispatch srs-reviewer subagent; gate: all R/A/C/S/D checks PASS before proceeding
-7. **Present & approve SRS** — section-by-section for non-trivial projects
-8. **Save SRS document** — `docs/plans/YYYY-MM-DD-<topic>-srs.md` and commit
-9. **Transition to UCD** — **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-ucd` (it auto-skips to design if no UI features in SRS)
+6. **Granularity analysis** — detect oversized FRs via 6 heuristics (G1-G6), decompose candidates, user approval for non-trivial splits
+7. **Scope fit & deferral** — assess current-round vs next-round, generate deferred backlog if applicable, update SRS to remove deferred items
+8. **SRS Compliance Review** — dispatch srs-reviewer subagent; gate: all R/A/C/S/D/G checks PASS before proceeding
+9. **Present & approve SRS** — section-by-section for non-trivial projects
+10. **Save SRS & backlog** — `docs/plans/YYYY-MM-DD-<topic>-srs.md` + deferred backlog (if any) and commit
+11. **Transition to UCD** — **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-ucd` (it auto-skips to design if no UI features in SRS)
 
 **The terminal state is invoking long-task-ucd.** Do NOT invoke any other skill.
 
@@ -199,6 +201,131 @@ Scan the full SRS for these anti-patterns and fix before presenting:
 - Glossary covers all domain-specific terms used in requirements
 - Out-of-Scope section explicitly lists deferred features
 
+## Step 5.5: Granularity Analysis & Decomposition
+
+Analyze each FR for hidden complexity that would create oversized features downstream. A well-granulated FR maps cleanly to 1-2 features in `feature-list.json`; an oversized FR hides multiple independently testable behaviors.
+
+### 5.5a. Granularity Heuristics
+
+Apply these heuristics to EACH functional requirement. If ANY heuristic triggers, the FR is a **decomposition candidate**:
+
+| # | Heuristic | Detection Signal | Example |
+|---|-----------|-----------------|---------|
+| G1 | **Multiple actors** | FR references 2+ distinct user roles performing different actions | "Admin can manage users and end-users can view profiles" |
+| G2 | **CRUD bundle** | FR describes Create + Read + Update + Delete as a single requirement | "The system shall manage product inventory" (implies CRUD) |
+| G3 | **Scenario explosion** | FR has 4+ acceptance criteria (Given/When/Then blocks) covering distinct behavioral paths | FR with happy path + 3 error cases + 2 boundary cases |
+| G4 | **Cross-layer concern** | FR spans both backend logic AND user-facing UI behavior | "Display real-time notifications when order status changes" |
+| G5 | **Multi-state behavior** | FR describes behavior across 3+ distinct system states or modes | "While in draft/review/published state, the system shall..." |
+| G6 | **Temporal coupling** | FR bundles a trigger event with a deferred/scheduled consequence | "When user registers, send confirmation email and create analytics profile" |
+
+### 5.5b. Decomposition Process
+
+For each decomposition candidate:
+
+1. **Identify atomic behaviors** — each independently testable behavior becomes a candidate sub-requirement
+2. **Apply the Single Responsibility Test**: "Can I write ONE focused acceptance test for this sub-requirement without testing unrelated behavior?"
+3. **Preserve traceability** — sub-requirements inherit the parent's ID prefix:
+   - Parent: `FR-003` → Children: `FR-003a`, `FR-003b`, `FR-003c`
+   - Each child gets its own EARS statement, acceptance criteria, and priority
+4. **Re-validate children** — each child must independently pass the 8 quality attribute checks from Step 5a
+5. **Update diagrams** — if decomposition changes the Use Case View or Process Flows, regenerate affected diagrams
+
+### 5.5c. Decomposition Decision Table
+
+| Candidate Count | Action |
+|----------------|--------|
+| 0 candidates | Skip — proceed to Step 5.6 |
+| 1-3 candidates | Auto-decompose; present rationale inline |
+| 4+ candidates | Present candidates to user via `AskUserQuestion` for approval before splitting |
+
+**Rule**: Never auto-split without user awareness. For 1-3 candidates, present rationale inline with the SRS; for 4+, use an explicit approval round.
+
+## Step 5.6: Scope Fit & Deferral
+
+After decomposition, assess whether ALL resulting sub-requirements belong in the current round. Not every sub-requirement needs to ship now — some should be deferred to a future increment for scope control and focus.
+
+### 5.6a. Scope Fit Criteria
+
+For each sub-requirement (and any original FR that was NOT decomposed), evaluate:
+
+| Criterion | Keep in Current Round | Defer to Next Round |
+|-----------|----------------------|---------------------|
+| **Priority** | Must / Should (MoSCoW) | Could / Won't |
+| **Dependency** | Required by other current-round FRs | No current-round FR depends on it |
+| **Completeness** | Acceptance criteria fully defined | Needs further elicitation or domain input |
+| **Risk** | Well-understood, low uncertainty | High uncertainty, needs prototype/spike first |
+| **Scope budget** | Fits within the target feature count (10-50 for MVP) | Would push total beyond manageable scope |
+
+### 5.6b. Deferral Decision
+
+Present the scope fit assessment to the user via `AskUserQuestion`:
+
+```
+After granularity analysis, the SRS contains [N] functional requirements.
+I recommend keeping [K] in the current round and deferring [D] to a future increment:
+
+**Current Round** (K requirements):
+- FR-001: ... (Must, no dependencies on deferred items)
+- FR-003a: ... (Must, core workflow)
+- FR-003b: ... (Should, needed by FR-005)
+...
+
+**Proposed Deferrals** (D requirements):
+- FR-003c: Update product (Could, no current-round FR depends on it)
+  → Reason: Lower priority, independent of core MVP flow
+- FR-003d: Delete product (Could, soft-delete can be added later)
+  → Reason: Risk — deletion policy needs business rule clarification
+- FR-009: Export reports (Won't for v1)
+  → Reason: Scope budget — exceeds MVP target
+...
+
+Should I proceed with this split? You can move items between rounds.
+```
+
+**Rules:**
+- **Must-priority FRs are NEVER auto-deferred** — only the user can defer a Must
+- **Dependency integrity** — if FR-X is kept and depends on FR-Y, FR-Y must also be kept
+- If user approves 0 deferrals → skip backlog generation, proceed to Step 6
+- If user approves 1+ deferrals → proceed to 5.6c
+
+### 5.6c. Generate Deferred Requirements Backlog
+
+For approved deferrals, generate `docs/plans/YYYY-MM-DD-<topic>-deferred.md` using the deferred backlog template:
+
+1. Check for template:
+   - If user specified a template → read and validate
+   - Else → read `docs/templates/deferred-backlog-template.md`
+2. For each deferred requirement, record:
+   - Original FR ID and EARS statement (preserved exactly from the SRS draft)
+   - Acceptance criteria (preserved exactly)
+   - Deferral reason (from 5.6b assessment)
+   - Dependencies on current-round requirements (for future impact analysis)
+   - Suggested wave (next increment or later)
+   - Re-entry hint: what must be true before this requirement can be picked up
+3. Update the SRS draft:
+   - **Remove** deferred FRs from Section 4 (Functional Requirements)
+   - **Add** a reference in Section 1.2 (Out of Scope): `"Deferred to future increment — see [deferred backlog](YYYY-MM-DD-<topic>-deferred.md)"`
+   - **Update** diagrams: remove deferred use cases from Use Case View, remove deferred flows from Process Flows
+   - **Renumber** remaining FRs if gaps are confusing (optional — user preference)
+4. Commit the deferred backlog alongside the SRS
+
+### 5.6d. Backlog-to-Increment Bridge
+
+The deferred backlog is designed to feed directly into the `long-task-increment` skill:
+
+- When the user is ready to pick up deferred requirements, they create `increment-request.json` referencing the backlog:
+  ```json
+  {
+    "reason": "Pick up deferred requirements from wave 0",
+    "scope": "See docs/plans/YYYY-MM-DD-<topic>-deferred.md",
+    "changes": ["new"]
+  }
+  ```
+- The increment skill reads the backlog, skips re-elicitation for requirements that already have complete EARS + acceptance criteria, and proceeds directly to impact analysis
+- After increment processing, mark picked-up items in the backlog as `status: "incorporated"` with the wave number and date
+
+**Rule**: The deferred backlog is a living document. Each increment that picks up items updates it. When all items are incorporated or explicitly dropped, the backlog is archived.
+
 ## Step 6: SRS Compliance Review
 
 Dispatch a subagent to independently verify the SRS against ISO/IEC/IEEE 29148 standards and diagram requirements before presenting to the user. This is mandatory — self-validation in Step 5 is not a substitute.
@@ -234,6 +361,7 @@ Task(
 - Group C (C1-C5): completeness — all cross-checks confirmed
 - Group S (S1-S4): structural compliance — all required sections present
 - Group D (D1-D4): diagrams — Use Case View and Process Flows present and populated
+- Group G (G1-G3): granularity — no oversized FRs remain (post-decomposition/deferral)
 
 **On FAIL — two-track resolution:**
 
@@ -293,7 +421,7 @@ Present each section. Wait for user feedback. Incorporate changes before moving 
 
 **For simple projects** (< 5 functional requirements): combine all sections into a single approval step.
 
-## Step 8: Save SRS Document
+## Step 8: Save SRS Document & Deferred Backlog
 
 Save the approved SRS to `docs/plans/YYYY-MM-DD-<topic>-srs.md`.
 
@@ -306,15 +434,22 @@ Read the template found in Step 1 (user-specified or default `docs/templates/srs
 4. For uncovered template sections: mark "[Not applicable]"
 5. For approved content without matching template section: append as "Additional Notes"
 
+### Deferred backlog (if generated in Step 5.6)
+
+If a deferred backlog was generated, save it alongside the SRS:
+- Path: `docs/plans/YYYY-MM-DD-<topic>-deferred.md`
+- Commit both files together in the same commit
+
 ## Step 9: Transition to UCD
 
-Once the SRS document is saved and committed:
+Once the SRS document (and deferred backlog, if any) is saved and committed:
 
 1. Summarize key inputs the next phase will need:
    - Functional requirement count and priority distribution
    - Key constraints that affect architecture choices
    - NFR thresholds that affect technology selection
    - Whether the SRS contains UI-related functional requirements (determines if UCD runs or auto-skips)
+   - Whether a deferred backlog exists (signals future increment potential)
 2. **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-ucd` to generate UCD style guide (auto-skips to design if no UI features)
 
 ## Scaling the Requirements Phase
@@ -336,9 +471,12 @@ Once the SRS document is saved and committed:
 | "NFRs don't apply to this project" | Every project has at least implicit performance/reliability needs — make them explicit |
 | "The glossary is obvious" | Obvious to whom? Define every term the user and developer might interpret differently |
 | "I'll just start with the happy path" | Error cases, boundaries, and negatives must be captured NOW |
+| "This FR is fine as one big requirement" | Apply the 6 granularity heuristics (G1-G6) — hidden complexity creates oversized features |
+| "All requirements belong in this round" | Scope fit assessment (Step 5.6) ensures focus — defer lower-priority items to maintain manageable scope |
+| "Deferred items can just go in Out-of-Scope" | Out-of-Scope is prose; the deferred backlog preserves EARS + acceptance criteria for seamless increment pickup |
 
 ## Integration
 
 **Called by:** using-long-task (when no SRS doc, no design doc, and no feature-list.json)
 **Chains to:** long-task-ucd (after SRS approval; auto-skips to design if no UI features)
-**Produces:** `docs/plans/YYYY-MM-DD-<topic>-srs.md`
+**Produces:** `docs/plans/YYYY-MM-DD-<topic>-srs.md`, optionally `docs/plans/YYYY-MM-DD-<topic>-deferred.md`
