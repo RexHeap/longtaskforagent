@@ -82,10 +82,9 @@ if (-not (Test-Path $MarketplacesDir)) {
     New-Item -ItemType Directory -Force -Path $MarketplacesDir | Out-Null
 }
 
-$gitOutput = git clone --depth 1 $MarketplaceGitUrl $TargetDir 2>&1
+git clone --depth 1 $MarketplaceGitUrl $TargetDir
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Error: Failed to clone repository" -ForegroundColor Red
-    Write-Host $gitOutput
     exit 1
 }
 
