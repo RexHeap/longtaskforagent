@@ -22,12 +22,14 @@ Check project state and invoke the corresponding skill:
 ```dot
 digraph phase_detection {
     "Session Start" [shape=doublecircle];
+    "bugfix-request.json exists?" [shape=diamond];
     "increment-request.json exists?" [shape=diamond];
     "feature-list.json exists?" [shape=diamond];
     "All active features passing?" [shape=diamond];
     "Design doc (*-design.md) in docs/plans/?" [shape=diamond];
     "UCD doc (*-ucd.md) in docs/plans/?" [shape=diamond];
     "SRS doc (*-srs.md) in docs/plans/?" [shape=diamond];
+    "Invoke long-task:long-task-hotfix" [shape=box style=filled fillcolor=orange];
     "Invoke long-task:long-task-increment" [shape=box style=filled fillcolor=plum];
     "Invoke long-task:long-task-requirements" [shape=box style=filled fillcolor=lightyellow];
     "Invoke long-task:long-task-ucd" [shape=box style=filled fillcolor=lightorange];
@@ -36,7 +38,9 @@ digraph phase_detection {
     "Invoke long-task:long-task-work" [shape=box style=filled fillcolor=lightgreen];
     "Invoke long-task:long-task-st" [shape=box style=filled fillcolor=lightcoral];
 
-    "Session Start" -> "increment-request.json exists?";
+    "Session Start" -> "bugfix-request.json exists?";
+    "bugfix-request.json exists?" -> "Invoke long-task:long-task-hotfix" [label="yes"];
+    "bugfix-request.json exists?" -> "increment-request.json exists?" [label="no"];
     "increment-request.json exists?" -> "Invoke long-task:long-task-increment" [label="yes"];
     "increment-request.json exists?" -> "feature-list.json exists?" [label="no"];
     "feature-list.json exists?" -> "All active features passing?" [label="yes"];
@@ -53,21 +57,24 @@ digraph phase_detection {
 ```
 
 **Detection rules:**
-0. Check `increment-request.json` in project root → if exists → `long-task-increment` **(highest priority)**
-1. Check `feature-list.json` in project root → if exists:
+0. Check `bugfix-request.json` in project root → if exists → `long-task-hotfix` **(HIGHEST priority)**
+   Note: If both `bugfix-request.json` AND `increment-request.json` exist, hotfix runs first; `increment-request.json` is preserved and processed next session.
+1. Check `increment-request.json` in project root → if exists → `long-task-increment`
+2. Check `feature-list.json` in project root → if exists:
    - Run `python scripts/check_st_readiness.py feature-list.json` — if exit 0 (all active features passing, excludes deprecated) → `long-task-st`
    - Otherwise (some active features failing) → `long-task-work`
-2. Check `docs/plans/*-design.md` → if any match → `long-task-init`
-3. Check `docs/plans/*-ucd.md` → if any match → `long-task-design` (UCD done, proceed to design)
-4. Check `docs/plans/*-srs.md` → if any match → `long-task-ucd` (SRS done, UCD next; if no UI features the UCD skill auto-skips to design)
-5. Otherwise → `long-task-requirements`
+3. Check `docs/plans/*-design.md` → if any match → `long-task-init`
+4. Check `docs/plans/*-ucd.md` → if any match → `long-task-design` (UCD done, proceed to design)
+5. Check `docs/plans/*-srs.md` → if any match → `long-task-ucd` (SRS done, UCD next; if no UI features the UCD skill auto-skips to design)
+6. Otherwise → `long-task-requirements`
 
 ## Skill Catalog
 
 ### Phase Skills (invoke ONE based on detection above)
 | Skill | Phase | When |
 |-------|-------|------|
-| `long-task:long-task-increment` | Phase 1.5 | increment-request.json exists (highest priority) |
+| `long-task:long-task-hotfix` | Hotfix | bugfix-request.json exists (HIGHEST priority) |
+| `long-task:long-task-increment` | Phase 1.5 | increment-request.json exists |
 | `long-task:long-task-requirements` | Phase 0a | No SRS, no design doc, no feature-list.json |
 | `long-task:long-task-ucd` | Phase 0b | SRS exists, no UCD doc, no design doc, no feature-list.json |
 | `long-task:long-task-design` | Phase 0c | SRS + UCD exist (or no UI features), no design doc, no feature-list.json |
@@ -98,6 +105,7 @@ digraph phase_detection {
 | `RELEASE_NOTES.md` | Living changelog |
 | `docs/test-cases/feature-*.md` | Per-feature ST test case documents (ISO/IEC/IEEE 29119) |
 | `docs/plans/*-st-report.md` | System testing report — Go/No-Go verdict |
+| `bugfix-request.json` | Signal file — triggers hotfix session (deleted after processing) |
 | `increment-request.json` | Signal file — triggers incremental requirements (deleted after processing) |
 
 ## Red Flags
@@ -122,6 +130,7 @@ These thoughts mean STOP — you're rationalizing:
 | "System testing is overkill" | Integration bugs, NFR failures, and workflow gaps hide until ST. |
 | "I'll just add features to the JSON directly" | Invoke the `long-task-increment` skill for tracked, audited changes. |
 | "The requirement change is small, no need for impact analysis" | Increment skill catches hidden dependencies. |
+| "I'll just fix this quick bug directly" | Invoke `long-task-hotfix` — bug gets tracked in feature-list.json as category=bugfix and fixed via the full Worker pipeline. |
 
 ## Skill Priority
 

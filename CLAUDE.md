@@ -61,6 +61,11 @@ python long-task-agent/scripts/validate_st_cases.py docs/test-cases/feature-1-us
 python long-task-agent/scripts/validate_increment_request.py increment-request.json
 ```
 
+### Validate bugfix request
+```bash
+python long-task-agent/scripts/validate_bugfix_request.py bugfix-request.json
+```
+
 ### Get tech-stack CLI commands (eliminates per-language lookup)
 ```bash
 python long-task-agent/scripts/get_tool_commands.py feature-list.json
@@ -87,6 +92,7 @@ python -m pytest tests/test_validate_guide.py
 python -m pytest tests/test_check_devtools.py
 python -m pytest tests/test_check_st_readiness.py
 python -m pytest tests/test_get_tool_commands.py
+python -m pytest tests/test_validate_bugfix_request.py
 python -m pytest tests/test_validate_increment_request.py
 python -m pytest tests/test_validate_st_cases.py
 python -m pytest tests/test_check_real_tests.py
@@ -105,7 +111,8 @@ The skill system uses on-demand loading via the `Skill` tool. Only the bootstrap
 | Skill | Phase | Trigger |
 |-------|-------|---------|
 | `using-long-task` | Bootstrap | Injected via SessionStart hook into every session |
-| `long-task-increment` | Phase 1.5 | increment-request.json exists (highest priority) |
+| `long-task-hotfix` | Hotfix | bugfix-request.json exists (HIGHEST priority — above increment) |
+| `long-task-increment` | Phase 1.5 | increment-request.json exists |
 | `long-task-requirements` | Phase 0a | No SRS, no design doc, no feature-list.json |
 | `long-task-ucd` | Phase 0b | SRS exists, no UCD doc, no design doc, no feature-list.json |
 | `long-task-design` | Phase 0c | SRS + UCD exist (or no UI features), no design doc, no feature-list.json |
@@ -129,7 +136,11 @@ The skill system uses on-demand loading via the `Skill` tool. Only the bootstrap
 using-long-task (router)
    ├─→ long-task-requirements ──→ long-task-ucd ──→ long-task-design ──→ long-task-init ──→ long-task-work
    │                              (auto-skip if no UI)                                        │
-   ├─→ long-task-increment (if increment-request.json exists — highest priority)
+   ├─→ long-task-hotfix (if bugfix-request.json exists — HIGHEST priority, above increment)
+   │      └─→ validate → reproduce → root cause → enqueue as category=bugfix feature
+   │          └─→ long-task-work (new failing bugfix feature detected)
+   │
+   ├─→ long-task-increment (if increment-request.json exists)
    │      └─→ updates SRS/Design/UCD in place, appends features to feature-list.json
    │          └─→ long-task-work (new failing features detected)
    │
@@ -172,8 +183,17 @@ using-long-task (router)
    - Save design doc to `docs/plans/YYYY-MM-DD-<topic>-design.md`
    - **Hard gate**: no coding until design approved
 
+**Hotfix** (`long-task-hotfix`):
+   - Triggered by `bugfix-request.json` signal file (HIGHEST routing priority — above increment)
+   - Validates signal file via `validate_bugfix_request.py`
+   - Reproduces the bug; confirms root cause via 4-phase systematic debugging
+   - Enqueues bug as `category: "bugfix"` feature in `feature-list.json` (status: "failing")
+   - Deletes signal file; router auto-detects failing bugfix feature → Worker
+   - Worker runs full TDD → Quality → ST → Review pipeline for the fix
+   - Worker uses `"fix:"` commit prefix and `### Fixed` RELEASE_NOTES entry for bugfix features
+
 1.5. **Increment** (`long-task-increment`):
-   - Triggered by `increment-request.json` signal file (highest routing priority)
+   - Triggered by `increment-request.json` signal file (high routing priority — below hotfix)
    - Collects new/modified/deprecated requirements with EARS templates
    - Impact analysis against existing features (user-approved)
    - Updates SRS, Design, UCD documents **in place** (git tracks history)
@@ -219,6 +239,8 @@ using-long-task (router)
 - **One feature per cycle**: Prevents context exhaustion
 - **UI features require Chrome DevTools MCP testing**: Mark with `"ui": true`
 - **System testing before release**: When all features pass, run ST phase (regression, integration, E2E, NFR, exploratory); no release without Go verdict
+- **Hotfix before increment**: When both `bugfix-request.json` and `increment-request.json` exist, hotfix runs first; `increment-request.json` is preserved for next session
+- **Bug fixes via hotfix skill only**: Never manually add bugfix features to feature-list.json; use the `long-task-hotfix` skill so root cause is confirmed and the fix is fully traceable
 - **Incremental changes via increment skill only**: Never manually edit feature-list.json to add/modify/deprecate features; use the `long-task-increment` skill for audited, tracked changes
 - **verification_steps immutable in Worker**: Only the increment skill can update verification_steps; Worker must invoke the `long-task-increment` skill for requirement changes
 - **ST acceptance test cases after Quality Gates**: Generate and execute ISO/IEC/IEEE 29119 acceptance test cases per feature after TDD and Quality Gates; test cases validate implementation against requirements
@@ -234,6 +256,7 @@ using-long-task (router)
 | `docs/plans/*-deferred.md` | Requirements | Deferred requirements backlog — structured tracking for next-round pickup via increment skill |
 | `docs/plans/*-ucd.md` | UCD | Approved UCD style guide — the LOOK (UI projects only; text-to-image prompts, style tokens) |
 | `docs/plans/*-design.md` | Design | Approved design — the HOW |
+| `bugfix-request.json` | Hotfix | Signal file triggering hotfix session (deleted after processing) |
 | `increment-request.json` | Increment | Signal file triggering incremental requirements (deleted after processing) |
 | `feature-list.json` | Init | Structured task inventory with status; includes `constraints[]`, `assumptions[]`, `waves[]` |
 | `CLAUDE.md` | Init | Cross-session navigation index (appended by `init_project.py`) |
@@ -324,6 +347,12 @@ ST test case fields (all optional, backward-compatible):
 - `st_case_path` (feature): Path to generated ST test case document
 - `st_case_count` (feature): Number of ST test cases generated for this feature
 
+Bugfix-specific fields (all optional, only on `category: "bugfix"` features):
+- `bug_severity` (feature): Severity of the bug — `"Critical"`, `"Major"`, `"Minor"`, or `"Cosmetic"`
+- `bug_source` (feature): Where the bug was found — `"manual-testing"` (set by hotfix skill)
+- `fixed_feature_id` (feature): ID of the feature this bug fix relates to (or `null` if unlinked)
+- `root_cause` (feature): Confirmed one-sentence root cause (set by hotfix skill after systematic debugging)
+
 Increment-specific fields:
 - `waves[]` (root): Tracks each increment batch — `id` (0=initial), `date`, `description`
 - `wave` (feature): Which wave introduced/last modified this feature (default 0)
@@ -343,6 +372,8 @@ long-task-agent/
 │   │       └── roadmap.md             # Future enhancements
 │   ├── long-task-requirements/SKILL.md # Phase 0a: Requirements & SRS (ISO 29148)
 │   ├── long-task-ucd/SKILL.md         # Phase 0b: UCD style guide (text-to-image prompts)
+│   ├── long-task-hotfix/               # Hotfix: user-reported bug triage, root-cause, enqueue → Worker
+│   │   └── SKILL.md
 │   ├── long-task-increment/SKILL.md    # Phase 1.5: Incremental requirements development
 │   ├── long-task-design/SKILL.md      # Phase 0c: Design (takes SRS + UCD as input)
 │   ├── long-task-init/                # Phase 1: Initialization (reads SRS + UCD + design)
@@ -404,6 +435,7 @@ long-task-agent/
 │   ├── check_devtools.py              # Chrome DevTools MCP checking
 │   ├── check_st_readiness.py          # System testing readiness checking
 │   ├── check_real_tests.py            # Real test verification (existence + mock grep)
+│   ├── validate_bugfix_request.py     # Bugfix request signal validation
 │   ├── validate_increment_request.py  # Increment request signal validation
 │   └── validate_st_cases.py          # ST test case document validation
 ├── tests/
@@ -415,6 +447,7 @@ long-task-agent/
 │   ├── test_check_devtools.py
 │   ├── test_check_st_readiness.py
 │   ├── test_check_real_tests.py
+│   ├── test_validate_bugfix_request.py
 │   ├── test_validate_increment_request.py
 │   └── test_validate_st_cases.py
 ```

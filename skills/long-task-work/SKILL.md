@@ -83,6 +83,8 @@ python scripts/check_configs.py feature-list.json --feature <id>
 ### 4. Feature Detailed Design
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-feature-design` and follow it exactly.
 
+> **For `category: "bugfix"` features**: feature-design is condensed. Focus on: (1) root cause documentation (read from `root_cause` field), (2) targeted fix approach, (3) regression test inventory derived from `verification_steps`. Skip full interface contracts, data flow diagrams, and state diagrams unless the bug directly touches those surfaces.
+
 Context to carry forward:
 - Current feature object from feature-list.json
 - Full `{design_section}` from Document Lookup Protocol (the entire §4.N subsection — do NOT grep)
@@ -154,7 +156,11 @@ Create runnable examples in `examples/` demonstrating the completed feature.
 
 ### 12. Persist
 - Git commit (include implementation, tests, examples, **test case document**)
+  > **For `category: "bugfix"` features**: use commit prefix `"fix:"` instead of `"feat:"`.
+  > Format: `fix: <feature title without the "Fix: " prefix> (#<fixed_feature_id>)`
 - Update `RELEASE_NOTES.md` (Keep a Changelog format)
+  > **For `category: "bugfix"` features**: add entry under `### Fixed` (not `### Added`):
+  > `- [<bug_severity>] <title without "Fix: "> (fixes #<fixed_feature_id>) — <root_cause one-line>`
 - Update `task-progress.md`:
   - Update `## Current State` header: progress count (X/Y passing), last completed feature (#id title, date), next feature (#id title)
   - Append session entry below the log separator
