@@ -95,7 +95,7 @@ if (-not (Test-Path $ClaudePluginsDir)) {
 }
 
 if (-not (Test-Path $KnownMarketplacesFile)) {
-    [System.IO.File]::WriteAllText($KnownMarketplacesFile, '{}', [System.Text.Encoding]::UTF8)
+    [System.IO.File]::WriteAllText($KnownMarketplacesFile, '{}', (New-Object System.Text.UTF8Encoding($false)))
 }
 
 $json = Get-Content $KnownMarketplacesFile -Raw | ConvertFrom-Json
@@ -109,7 +109,7 @@ $json | Add-Member -MemberType NoteProperty -Name $MarketplaceName -Value @{
 
 $compact = $json | ConvertTo-Json -Depth 10 -Compress
 $formatted = Format-Json $compact
-[System.IO.File]::WriteAllText($KnownMarketplacesFile, $formatted, [System.Text.Encoding]::UTF8)
+[System.IO.File]::WriteAllText($KnownMarketplacesFile, $formatted, (New-Object System.Text.UTF8Encoding($false)))
 
 # =============================================================================
 # Success
