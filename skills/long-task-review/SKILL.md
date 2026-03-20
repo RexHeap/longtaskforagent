@@ -81,13 +81,16 @@ Task(
 | D4 | Architectural layers/boundaries respected as defined in the logical view |
 | D5 | No unauthorized design deviations (or deviations are documented with user approval in the plan) |
 
-### Plan Compliance Checklist (P1-P3)
+### Detailed Design Compliance Checklist (P1-P6)
 
 | # | Check |
 |---|-------|
-| P1 | Implementation tasks match the plan's task decomposition |
-| P2 | Files created/modified match the plan's file list |
-| P3 | Design alignment section in plan is honored (class structure, interaction flow, deps) |
+| P1 | Implementation tasks match the feature detailed design's task decomposition (§8) |
+| P2 | Public method signatures match the Interface Contract table (§3) — parameters, return types, exceptions |
+| P3 | Core algorithm matches the pseudocode and flow diagram in §5 — control flow, key decisions, data transformations |
+| P4 | Boundary conditions handled match the boundary matrix (§5.3) — all rows covered |
+| P5 | Error handling matches the error table (§5.4) — trigger conditions, recovery actions, error types |
+| P6 | State transitions (if any) match the state diagram (§6) — all states reachable, no undocumented transitions |
 
 ### UCD Compliance Checklist (U1-U4) — only for `"ui": true` features with UCD document
 
@@ -109,7 +112,7 @@ Task(
 **Any NO in S1-S5 or D1-D5 → FAIL. Fix gaps, re-run tests, re-review.**
 **Any NO in U1-U4 → FAIL (for ui:true features). Visual inconsistency must be fixed before proceeding.**
 **Any NO in T1-T3 → FAIL. Test case coverage gaps must be filled before proceeding.**
-**NO in P1-P3 → Important (must fix before feature complete).**
+**Any NO in P1-P6 → FAIL (must fix before feature complete). Interface contract and algorithm deviations indicate spec drift.**
 
 ## Issue Severity
 
@@ -153,7 +156,7 @@ After 3 failed rounds, escalate via `AskUserQuestion` with:
 - Feature spec from `feature-list.json`
 - SRS requirement section (full FR-xxx subsection from `docs/plans/*-srs.md`)
 - Design document section (full §4.N subsection from `docs/plans/*-design.md` — NOT a grep snippet)
-- Plan document (`docs/plans/YYYY-MM-DD-<feature-name>.md`)
+- Feature detailed design document (`docs/plans/YYYY-MM-DD-<feature-name>.md`) — includes Interface Contract, Algorithm, State Diagram, Test Inventory
 - ST test case document (`docs/test-cases/feature-{id}-{slug}.md`) — from Worker Step 10
 - UCD style guide (`docs/plans/*-ucd.md`) — only for `"ui": true` features
 - Git diff, test results

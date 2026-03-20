@@ -78,6 +78,7 @@ digraph phase_detection {
 ### Discipline Skills (invoked by long-task-work as sub-skills — do NOT invoke directly)
 | Skill | Purpose |
 |-------|---------|
+| `long-task:long-task-feature-design` | Feature Detailed Design — interface contracts, algorithm pseudocode, state diagrams, boundary matrices, test inventory (bridges system design → TDD) |
 | `long-task:long-task-feature-st` | Black-Box Feature Acceptance Testing — self-managed start/cleanup lifecycle, Chrome DevTools MCP execution, ISO/IEC/IEEE 29119 test case documentation (per-feature, after Quality Gates) |
 | `long-task:long-task-tdd` | TDD Red-Green-Refactor |
 | `long-task:long-task-quality` | Coverage Gate + Mutation Gate |

@@ -8,7 +8,7 @@ Dispatch a fresh subagent for each implementation task. This prevents context po
 
 - Complex features with multiple tasks
 - Features where context pollution is a concern
-- When the implementation plan has been written (see [plan-writing.md](plan-writing.md))
+- When the feature detailed design has been completed (via `long-task:long-task-feature-design` skill)
 
 For simple features (1-2 tasks), self-execution is faster and sufficient.
 

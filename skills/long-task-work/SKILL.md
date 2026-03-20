@@ -80,23 +80,18 @@ python scripts/check_configs.py feature-list.json --feature <id>
 5. Ensure any secrets config file is listed in `.gitignore` if not already present.
 6. **Block until all configs pass.**
 
-### 4. Plan
-Write a step-by-step implementation plan for the selected feature.
-Save to `docs/plans/YYYY-MM-DD-<feature-name>.md`.
-See `references/plan-writing.md` for plan structure and task granularity.
+### 4. Feature Detailed Design
+**REQUIRED SUB-SKILL:** Invoke `long-task:long-task-feature-design` and follow it exactly.
 
-**Design document reference (mandatory):**
-- Using the Document Lookup Protocol above, read the full `{design_section}` for this feature — do NOT grep; read the complete subsection including all diagrams and design decisions
-- Also read the full `{srs_section}` (the FR-xxx requirement from the SRS) for complete acceptance criteria
-- The plan MUST align with the approved class diagrams, sequence flows, and architectural decisions
-- If the plan deviates from the design → explain why and get user approval before proceeding
-- Reference the design's third-party dependency versions when choosing libraries
+Context to carry forward:
+- Current feature object from feature-list.json
+- Full `{design_section}` from Document Lookup Protocol (the entire §4.N subsection — do NOT grep)
+- Full `{srs_section}` from Document Lookup Protocol (the entire FR-xxx subsection)
+- UCD sections (if `"ui": true`) — component/page prompts from `docs/plans/*-ucd.md`
+- `quality_gates` and `tech_stack` from feature-list.json
+- Existing passing features' public interfaces (for dependency awareness)
 
-**UCD style guide reference (mandatory for `"ui": true` features):**
-- If `docs/plans/*-ucd.md` exists, read the relevant component prompts and page prompts for this feature
-- The plan MUST specify which UCD style tokens (colors, typography, spacing) apply to each UI element
-- The plan MUST reference the UCD component prompt for each UI component being implemented
-- Any visual deviation from UCD → explain why and get user approval
+Output: `docs/plans/YYYY-MM-DD-<feature-name>.md` — feature detailed design document containing interface contracts, algorithm pseudocode, diagrams, test inventory, and TDD task decomposition.
 
 ### 5-7. TDD Cycle (Red → Green → Refactor)
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-tdd` and follow it exactly.
@@ -104,7 +99,7 @@ See `references/plan-writing.md` for plan structure and task granularity.
 Context to carry forward:
 - Current feature object from feature-list.json
 - `quality_gates` and `tech_stack` from feature-list.json
-- Plan file path from Step 5
+- Feature detailed design document from Step 4 (includes Test Inventory table, Interface Contract, Algorithm pseudocode)
 - Full `{srs_section}` from Document Lookup Protocol — TDD Red uses this as primary specification input alongside `verification_steps`
 - Full `{design_section}` from Document Lookup Protocol — architectural constraints and interface contracts
 - **Test commands**: from `python scripts/get_tool_commands.py feature-list.json` — use these directly (no wrapper scripts)
@@ -233,4 +228,4 @@ Follow the systematic debugging process — **never guess-and-fix**:
 3. `long-task:long-task-feature-st` (Step 10) — Black-Box Feature Acceptance Testing (ISO/IEC/IEEE 29119, self-managed lifecycle)
 4. `long-task:long-task-review` (Step 11) — Spec & Design Compliance Review
 **Reads/Writes:** feature-list.json, task-progress.md (including `## Current State`), RELEASE_NOTES.md
-**Read on-demand (via Read tool, NOT Skill tool):** `references/plan-writing.md`, `references/systematic-debugging.md`
+**Read on-demand (via Read tool, NOT Skill tool):** `references/systematic-debugging.md`

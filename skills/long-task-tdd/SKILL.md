@@ -40,11 +40,12 @@ Write tests for ALL verification_steps in the feature spec. Tests MUST fail (fea
 
 ### Specification Input
 
-Tests are driven by two primary sources:
+Tests are driven by three primary sources:
 - **`verification_steps`** from the feature spec (primary — each step becomes one or more tests)
 - **SRS requirement section** (`{srs_section}`) — full FR-xxx with Given/When/Then acceptance criteria, boundary conditions, and error paths
+- **Feature detailed design** (`docs/plans/YYYY-MM-DD-<feature-name>.md`) — Test Inventory table (§7), Interface Contract (§3), Algorithm pseudocode and boundary matrix (§5)
 
-These provide sufficient specification for writing comprehensive failing tests. ST test case documents are generated *after* TDD as acceptance verification (Worker Step 10).
+The Test Inventory table from feature detailed design is the **starting set** for TDD Red. Each row maps to one or more test cases. TDD rules (Rule 1–6) extend and refine this set — they do not duplicate it. ST test case documents are generated *after* TDD as acceptance verification (Worker Step 10).
 
 ### Test Scenario Rules (hard requirements)
 
@@ -89,6 +90,8 @@ Low-value assertion patterns (avoid):
 For each test, ask: "What wrong implementation would this test catch?"
 
 If "almost any wrong implementation would still pass" → rewrite with more specific assertions.
+
+**Interaction with Feature Detailed Design:** The boundary matrix (§5.3) and error table (§5.4) from the feature detailed design document provide pre-analyzed boundary values and error conditions. Use these as inputs when applying Rule 4 — they identify the "plausible wrong implementations" systematically rather than ad-hoc.
 
 Imagine 2-3 plausible wrong implementations:
 - Returns hardcoded value instead of computing
@@ -244,6 +247,6 @@ Full catalog of 15 anti-patterns: Read `skills/long-task-tdd/testing-anti-patter
 
 **Called by:** long-task-work (Steps 6-8)
 **Dispatches:** implementer subagent (`skills/long-task-tdd/prompts/implementer-prompt.md`)
-**Requires:** Plan file exists (from Work Step 5)
+**Requires:** Feature detailed design exists (from Work Step 4, via `long-task:long-task-feature-design`)
 **Produces:** Passing tests + implementation code
 **Chains to:** long-task-quality (via Work Step 9)

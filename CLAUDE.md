@@ -117,6 +117,7 @@ The skill system uses on-demand loading via the `Skill` tool. Only the bootstrap
 
 | Skill | Purpose |
 |-------|---------|
+| `long-task-feature-design` | Feature Detailed Design — interface contracts, algorithm pseudocode, state diagrams, boundary matrices, test inventory (bridges system design → TDD) |
 | `long-task-tdd` | TDD Red-Green-Refactor |
 | `long-task-quality` | Coverage Gate + Mutation Gate |
 | `long-task-feature-st` | Black-Box Feature Acceptance Testing — self-managed environment lifecycle, Chrome DevTools MCP + ISO/IEC/IEEE 29119 (per-feature, after Quality Gates) |
@@ -133,6 +134,7 @@ using-long-task (router)
    │          └─→ long-task-work (new failing features detected)
    │
    ├─→ long-task-work (if active features remain failing)
+   │      ├─→ long-task-feature-design (Step 4, feature detailed design)
    │      ├─→ long-task-tdd (Steps 6-8)
    │      ├─→ long-task-quality (Step 9)
    │      ├─→ long-task-feature-st (Step 10, black-box acceptance testing)
@@ -347,10 +349,13 @@ long-task-agent/
 │   │   │   └── init_project.py        # Project scaffolding (run as `python scripts/init_project.py`)
 │   │   └── references/
 │   │       └── init-script-recipes.md # Environment bootstrap templates (conda, venv, nvm, etc.)
+│   ├── long-task-feature-design/      # Feature Detailed Design discipline
+│   │   ├── SKILL.md
+│   │   └── references/
+│   │       └── feature-design-template.md # Feature detailed design template
 │   ├── long-task-work/               # Phase 2: Worker orchestrator
 │   │   ├── SKILL.md
 │   │   └── references/
-│   │       ├── plan-writing.md        # Implementation plan structure
 │   │       ├── systematic-debugging.md # Four-phase debugging process
 │   │       ├── subagent-development.md # Subagent-driven development mode
 │   │       └── worktree-isolation.md  # Git worktree isolation & branch finishing
@@ -416,7 +421,7 @@ long-task-agent/
 - [ReadMe.md](ReadMe.md) - Overview and design rationale
 - [skills/using-long-task/references/architecture.md](skills/using-long-task/references/architecture.md) - Detailed TDD workflow, Chrome DevTools testing patterns
 - [skills/using-long-task/references/roadmap.md](skills/using-long-task/references/roadmap.md) - Future enhancements
-- [skills/long-task-work/references/plan-writing.md](skills/long-task-work/references/plan-writing.md) - Implementation planning
+- [skills/long-task-feature-design/SKILL.md](skills/long-task-feature-design/SKILL.md) - Feature detailed design skill
 - [skills/long-task-work/references/systematic-debugging.md](skills/long-task-work/references/systematic-debugging.md) - Systematic debugging
 - [skills/long-task-work/references/subagent-development.md](skills/long-task-work/references/subagent-development.md) - Subagent-driven development
 - [skills/long-task-work/references/worktree-isolation.md](skills/long-task-work/references/worktree-isolation.md) - Worktree isolation & branch finishing
