@@ -34,6 +34,27 @@ $KnownMarketplacesFile = Join-Path $ClaudePluginsDir "known_marketplaces.json"
 function Write-Info { param($Message) Write-Host "ℹ " -ForegroundColor Blue -NoNewline; Write-Host $Message }
 function Write-Success { param($Message) Write-Host "✓ " -ForegroundColor Green -NoNewline; Write-Host $Message }
 
+function Format-Json {
+    param([string]$json)
+    $indent = 0
+    $result = [System.Text.StringBuilder]::new()
+    $inString = $false
+    for ($i = 0; $i -lt $json.Length; $i++) {
+        $char = $json[$i]
+        switch ($char) {
+            '"'     { $inString = -not $inString; [void]$result.Append($char) }
+            '{'     { [void]$result.Append($char); if (-not $inString) { $indent++; [void]$result.Append("`n" + ('  ' * $indent)) } }
+            '}'     { if (-not $inString) { $indent--; [void]$result.Append("`n" + ('  ' * $indent)) }; [void]$result.Append($char) }
+            ','     { [void]$result.Append($char); if (-not $inString) { [void]$result.Append("`n" + ('  ' * $indent)) } }
+            ':'     { [void]$result.Append($char); if (-not $inString) { [void]$result.Append(' ') } }
+            '['     { [void]$result.Append($char); if (-not $inString) { $indent++; [void]$result.Append("`n" + ('  ' * $indent)) } }
+            ']'     { if (-not $inString) { $indent--; [void]$result.Append("`n" + ('  ' * $indent)) }; [void]$result.Append($char) }
+            default { [void]$result.Append($char) }
+        }
+    }
+    return $result.ToString()
+}
+
 # =============================================================================
 # Pre-flight Check
 # =============================================================================
@@ -75,7 +96,7 @@ if (-not (Test-Path $ClaudePluginsDir)) {
 }
 
 if (-not (Test-Path $KnownMarketplacesFile)) {
-    "{}" | Out-File -FilePath $KnownMarketplacesFile -Encoding utf8
+    [System.IO.File]::WriteAllText($KnownMarketplacesFile, '{}', [System.Text.Encoding]::UTF8)
 }
 
 $json = Get-Content $KnownMarketplacesFile -Raw | ConvertFrom-Json
@@ -87,7 +108,9 @@ $json | Add-Member -MemberType NoteProperty -Name $MarketplaceName -Value @{
     lastUpdated = $timestamp
 } -Force
 
-$json | ConvertTo-Json -Depth 10 | Out-File -FilePath $KnownMarketplacesFile -Encoding utf8
+$compact = $json | ConvertTo-Json -Depth 10 -Compress
+$formatted = Format-Json $compact
+[System.IO.File]::WriteAllText($KnownMarketplacesFile, $formatted, [System.Text.Encoding]::UTF8)
 
 # =============================================================================
 # Success
