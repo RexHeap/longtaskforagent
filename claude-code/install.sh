@@ -34,16 +34,19 @@ KNOWN_MARKETPLACES_FILE="${CLAUDE_PLUGINS_DIR}/known_marketplaces.json"
 if [[ -t 1 ]]; then
   GREEN='\033[0;32m'
   BLUE='\033[0;34m'
+  YELLOW='\033[0;33m'
   BOLD='\033[1m'
   RESET='\033[0m'
 else
   GREEN=''
   BLUE=''
+  YELLOW=''
   BOLD=''
   RESET=''
 fi
 
 info()    { echo -e "${BLUE}ℹ${RESET} $*"; }
+warn()    { echo -e "${YELLOW}⚠${RESET} $*"; }
 success() { echo -e "${GREEN}✓${RESET} $*"; }
 
 # =============================================================================
@@ -80,23 +83,34 @@ if [[ ! -f "$KNOWN_MARKETPLACES_FILE" ]]; then
   echo '{}' > "$KNOWN_MARKETPLACES_FILE"
 fi
 
-# Use Python for reliable JSON update
+# Use Python for reliable JSON update (UTF-8 without BOM, 2-space indent)
 if command -v python3 &>/dev/null || command -v python &>/dev/null; then
   PYTHON_CMD=$(command -v python3 || command -v python)
-  "$PYTHON_CMD" - "$MARKETPLACE_NAME" "$MARKETPLACE_GIT_URL" "$TARGET_DIR" <<'PYTHON' "$KNOWN_MARKETPLACES_FILE"
-import json, sys
-name, git_url, target_dir, filepath = sys.argv[1:5]
-with open(filepath, 'r') as f:
-    data = json.load(f)
+  "$PYTHON_CMD" -c "
+import json
+import sys
 from datetime import datetime
+
+name = '$MARKETPLACE_NAME'
+git_url = '$MARKETPLACE_GIT_URL'
+target_dir = '$TARGET_DIR'
+filepath = '$KNOWN_MARKETPLACES_FILE'
+
+with open(filepath, 'r', encoding='utf-8') as f:
+    data = json.load(f)
+
 data[name] = {
-    "source": {"source": "github", "repo": git_url.replace("https://github.com/", "").replace(".git", "")},
-    "installLocation": target_dir,
-    "lastUpdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    'source': {'source': 'github', 'repo': git_url.replace('https://github.com/', '').replace('.git', '')},
+    'installLocation': target_dir,
+    'lastUpdated': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z')
 }
-with open(filepath, 'w') as f:
-    json.dump(data, f, indent=2)
-PYTHON
+
+with open(filepath, 'w', encoding='utf-8') as f:
+    json.dump(data, f, indent=2, ensure_ascii=False)
+    f.write('\n')
+"
+else
+  warn "Python not found, skipping known_marketplaces.json update"
 fi
 
 # =============================================================================

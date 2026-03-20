@@ -75,7 +75,7 @@ if (-not (Test-Path $ClaudePluginsDir)) {
 }
 
 if (-not (Test-Path $KnownMarketplacesFile)) {
-    "{}" | Out-File -FilePath $KnownMarketplacesFile -Encoding utf8
+    "{}" | Out-File -FilePath $KnownMarketplacesFile -Encoding utf8NoBOM
 }
 
 $json = Get-Content $KnownMarketplacesFile -Raw | ConvertFrom-Json
@@ -87,7 +87,8 @@ $json | Add-Member -MemberType NoteProperty -Name $MarketplaceName -Value @{
     lastUpdated = $timestamp
 } -Force
 
-$json | ConvertTo-Json -Depth 10 | Out-File -FilePath $KnownMarketplacesFile -Encoding utf8
+# Use UTF-8 without BOM and consistent 2-space indentation
+$json | ConvertTo-Json -Depth 10 | Out-File -FilePath $KnownMarketplacesFile -Encoding utf8NoBOM
 
 # =============================================================================
 # Success
