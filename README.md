@@ -46,6 +46,24 @@ irm https://raw.githubusercontent.com/suriyel/longtaskforagent/main/claude-code/
 /plugin install long-task@longtaskforagent
 ```
 
+#### 方式三：OpenCode 用户
+
+如果您使用 [OpenCode](https://opencode.ai)：
+
+**macOS / Linux：**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/suriyel/longtaskforagent/main/install.sh | bash
+```
+
+**Windows（PowerShell，需开发者模式或管理员权限）：**
+
+```powershell
+irm https://raw.githubusercontent.com/suriyel/longtaskforagent/main/install.ps1 | iex
+```
+
+安装完成后重启 OpenCode 即可激活。完整说明请参阅 [OpenCode 安装指南](docs/README.opencode.md)。
+
 ### 2. 快速开始
 
 启动 Claude Code 后，只需告诉它您想构建什么：
@@ -63,26 +81,6 @@ irm https://raw.githubusercontent.com/suriyel/longtaskforagent/main/claude-code/
 [点击查看样例项目](https://github.com/suriyel/githubtrends)
 
 ![](http://gitee.com/null_161_0561/picpic/raw/master/2021/image-20260313224154726.png)
-
-
-
-### OpenCode 用户
-
-如果您使用 [OpenCode](https://opencode.ai) 而非 Claude Code，一条命令即可安装：
-
-**macOS / Linux：**
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/suriyel/longtaskforagent/main/install.sh | bash
-```
-
-**Windows（PowerShell，需开发者模式或管理员权限）：**
-
-```powershell
-irm https://raw.githubusercontent.com/suriyel/longtaskforagent/main/install.ps1 | iex
-```
-
-安装完成后重启 OpenCode 即可激活。完整说明请参阅 [OpenCode 安装指南](docs/README.opencode.md)。
 
 ---
 

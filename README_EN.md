@@ -46,6 +46,24 @@ After installation, use Claude Code to install plugins:
 /plugin install long-task@longtaskforagent
 ```
 
+#### Option 3: OpenCode Users
+
+If you use [OpenCode](https://opencode.ai):
+
+**macOS / Linux:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/suriyel/longtaskforagent/main/install.sh | bash
+```
+
+**Windows (PowerShell — requires Developer Mode or Administrator):**
+
+```powershell
+irm https://raw.githubusercontent.com/suriyel/longtaskforagent/main/install.ps1 | iex
+```
+
+Restart OpenCode after installation. See the [OpenCode Installation Guide](docs/README.opencode.md) for full details.
+
 ### 2. Quick Start
 
 After launching Claude Code, simply tell it what you want to build:
@@ -63,26 +81,6 @@ Requirements → UCD (if UI) → Design → Init → Worker cycles → System Te
 [View sample project](https://github.com/suriyel/githubtrends)
 
 ![](http://gitee.com/null_161_0561/picpic/raw/master/2021/image-20260313224154726.png)
-
-
-
-### OpenCode Users
-
-If you use [OpenCode](https://opencode.ai) instead of Claude Code, install with a single command:
-
-**macOS / Linux:**
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/suriyel/longtaskforagent/main/install.sh | bash
-```
-
-**Windows (PowerShell — requires Developer Mode or Administrator):**
-
-```powershell
-irm https://raw.githubusercontent.com/suriyel/longtaskforagent/main/install.ps1 | iex
-```
-
-Restart OpenCode after installation. See the [OpenCode Installation Guide](docs/README.opencode.md) for full details.
 
 ---
 
