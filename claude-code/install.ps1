@@ -41,10 +41,15 @@ $MarketplacesDir = Join-Path $ClaudePluginsDir "marketplaces"
 $KnownMarketplacesFile = Join-Path $ClaudePluginsDir "known_marketplaces.json"
 $MarketplaceManifest = ".claude-plugin\marketplace.json"
 
-# Default source extracted from this script's URL
-# This script lives at: https://raw.githubusercontent.com/suriyel/longtaskforagent/main/claude-code/install.ps1
-# So the default marketplace is: suriyel/longtaskforagent
-$DefaultSource = "suriyel/longtaskforagent"
+# =============================================================================
+# Configurable Marketplace Defaults
+# =============================================================================
+
+# The default marketplace to install when no source is specified
+# Format: GitHub shorthand (owner/repo)
+$DefaultMarketplaceOwner = "suriyel"
+$DefaultMarketplaceRepo = "longtaskforagent"
+$DefaultSource = "${DefaultMarketplaceOwner}/${DefaultMarketplaceRepo}"
 
 # =============================================================================
 # Color Output Functions

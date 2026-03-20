@@ -41,6 +41,16 @@ KNOWN_MARKETPLACES_FILE="${CLAUDE_PLUGINS_DIR}/known_marketplaces.json"
 MARKETPLACE_MANIFEST=".claude-plugin/marketplace.json"
 
 # =============================================================================
+# Configurable Marketplace Defaults
+# =============================================================================
+
+# The default marketplace to install when no source is specified
+# Format: GitHub shorthand (owner/repo)
+DEFAULT_MARKETPLACE_OWNER="suriyel"
+DEFAULT_MARKETPLACE_REPO="longtaskforagent"
+DEFAULT_SOURCE="${DEFAULT_MARKETPLACE_OWNER}/${DEFAULT_MARKETPLACE_REPO}"
+
+# =============================================================================
 # Color Output
 # =============================================================================
 
@@ -69,22 +79,6 @@ die()     { error "$@"; exit 1; }
 # =============================================================================
 # Argument Parsing
 # =============================================================================
-
-# Extract default source from script URL (if piped from curl)
-# When run as: curl -fsSL https://raw.githubusercontent.com/owner/repo/main/... | bash
-# We can extract owner/repo from the URL
-SCRIPT_URL=""
-if [[ -n "${BASH_SOURCE[0]}" ]]; then
-  # Try to get URL from various sources
-  if [[ -f "/proc/$$/fd/0" ]] && [[ -t 0 ]]; then
-    : # stdin is terminal, not piped
-  fi
-fi
-
-# Default source extracted from this script's URL
-# This script lives at: https://raw.githubusercontent.com/suriyel/longtaskforagent/main/claude-code/install.sh
-# So the default marketplace is: suriyel/longtaskforagent
-DEFAULT_SOURCE="suriyel/longtaskforagent"
 
 SOURCE=""
 NAME=""

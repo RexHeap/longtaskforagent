@@ -22,33 +22,22 @@
 /plugin install long-task@longtaskforagent
 ```
 
-#### 方式二：一键安装脚本（支持非 GitHub 源）
-
-如果需要从 **GitLab、Gitee、自托管 Git** 等非 GitHub 源安装，使用安装脚本：
+#### 方式二：一键安装脚本
 
 **macOS / Linux：**
 
 ```bash
-# 安装默认 marketplace（suriyel/longtaskforagent）
 curl -fsSL https://raw.githubusercontent.com/suriyel/longtaskforagent/main/claude-code/install.sh | bash
-
-# 安装其他源
-curl -fsSL https://raw.githubusercontent.com/suriyel/longtaskforagent/main/claude-code/install.sh | bash -s -- https://gitlab.com/company/plugins.git
 ```
 
 **Windows（PowerShell）：**
 
 ```powershell
-# 安装默认 marketplace（suriyel/longtaskforagent）
 irm https://raw.githubusercontent.com/suriyel/longtaskforagent/main/claude-code/install.ps1 | iex
-
-# 安装其他源
-irm https://raw.githubusercontent.com/suriyel/longtaskforagent/main/claude-code/install.ps1 | iex -Args "https://gitlab.com/company/plugins.git"
 ```
 
 脚本会自动：
-- 识别 Git 源类型（GitHub/GitLab/Gitee/SSH/本地路径）
-- Clone 仓库到 `~/.claude/plugins/marketplaces/<name>/`
+- Clone 仓库到 `~/.claude/plugins/marketplaces/longtaskforagent/`
 - 更新 `known_marketplaces.json` 注册信息
 
 安装完成后，使用 Claude Code 安装插件：
