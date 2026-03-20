@@ -323,6 +323,80 @@ The plugin includes a suite of validation scripts to prevent common failures:
 
 ---
 
+## Template Customization Guide
+
+Long-Task Agent provides three customizable document templates for generating standards-compliant requirements, design, and test documents.
+
+### Built-in Templates
+
+| Template | Path | Purpose | Standard |
+|----------|------|---------|----------|
+| SRS Template | `docs/templates/srs-template.md` | Software Requirements Specification | ISO/IEC/IEEE 29148 |
+| Design Template | `docs/templates/design-template.md` | Technical Design Document | - |
+| ST Test Case Template | `docs/templates/st-case-template.md` | System Test Case Document | ISO/IEC/IEEE 29119-3 |
+
+### Customization Methods
+
+#### SRS Template Customization
+
+During the **Requirements Phase** (`long-task-requirements`), specify a custom template path via conversation:
+
+```
+Please use my custom SRS template: docs/templates/my-srs-template.md
+```
+
+**Requirements**: Template must be a `.md` file containing at least one `## ` heading.
+
+#### Design Template Customization
+
+During the **Design Phase** (`long-task-design`), specify a custom template path via conversation:
+
+```
+Please use my custom design template: docs/templates/my-design-template.md
+```
+
+**Requirements**: Template must be a `.md` file containing at least one `## ` heading.
+
+#### ST Test Case Template Customization
+
+Configure via `feature-list.json` root-level fields:
+
+```json
+{
+  "st_case_template_path": "docs/templates/custom-st-template.md",
+  "st_case_example_path": "docs/templates/st-case-example.md"
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `st_case_template_path` | Custom template path (defines document structure) |
+| `st_case_example_path` | Example file path (defines style, language, detail level) |
+
+**Configuration Combinations**:
+
+| Configuration | Effect |
+|---------------|--------|
+| Both provided | Use template's **structure** + example's **style** |
+| Only template | Use template structure + default style |
+| Only example | Infer structure from example + use example's style |
+| Neither | Use built-in default template (ISO/IEC/IEEE 29119-3) |
+
+### Template Priority Rules
+
+1. **User-specified path** > **Built-in default template**
+2. Template file must exist, otherwise falls back to default
+3. Template must pass validation (`.md` file + at least one `## ` heading)
+
+### Best Practices
+
+1. **Copy built-in templates as a starting point**: Preserve existing section structure, only modify guidance text
+2. **Maintain standards compliance**: SRS templates should retain ISO 29148 core sections; ST templates should retain 29119-3 required fields
+3. **Version control**: Commit custom templates to git for team collaboration
+4. **ST example file**: Provide a filled-out ST test case document as an example to unify team style and detail level
+
+---
+
 ## How It Compares
 
 <!-- ILLUSTRATION: Comparison Matrix

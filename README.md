@@ -323,6 +323,80 @@ python scripts/auto_loop.py feature-list.json --prompt "继续"
 
 ---
 
+## 模板自定义指南
+
+Long-Task Agent 提供三个可自定义的文档模板，用于生成符合行业标准的需求、设计和测试文档。
+
+### 内置模板
+
+| 模板 | 路径 | 用途 | 标准 |
+|------|------|------|------|
+| SRS 模板 | `docs/templates/srs-template.md` | 软件需求规格说明书 | ISO/IEC/IEEE 29148 |
+| 设计模板 | `docs/templates/design-template.md` | 技术设计文档 | - |
+| ST 测试用例模板 | `docs/templates/st-case-template.md` | 系统测试用例文档 | ISO/IEC/IEEE 29119-3 |
+
+### 自定义方式
+
+#### SRS 模板自定义
+
+在**需求阶段**（`long-task-requirements`），通过对话指定自定义模板路径：
+
+```
+请使用我自定义的 SRS 模板：docs/templates/my-srs-template.md
+```
+
+**要求**：模板必须是 `.md` 文件，且包含至少一个 `## ` 级别的标题。
+
+#### 设计模板自定义
+
+在**设计阶段**（`long-task-design`），通过对话指定自定义模板路径：
+
+```
+请使用我自定义的设计模板：docs/templates/my-design-template.md
+```
+
+**要求**：模板必须是 `.md` 文件，且包含至少一个 `## ` 级别的标题。
+
+#### ST 测试用例模板自定义
+
+通过 `feature-list.json` 根级别字段配置：
+
+```json
+{
+  "st_case_template_path": "docs/templates/custom-st-template.md",
+  "st_case_example_path": "docs/templates/st-case-example.md"
+}
+```
+
+| 字段 | 说明 |
+|------|------|
+| `st_case_template_path` | 自定义模板路径（定义文档结构） |
+| `st_case_example_path` | 示例文件路径（定义风格、语言、详细程度） |
+
+**配置组合效果**：
+
+| 配置 | 效果 |
+|------|------|
+| 两者都提供 | 使用模板的**结构** + 示例的**风格** |
+| 仅提供模板 | 使用模板结构 + 默认风格 |
+| 仅提供示例 | 从示例推断结构 + 使用示例风格 |
+| 都不提供 | 使用内置默认模板（ISO/IEC/IEEE 29119-3） |
+
+### 模板优先级规则
+
+1. **用户指定路径** > **内置默认模板**
+2. 模板文件必须存在，否则回退到默认模板
+3. 模板必须通过验证（`.md` 文件 + 至少一个 `## ` 标题）
+
+### 最佳实践
+
+1. **复制内置模板作为起点**：保留原有的章节结构，只修改指导文字
+2. **保持标准合规性**：SRS 模板建议保留 ISO 29148 核心章节；ST 模板建议保留 29119-3 必需字段
+3. **版本控制**：将自定义模板提交到 git，便于团队协作
+4. **ST 示例文件**：提供一个已填写的 ST 测试用例文档作为示例，可统一团队的风格和详细程度
+
+---
+
 ## 对比分析
 
 | 能力 | 典型 AI 编程 | Long-Task Agent |
