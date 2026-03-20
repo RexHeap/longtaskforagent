@@ -83,34 +83,26 @@ if [[ ! -f "$KNOWN_MARKETPLACES_FILE" ]]; then
   echo '{}' > "$KNOWN_MARKETPLACES_FILE"
 fi
 
-# Use Python for reliable JSON update (UTF-8 without BOM, 2-space indent)
-if command -v python3 &>/dev/null || command -v python &>/dev/null; then
-  PYTHON_CMD=$(command -v python3 || command -v python)
-  "$PYTHON_CMD" -c "
-import json
-import sys
-from datetime import datetime
+# Update known_marketplaces.json using jq (pure bash, no Python needed)
+TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
+REPO_NAME="${MARKETPLACE_GIT_URL#https://github.com/}"
+REPO_NAME="${REPO_NAME%.git}"
 
-name = '$MARKETPLACE_NAME'
-git_url = '$MARKETPLACE_GIT_URL'
-target_dir = '$TARGET_DIR'
-filepath = '$KNOWN_MARKETPLACES_FILE'
-
-with open(filepath, 'r', encoding='utf-8') as f:
-    data = json.load(f)
-
-data[name] = {
-    'source': {'source': 'github', 'repo': git_url.replace('https://github.com/', '').replace('.git', '')},
-    'installLocation': target_dir,
-    'lastUpdated': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z')
-}
-
-with open(filepath, 'w', encoding='utf-8') as f:
-    json.dump(data, f, indent=2, ensure_ascii=False)
-    f.write('\n')
-"
+if command -v jq &>/dev/null; then
+  # Use jq for reliable JSON manipulation
+  jq --arg name "$MARKETPLACE_NAME" \
+     --arg repo "$REPO_NAME" \
+     --arg location "$TARGET_DIR" \
+     --arg timestamp "$TIMESTAMP" \
+     '.[$name] = {
+       "source": {"source": "github", "repo": $repo},
+       "installLocation": $location,
+       "lastUpdated": $timestamp
+     }' "$KNOWN_MARKETPLACES_FILE" > "${KNOWN_MARKETPLACES_FILE}.tmp" && \
+  mv "${KNOWN_MARKETPLACES_FILE}.tmp" "$KNOWN_MARKETPLACES_FILE"
 else
-  warn "Python not found, skipping known_marketplaces.json update"
+  warn "jq not found, skipping known_marketplaces.json update"
+  warn "Install jq with: brew install jq (macOS) or apt install jq (Linux)"
 fi
 
 # =============================================================================
