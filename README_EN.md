@@ -397,6 +397,85 @@ Configure via `feature-list.json` root-level fields:
 
 ---
 
+## Enterprise MCP Tool Abstraction
+
+All Long-Task Agent skills default to Chrome DevTools MCP and CLI commands for testing, coverage, and mutation testing. The **Enterprise MCP Tool Abstraction** lets you replace these hardcoded tool references with your internal MCP servers — without modifying any skill files.
+
+### How It Works
+
+```
+tool-bindings.json          →  apply_tool_bindings.py  →  .long-task-bindings/
+(enterprise tool mapping)       (Jinja2 template render)    (rendered SKILL.md)
+```
+
+1. Place `tool-bindings.json` in your project root (copy from `docs/templates/tool-bindings-template.json`)
+2. The session-start hook auto-detects it and renders templates to `.long-task-bindings/`
+3. Skills load the rendered files first, falling back to the original SKILL.md
+
+### Capability Bindings
+
+`tool-bindings.json` defines four capability bindings:
+
+| Capability | Default (CLI / Chrome DevTools) | Enterprise MCP Replacement |
+|------------|--------------------------------|---------------------------|
+| `test` | `pytest` / `jest` etc. CLI commands | Enterprise CI MCP server |
+| `coverage` | `pytest-cov` / `c8` etc. CLI commands | Enterprise CI MCP server |
+| `mutation` | `mutmut` / `stryker` etc. CLI commands | Enterprise CI MCP server |
+| `ui_tools` | Chrome DevTools MCP tool names | Enterprise browser automation MCP |
+
+### Configuration Example
+
+```json
+{
+  "version": 1,
+  "mcp_servers": {
+    "corp_ci": {
+      "command": "npx",
+      "args": ["-y", "@your-org/ci-mcp@latest"]
+    },
+    "corp_browser": {
+      "command": "npx",
+      "args": ["-y", "@your-org/browser-mcp@latest"]
+    }
+  },
+  "capability_bindings": {
+    "test": {
+      "type": "mcp",
+      "tool": "corp_ci__run_tests"
+    },
+    "coverage": {
+      "type": "mcp",
+      "tool": "corp_ci__coverage"
+    },
+    "ui_tools": {
+      "type": "mcp",
+      "tool_mapping": {
+        "navigate_page": "corp_browser__navigate",
+        "take_screenshot": "corp_browser__screenshot",
+        "click": "corp_browser__click"
+      }
+    }
+  }
+}
+```
+
+### Related Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `apply_tool_bindings.py` | Render SKILL.md.template → .long-task-bindings/ (Jinja2) |
+| `check_mcp_providers.py` | Detect enterprise MCP server registration, output install guidance |
+| `check_jinja2.py` | Detect Jinja2 availability (required for enterprise MCP template rendering) |
+
+### Design Principles
+
+- **Non-invasive detection** — read-only MCP registration checks, no config file writes
+- **Project-local rendering** — output to `.long-task-bindings/`, eliminates multi-session race conditions
+- **Backward compatible** — works without `tool-bindings.json`, zero impact on default workflow
+- **Stdlib only** — no external dependencies beyond Jinja2 (Python 3 stdlib)
+
+---
+
 ## How It Compares
 
 <!-- ILLUSTRATION: Comparison Matrix
