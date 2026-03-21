@@ -24,9 +24,9 @@ You MUST create a TodoWrite task for each of these items and complete them in or
 3. **Propose 2-3 approaches** — with trade-offs and your recommendation
 4. **Section-by-section design approval** — architecture, data model, API, UI, testing, deployment
 5. **Write design document** — save to `docs/plans/YYYY-MM-DD-<topic>-design.md` and commit
-6. **Transition to initialization** — **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-init`
+6. **Transition to ATS** — **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-ats`
 
-**The terminal state is invoking long-task-init.** Do NOT invoke any other implementation skill.
+**The terminal state is invoking long-task-ats.** Do NOT invoke any other implementation skill.
 
 ## Step 1: Read SRS & UCD & Extract Design Inputs
 
@@ -128,14 +128,14 @@ Read the template found in Step 2 (user-specified or default `docs/templates/des
 4. For uncovered template sections: mark "[Not applicable]"
 5. For approved content without matching template section: append as "Additional Notes"
 
-## Step 6: Transition to Initializer
+## Step 6: Transition to ATS
 
 Once the design document is saved and committed:
 
-1. Summarize key inputs the Initializer will need:
-   - **From SRS**: constraints, assumptions, NFRs, user personas, glossary, functional requirements → features
-   - **From Design**: tech stack, architecture decisions → `tech_stack` in feature-list.json, project skeleton
-2. **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-init` to scaffold the project
+1. Summarize key inputs the ATS skill will need:
+   - **From SRS**: all FR/NFR/IFR requirements with acceptance criteria
+   - **From Design**: testing strategy, tech stack, architecture risk areas
+2. **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-ats` to generate the Acceptance Test Strategy
 
 ## Scaling the Design Phase
 
@@ -215,5 +215,5 @@ The Init phase uses this plan to populate `feature-list.json` with correct prior
 
 **Called by:** using-long-task (when SRS + UCD exist, no design doc, no feature-list.json) or long-task-ucd (Step 8)
 **Requires:** Approved SRS at `docs/plans/*-srs.md`; optionally approved UCD at `docs/plans/*-ucd.md` (for UI projects)
-**Chains to:** long-task-init (after design approval)
+**Chains to:** long-task-ats (after design approval)
 **Produces:** `docs/plans/YYYY-MM-DD-<topic>-design.md`

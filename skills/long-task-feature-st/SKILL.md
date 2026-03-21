@@ -107,6 +107,7 @@ Read all input artifacts for the target feature:
 - **Feature object** from `feature-list.json` — ID, title, description, verification_steps, ui flag, dependencies, priority
 - **SRS section** — full FR-xxx from `docs/plans/*-srs.md` via Document Lookup Protocol (read the entire subsection, NOT grep)
 - **Design section** — full §4.N from `docs/plans/*-design.md` via Document Lookup Protocol
+- **ATS constraints** (if `docs/plans/*-ats.md` exists) — read the ATS mapping table rows for the requirement(s) that map to this feature; extract required categories and minimum case counts. These constraints are **binding** for Step 3 (Derive Test Cases).
 - **Plan document** — from Step 5 (`docs/plans/YYYY-MM-DD-<feature-name>.md`)
 - **UCD sections** (only if `"ui": true`) — relevant component prompts and page prompts from `docs/plans/*-ucd.md`
 - **Root context** — `constraints[]`, `assumptions[]` from `feature-list.json` root
@@ -158,10 +159,18 @@ For each `verification_step` in the feature, generate **one or more** test cases
 - Test cases MUST test at least one negative path via UI (e.g., submit invalid form → verify error message)
 - See `prompts/e2e-scenario-prompt.md` for detailed expansion rules and examples
 
+**ATS enforcement (if ATS document exists):**
+- Read the ATS mapping table rows loaded in Step 1
+- For each ATS-required category for this feature's requirement(s): generate at least one test case of that category
+- Total test cases per requirement MUST meet or exceed the ATS minimum case count
+- If ATS requires SEC but the feature does not handle user input, note the discrepancy in the test case document and generate at least one boundary-security case
+- **ATS minimum counts are hard gates** — validate via `python scripts/check_ats_coverage.py` in Step 6
+
 **Minimum coverage:**
 - Every feature MUST have at least one FUNC and one BNDRY test case
 - Every `verification_step` MUST map to at least one test case
 - UI features MUST have at least one UI and one A11Y test case
+- If ATS exists: all ATS-required categories and minimum counts are met
 
 **Case ID format:**
 ```
@@ -238,14 +247,19 @@ The traceability matrix `结果` column starts as `PENDING`. Execute each test c
 
 ### 6. Validate
 
-Run the validation script:
+Run the validation scripts:
 
 ```bash
 python scripts/validate_st_cases.py docs/test-cases/feature-{id}-{slug}.md --feature-list feature-list.json --feature {id}
 ```
 
-- **Exit 0**: proceed to Execute Test Cases (Step 7)
-- **Exit 1**: fix errors and re-validate (do NOT proceed with errors)
+If ATS document exists, also run ATS coverage check:
+```bash
+python scripts/check_ats_coverage.py docs/plans/*-ats.md --feature-list feature-list.json --feature {id} --strict
+```
+
+- **Both exit 0**: proceed to Execute Test Cases (Step 7)
+- **Any exit 1**: fix errors and re-validate (do NOT proceed with errors)
 
 ### 7. Execute Test Cases
 

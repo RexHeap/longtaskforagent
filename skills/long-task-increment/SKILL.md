@@ -24,6 +24,7 @@ You MUST create a TodoWrite task for each step and complete them in order:
 - Read `feature-list.json` — note all features, their statuses, wave history, constraints, assumptions
 - Read approved SRS (`docs/plans/*-srs.md`) — current requirements baseline
 - Read approved design (`docs/plans/*-design.md`) — current architecture
+- If exists: read ATS document (`docs/plans/*-ats.md`) — current test strategy baseline
 - If UI project: read UCD style guide (`docs/plans/*-ucd.md`)
 - If exists: read deferred backlog (`docs/plans/*-deferred.md`) — pre-elicited requirements available for pickup (skip re-elicitation for items with complete EARS + acceptance criteria)
 - Read `task-progress.md` — session history
@@ -96,6 +97,39 @@ Update the existing design document **in place** for affected sections:
    New: FR-021 (feature title), FR-022 (feature title)
    Modified: FR-005 (what changed)
    Deprecated: FR-012 (reason)
+   ```
+
+### 4b. ATS Revision
+
+**Skip this step** if no ATS document exists (`docs/plans/*-ats.md`).
+
+Update the existing ATS document **in place** for affected requirements:
+
+1. Read `docs/plans/*-ats.md`
+2. For **new** requirements:
+   - Add mapping table rows with requirement ID, scenarios, required categories, minimum case counts
+   - Apply category assignment rules (FUNC+BNDRY for all FRs; +SEC for input/auth; +UI+A11Y for ui:true; +PERF for NFRs with metrics)
+   - Use minimum case count heuristics based on acceptance criteria complexity
+   - Update the coverage statistics table (Section 2.4)
+   - If new NFRs: add rows to the NFR Test Method Matrix (Section 4)
+   - If new cross-feature interactions: add rows to Integration Scenarios (Section 5)
+3. For **modified** requirements:
+   - Update the corresponding mapping table row in place (scenarios, categories, minimum counts)
+   - Adjust NFR test methods if thresholds changed
+   - Update integration scenarios if data flows changed
+4. For **deprecated** requirements:
+   - Add `[DEPRECATED - Wave N]` marker to the corresponding mapping table row
+   - Do NOT delete the row (preserve traceability)
+   - Update coverage statistics (exclude deprecated rows from totals)
+5. Update the Risk-Driven Test Priority section if risk profile changed
+6. Get user approval for ATS changes
+7. Git commit:
+   ```
+   docs: update ATS for wave N — <brief scope>
+
+   New: <req_ids added>
+   Modified: <req_ids changed>
+   Deprecated: <req_ids deprecated>
    ```
 
 ### 5. UCD Revision (UI projects only)
@@ -252,6 +286,6 @@ The router will now detect failing features in `feature-list.json` and route to 
 ## Integration
 
 **Called by:** using-long-task (when increment-request.json exists)
-**Reads:** SRS, Design, UCD, feature-list.json, increment-request.json
-**Writes:** SRS (in place), Design (in place), UCD (in place), feature-list.json (append/modify)
+**Reads:** SRS, Design, ATS, UCD, feature-list.json, increment-request.json
+**Writes:** SRS (in place), Design (in place), ATS (in place), UCD (in place), feature-list.json (append/modify)
 **Chains to:** long-task-work (after increment complete, via router detecting failing features)

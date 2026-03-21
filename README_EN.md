@@ -75,7 +75,7 @@ After launching Claude Code, simply tell it what you want to build:
 The system will automatically enter the **Requirements phase**, helping you refine requirements through structured questioning and ultimately generate a standardized SRS document. The subsequent workflow is fully automated:
 
 ```
-Requirements → UCD (if UI) → Design → Init → Worker cycles → System Testing
+Requirements → UCD (if UI) → Design → ATS (Acceptance Test Strategy) → Init → Worker cycles → System Testing
 ```
 
 [View sample project](https://github.com/suriyel/githubtrends)
@@ -88,7 +88,7 @@ Requirements → UCD (if UI) → Design → Init → Worker cycles → System Te
 
 **A Claude Code skill plugin that turns single-session AI coding into a rigorous, multi-session software engineering workflow.**
 
-Most AI coding assistants lose context after one conversation. Long-Task Agent solves this by implementing a six-phase architecture with persistent state bridging — enabling Claude Code to build complex projects across unlimited sessions with the discipline of a professional engineering team.
+Most AI coding assistants lose context after one conversation. Long-Task Agent solves this by implementing a seven-phase architecture with persistent state bridging — enabling Claude Code to build complex projects across unlimited sessions with the discipline of a professional engineering team.
 ![Hero Banner](images/1.png)
 
 ## Why Long-Task Agent?
@@ -99,6 +99,7 @@ Most AI coding assistants lose context after one conversation. Long-Task Agent s
 | AI generates code without understanding requirements | ISO/IEC/IEEE 29148-aligned requirements elicitation produces an approved SRS before any code is written |
 | AI skips testing or writes shallow tests | Strict TDD (Red→Green→Refactor) with coverage gates (≥90% line, ≥80% branch) and mutation testing (≥80% score) |
 | AI produces inconsistent UI | UCD style guide with token-based design system ensures visual consistency across all features |
+| AI generates thin acceptance tests | ATS (Acceptance Test Strategy) pre-plans test categories and minimum case counts per requirement after design, with independent subagent review ensuring no coverage blind spots |
 | AI drifts from the approved design | Automated spec & design compliance review after every feature |
 | No way to add features to an existing project safely | Increment skill performs impact analysis, updates SRS/Design/UCD in place, tracks changes with waves |
 | "Works on my machine" syndrome | System Testing phase (IEEE 829) with regression, integration, E2E, and NFR verification |
@@ -121,6 +122,7 @@ Ten+ persistent artifacts ensure zero knowledge loss between sessions:
 | `task-progress.md` | Session-by-session log with current state header |
 | `docs/plans/*-srs.md` | Approved Software Requirements Specification |
 | `docs/plans/*-design.md` | Approved technical design document |
+| `docs/plans/*-ats.md` | Approved Acceptance Test Strategy (requirement→scenario mapping, independent subagent review) |
 | `docs/plans/*-ucd.md` | Approved UCD style guide (UI projects) |
 | `long-task-guide.md` | Worker session guide with env activation + tool commands |
 | `docs/test-cases/feature-*.md` | Per-feature ST test case documents (ISO/IEC/IEEE 29119) |
@@ -145,7 +147,7 @@ Each worker session focuses on exactly one feature. This prevents context exhaus
 
 ![Quality Gates](images/3.png)
 
-## Six-Phase Architecture
+## Seven-Phase Architecture
 
 
 ![Architecture](images/4.png)
@@ -171,9 +173,20 @@ Each worker session focuses on exactly one feature. This prevents context exhaus
 - Third-party dependency versions with compatibility verification
 - Produces an approved **Design Document** (`docs/plans/*-design.md`)
 
+### Phase 0d: Acceptance Test Strategy (ATS)
+
+- Maps every FR/NFR/IFR to acceptance scenarios with required test categories (FUNC, BNDRY, SEC, PERF, A11Y, UI) and minimum case counts
+- NFR test method matrix (tools + thresholds + load parameters)
+- Cross-feature integration scenario pre-planning
+- Risk-driven test priority ordering
+- Independent ATS reviewer subagent (7 dimensions: coverage completeness, category diversity, scenario adequacy, verifiability, NFR testability, integration coverage, risk consistency), with custom review template support
+- Auto-skip for tiny projects (≤5 FR), embedded in design doc for tiny projects
+- Produces an approved **ATS** (`docs/plans/*-ats.md`)
+- Constrains downstream Init (verification_steps) and feature-st (test case derivation)
+
 ### Phase 1: Initialization
 
-- Reads SRS + Design, scaffolds project skeleton
+- Reads SRS + Design + ATS, scaffolds project skeleton
 - Decomposes requirements into 10-200+ verifiable features
 - Generates environment bootstrap scripts (`init.sh` / `init.ps1`)
 - Creates initial git commit
@@ -201,19 +214,19 @@ Orient → Bootstrap → Config Gate → DevTools Gate → Plan
 
 - Place an `increment-request.json` signal file → the skill auto-detects it
 - Impact analysis against existing features
-- Updates SRS, Design, UCD in place (git tracks history)
+- Updates SRS, Design, ATS, UCD in place (git tracks history)
 - Appends new features with wave metadata for traceability
   ![Worker Cycle](images/5.png)
 
-## 12-Skill Superpowers Architecture
+## 13-Skill Superpowers Architecture
 
 Long-Task Agent uses an **on-demand skill loading** pattern — only the bootstrap router is loaded at session start; phase skills are loaded as needed, keeping context lean.
 
 ```
 using-long-task (bootstrap router — always loaded)
    │
-   ├─→ long-task-requirements ──→ long-task-ucd ──→ long-task-design ──→ long-task-init
-   │                              (auto-skip if no UI)                        │
+   ├─→ long-task-requirements ──→ long-task-ucd ──→ long-task-design ──→ long-task-ats ──→ long-task-init
+   │                              (auto-skip if no UI)                   (auto-skip ≤5 FR)      │
    │                                                                          ↓
    ├─→ long-task-increment (if increment-request.json exists)          long-task-work
    │                                                                     │  │  │  │
@@ -234,6 +247,7 @@ using-long-task (bootstrap router — always loaded)
 | `long-task-requirements` | ISO 29148 requirements elicitation → SRS |
 | `long-task-ucd` | UCD style guide with design tokens |
 | `long-task-design` | Technical design with trade-off analysis |
+| `long-task-ats` | Acceptance Test Strategy — requirement→scenario mapping + independent subagent review |
 | `long-task-init` | Project scaffolding and feature decomposition |
 | `long-task-work` | Worker orchestrator (one feature per cycle) |
 | `long-task-tdd` | TDD Red→Green→Refactor discipline |
@@ -319,13 +333,15 @@ The plugin includes a suite of validation scripts to prevent common failures:
 | `validate_st_cases.py` | Validate ST test case documents (ISO/IEC/IEEE 29119) |
 | `get_tool_commands.py` | Map tech stack to CLI commands |
 | `check_real_tests.py` | Verify real test existence and mock detection |
+| `validate_ats.py` | Validate ATS document structure + SRS cross-validation |
+| `check_ats_coverage.py` | ATS↔feature-list↔ST case coverage checking |
 | `analyze-tokens.py` | Analyze UCD design tokens from generated images |
 
 ---
 
 ## Template Customization Guide
 
-Long-Task Agent provides three customizable document templates for generating standards-compliant requirements, design, and test documents.
+Long-Task Agent provides five customizable document templates for generating standards-compliant requirements, design, test strategy, and test documents.
 
 ### Built-in Templates
 
@@ -333,6 +349,8 @@ Long-Task Agent provides three customizable document templates for generating st
 |----------|------|---------|----------|
 | SRS Template | `docs/templates/srs-template.md` | Software Requirements Specification | ISO/IEC/IEEE 29148 |
 | Design Template | `docs/templates/design-template.md` | Technical Design Document | - |
+| ATS Template | `docs/templates/ats-template.md` | Acceptance Test Strategy Document | - |
+| ATS Review Template | `docs/templates/ats-review-template.md` | ATS Review Specification (7 dimensions) | - |
 | ST Test Case Template | `docs/templates/st-case-template.md` | System Test Case Document | ISO/IEC/IEEE 29119-3 |
 
 ### Customization Methods
@@ -356,6 +374,26 @@ Please use my custom design template: docs/templates/my-design-template.md
 ```
 
 **Requirements**: Template must be a `.md` file containing at least one `## ` heading.
+
+#### ATS Template Customization
+
+Configure via `feature-list.json` root-level fields (or specify during the ATS phase via conversation):
+
+```json
+{
+  "ats_template_path": "docs/templates/custom-ats-template.md",
+  "ats_review_template_path": "docs/templates/custom-ats-review-template.md",
+  "ats_example_path": "docs/templates/ats-example.md"
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `ats_template_path` | Custom ATS document template path (defines document structure) |
+| `ats_review_template_path` | Custom review spec template path (defines dimensions, severity levels, pass criteria) |
+| `ats_example_path` | Example file path (defines style, language, detail level) |
+
+The review template supports: adding/removing dimensions (e.g., GDPR data testing coverage), modifying severity definitions, and customizing pass criteria.
 
 #### ST Test Case Template Customization
 
@@ -491,6 +529,7 @@ tool-bindings.json          →  apply_tool_bindings.py  →  .long-task-binding
 | Design process | Ad-hoc | 2-3 approaches with trade-offs, section-by-section approval |
 | TDD discipline | Optional, often skipped | Mandatory Red→Green→Refactor for every feature |
 | Test quality verification | Line coverage only (if any) | Coverage + mutation testing with configurable thresholds |
+| Acceptance test planning | Ad-hoc, category-biased toward functional | ATS pre-plans test categories and minimum case counts per requirement, with independent subagent review |
 | UI consistency | Per-developer taste | UCD style guide with token-based design system |
 | Post-implementation review | None | Automated spec & design compliance review |
 | System testing | Manual QA | IEEE 829-aligned with RTM, Go/No-Go verdict |
@@ -503,11 +542,12 @@ tool-bindings.json          →  apply_tool_bindings.py  →  .long-task-binding
 
 ```
 long-task-agent/
-├── skills/                          # 12 skills (on-demand loaded)
+├── skills/                          # 13 skills (on-demand loaded)
 │   ├── using-long-task/             # Bootstrap router
 │   ├── long-task-requirements/      # Phase 0a: Requirements & SRS
 │   ├── long-task-ucd/               # Phase 0b: UCD style guide
 │   ├── long-task-design/            # Phase 0c: Design
+│   ├── long-task-ats/               # Phase 0d: Acceptance Test Strategy (with independent reviewer subagent)
 │   ├── long-task-init/              # Phase 1: Initialization
 │   ├── long-task-work/              # Phase 2: Worker orchestrator
 │   ├── long-task-tdd/               # TDD discipline

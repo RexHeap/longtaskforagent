@@ -75,7 +75,7 @@ irm https://raw.githubusercontent.com/suriyel/longtaskforagent/main/install.ps1 
 系统将自动进入**需求阶段**，通过结构化提问帮助您完善需求，最终生成标准化的 SRS 文档。后续工作流程完全自动化：
 
 ```
-需求 → UCD (如有UI) → 设计 → 初始化 → 工作循环 → 系统测试
+需求 → UCD (如有UI) → 设计 → ATS (验收测试策略) → 初始化 → 工作循环 → 系统测试
 ```
 
 [点击查看样例项目](https://github.com/suriyel/githubtrends)
@@ -88,7 +88,7 @@ irm https://raw.githubusercontent.com/suriyel/longtaskforagent/main/install.ps1 
 
 **一款 Claude Code 技能插件，将单会话 AI 编码转变为严谨的多会话软件工程工作流。**
 
-大多数 AI 编程助手在一次对话后会丢失上下文。Long-Task Agent 通过实现六阶段架构和持久状态桥接解决了这个问题——使 Claude Code 能够以专业工程团队的纪律，跨无限会话构建复杂项目。
+大多数 AI 编程助手在一次对话后会丢失上下文。Long-Task Agent 通过实现七阶段架构和持久状态桥接解决了这个问题——使 Claude Code 能够以专业工程团队的纪律，跨无限会话构建复杂项目。
 ![Hero Banner](images/1.png)
 
 ## 为什么选择 Long-Task Agent？
@@ -99,6 +99,7 @@ irm https://raw.githubusercontent.com/suriyel/longtaskforagent/main/install.ps1 
 | AI 不理解需求就生成代码 | 符合 ISO/IEC/IEEE 29148 的需求收集在编写任何代码前产生经批准的 SRS |
 | AI 跳过测试或编写浅层测试 | 严格的 TDD（红→绿→重构）配合覆盖率门禁（≥90% 行覆盖，≥80% 分支覆盖）和变异测试（≥80% 得分） |
 | AI 产生不一致的 UI | 带令牌化设计系统的 UCD 风格指南确保所有功能的视觉一致性 |
+| AI 验收测试覆盖不全 | ATS（验收测试策略）在设计后前置规划每个需求的测试类别和最低用例数，独立 subagent 审核确保无覆盖盲区 |
 | AI 偏离批准的设计 | 每个功能后自动进行规范和设计合规性审查 |
 | 无法安全地向现有项目添加功能 | 增量技能执行影响分析，就地更新 SRS/设计/UCD，用波次跟踪变更 |
 | "在我机器上能跑"综合症 | 系统测试阶段（IEEE 829）包含回归、集成、端到端和 NFR 验证 |
@@ -121,6 +122,7 @@ irm https://raw.githubusercontent.com/suriyel/longtaskforagent/main/install.ps1 
 | `task-progress.md` | 逐会话日志，带当前状态标题 |
 | `docs/plans/*-srs.md` | 已批准的软件需求规格说明书 |
 | `docs/plans/*-design.md` | 已批准的技术设计文档 |
+| `docs/plans/*-ats.md` | 已批准的验收测试策略（需求→场景映射，独立 subagent 审核） |
 | `docs/plans/*-ucd.md` | 已批准的 UCD 风格指南（UI 项目） |
 | `long-task-guide.md` | 工作会话指南，含环境激活 + 工具命令 |
 | `docs/test-cases/feature-*.md` | 每功能的 ST 测试用例文档（ISO/IEC/IEEE 29119） |
@@ -145,7 +147,7 @@ irm https://raw.githubusercontent.com/suriyel/longtaskforagent/main/install.ps1 
 
 ![Quality Gates](images/3.png)
 
-## 六阶段架构
+## 七阶段架构
 
 
 ![Architecture](images/4.png)
@@ -171,9 +173,20 @@ irm https://raw.githubusercontent.com/suriyel/longtaskforagent/main/install.ps1 
 - 第三方依赖版本及兼容性验证
 - 产出一份已批准的 **设计文档**（`docs/plans/*-design.md`）
 
+### 阶段 0d：验收测试策略（ATS）
+
+- 将每个 FR/NFR/IFR 映射到验收场景，标注必须的测试类别（FUNC、BNDRY、SEC、PERF、A11Y、UI）和最低用例数
+- NFR 测试方法矩阵（工具 + 阈值 + 负载参数）
+- 跨功能集成场景预规划
+- 风险驱动测试优先级排序
+- 独立 ATS 审核 subagent（7 维度：覆盖完整性、类别多样性、场景充分性、可验证性、NFR 可测性、集成覆盖、风险一致性），支持自定义审核模板
+- 小项目（≤5 FR）自动跳过，Tiny 项目嵌入设计文档
+- 产出一份已批准的 **ATS**（`docs/plans/*-ats.md`）
+- 约束下游 Init（verification_steps）和 feature-st（用例派生）
+
 ### 阶段 1：初始化
 
-- 读取 SRS + 设计，脚手架项目骨架
+- 读取 SRS + 设计 + ATS，脚手架项目骨架
 - 将需求分解为 10-200+ 个可验证功能
 - 生成环境引导脚本（`init.sh` / `init.ps1`）
 - 创建初始 git 提交
@@ -201,19 +214,19 @@ irm https://raw.githubusercontent.com/suriyel/longtaskforagent/main/install.ps1 
 
 - 放置 `increment-request.json` 信号文件 → 技能自动检测
 - 对现有功能的影响分析
-- 就地更新 SRS、设计、UCD（git 跟踪历史）
+- 就地更新 SRS、设计、ATS、UCD（git 跟踪历史）
 - 带波次元数据追加新功能以实现可追溯性
   ![Worker Cycle](images/5.png)
 
-## 12 技能超能力架构
+## 13 技能超能力架构
 
 Long-Task Agent 使用**按需技能加载**模式——只有引导路由器在会话开始时加载；阶段技能按需加载，保持上下文精简。
 
 ```
 using-long-task (引导路由器 — 始终加载)
    │
-   ├─→ long-task-requirements ──→ long-task-ucd ──→ long-task-design ──→ long-task-init
-   │                              (无UI时自动跳过)                        │
+   ├─→ long-task-requirements ──→ long-task-ucd ──→ long-task-design ──→ long-task-ats ──→ long-task-init
+   │                              (无UI时自动跳过)                   (≤5FR自动跳过)       │
    │                                                                          ↓
    ├─→ long-task-increment (如果 increment-request.json 存在)          long-task-work
    │                                                                     │  │  │  │
@@ -234,6 +247,7 @@ using-long-task (引导路由器 — 始终加载)
 | `long-task-requirements` | ISO 29148 需求收集 → SRS |
 | `long-task-ucd` | 带设计令牌的 UCD 风格指南 |
 | `long-task-design` | 带权衡分析的技术设计 |
+| `long-task-ats` | 验收测试策略 — 需求→场景映射 + 独立 subagent 审核 |
 | `long-task-init` | 项目脚手架和功能分解 |
 | `long-task-work` | 工作编排器（每周期一个功能） |
 | `long-task-tdd` | TDD 红→绿→重构纪律 |
@@ -319,13 +333,15 @@ python scripts/auto_loop.py feature-list.json --prompt "继续"
 | `validate_st_cases.py` | 验证 ST 测试用例文档（ISO/IEC/IEEE 29119） |
 | `get_tool_commands.py` | 将技术栈映射到 CLI 命令 |
 | `check_real_tests.py` | 验证真实测试存在性和 mock 检测 |
+| `validate_ats.py` | 验证 ATS 文档结构完整性 + SRS 交叉验证 |
+| `check_ats_coverage.py` | ATS↔功能列表↔ST 用例覆盖率检查 |
 | `analyze-tokens.py` | 从生成的图像分析 UCD 设计令牌 |
 
 ---
 
 ## 模板自定义指南
 
-Long-Task Agent 提供三个可自定义的文档模板，用于生成符合行业标准的需求、设计和测试文档。
+Long-Task Agent 提供五个可自定义的文档模板，用于生成符合行业标准的需求、设计、测试策略和测试文档。
 
 ### 内置模板
 
@@ -333,6 +349,8 @@ Long-Task Agent 提供三个可自定义的文档模板，用于生成符合行�
 |------|------|------|------|
 | SRS 模板 | `docs/templates/srs-template.md` | 软件需求规格说明书 | ISO/IEC/IEEE 29148 |
 | 设计模板 | `docs/templates/design-template.md` | 技术设计文档 | - |
+| ATS 模板 | `docs/templates/ats-template.md` | 验收测试策略文档 | - |
+| ATS 审核模板 | `docs/templates/ats-review-template.md` | ATS 审核规范（7 维度） | - |
 | ST 测试用例模板 | `docs/templates/st-case-template.md` | 系统测试用例文档 | ISO/IEC/IEEE 29119-3 |
 
 ### 自定义方式
@@ -356,6 +374,26 @@ Long-Task Agent 提供三个可自定义的文档模板，用于生成符合行�
 ```
 
 **要求**：模板必须是 `.md` 文件，且包含至少一个 `## ` 级别的标题。
+
+#### ATS 模板自定义
+
+通过 `feature-list.json` 根级别字段配置（或在 ATS 阶段通过对话指定）：
+
+```json
+{
+  "ats_template_path": "docs/templates/custom-ats-template.md",
+  "ats_review_template_path": "docs/templates/custom-ats-review-template.md",
+  "ats_example_path": "docs/templates/ats-example.md"
+}
+```
+
+| 字段 | 说明 |
+|------|------|
+| `ats_template_path` | 自定义 ATS 文档模板路径（定义文档结构） |
+| `ats_review_template_path` | 自定义审核规范模板路径（定义维度、严重级别、通过条件） |
+| `ats_example_path` | 示例文件路径（定义风格、语言、详细程度） |
+
+审核模板可自定义：增删维度（如添加 GDPR 数据测试覆盖）、修改严重级别定义、调整通过条件。
 
 #### ST 测试用例模板自定义
 
@@ -485,6 +523,7 @@ tool-bindings.json          →  apply_tool_bindings.py  →  .long-task-binding
 | 设计流程 | 临时性 | 2-3 种方案带权衡，逐节批准 |
 | TDD 纪律 | 可选，经常跳过 | 每个功能强制 红→绿→重构 |
 | 测试质量验证 | 仅行覆盖（如果有） | 覆盖率 + 变异测试，可配置阈值 |
+| 验收测试规划 | 临时性，类别偏向功能测试 | ATS 前置规划每个需求的测试类别和最低用例数，独立 subagent 审核 |
 | UI 一致性 | 每个开发者的口味 | 带令牌化设计系统的 UCD 风格指南 |
 | 实现后审查 | 无 | 自动规范和设计合规性审查 |
 | 系统测试 | 手动 QA | 符合 IEEE 829，带 RTM、Go/No-Go 结论 |
@@ -497,11 +536,12 @@ tool-bindings.json          →  apply_tool_bindings.py  →  .long-task-binding
 
 ```
 long-task-agent/
-├── skills/                          # 12 个技能（按需加载）
+├── skills/                          # 13 个技能（按需加载）
 │   ├── using-long-task/             # 引导路由器
 │   ├── long-task-requirements/      # 阶段 0a：需求和 SRS
 │   ├── long-task-ucd/               # 阶段 0b：UCD 风格指南
 │   ├── long-task-design/            # 阶段 0c：设计
+│   ├── long-task-ats/               # 阶段 0d：验收测试策略（含独立审核 subagent）
 │   ├── long-task-init/              # 阶段 1：初始化
 │   ├── long-task-work/              # 阶段 2：工作编排器
 │   ├── long-task-tdd/               # TDD 纪律

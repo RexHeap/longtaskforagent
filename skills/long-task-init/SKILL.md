@@ -11,20 +11,22 @@ Run once after both SRS and design are approved. Scaffolds all persistent artifa
 
 ## Input Documents
 
-This skill reads from **two** approved documents:
+This skill reads from **three** approved documents:
 
 | Document | Location | Provides |
 |----------|----------|----------|
 | **SRS** | `docs/plans/*-srs.md` | Functional requirements (FR-xxx), NFRs (NFR-xxx), constraints (CON-xxx), assumptions (ASM-xxx), interface requirements (IFR-xxx), glossary, user personas, acceptance criteria |
 | **Design** | `docs/plans/*-design.md` | Tech stack, architecture, data model, API design, testing strategy |
+| **ATS** | `docs/plans/*-ats.md` | Requirement→scenario mapping, required test categories per requirement, minimum case counts (constrains verification_steps and downstream feature-st) |
 
 ## Checklist
 
 You MUST create a TodoWrite task for each step and complete them in order:
 
-1. **Read the approved SRS and design documents** from `docs/plans/`
+1. **Read the approved SRS, design, and ATS documents** from `docs/plans/`
    - SRS: `docs/plans/*-srs.md` — for requirements, constraints, assumptions, NFRs, glossary, personas
    - Design: `docs/plans/*-design.md` — for tech stack, architecture decisions
+   - ATS: `docs/plans/*-ats.md` — for requirement→category mapping, minimum case counts (constrains verification_steps quality in Step 8)
 2. **Run `scripts/init_project.py`** to scaffold deterministic artifacts:
    ```bash
    python scripts/init_project.py <project-name> --path . --lang <language>
@@ -183,6 +185,7 @@ You MUST create a TodoWrite task for each step and complete them in order:
      - For `"ui": true` features: every `[devtools]` step MUST describe a multi-step interaction chain (navigate → interact → verify → interact → verify)
      - For features with backend dependencies: at least one step MUST verify real data flow across the dependency boundary
      - **Minimum complexity**: each feature SHOULD have ≥ 1 verification_step with 3+ chained actions
+   - **ATS category constraint** (if ATS document exists): for each feature, check the ATS mapping table for the corresponding requirement(s). Ensure verification_steps cover scenarios sufficient to generate the ATS-required test categories and minimum case counts. For example, if ATS requires SEC for FR-005, include a verification_step that exercises input validation or auth behavior so feature-st can derive SEC test cases from it.
    - **Backend-frontend pairing rule**: Frontend features (`"ui": true`) MUST list their backend API dependency features in `dependencies[]`. Additionally, features MUST be ordered in the `features[]` array using **paired grouping**: after each backend feature, place its corresponding frontend feature(s) immediately next in the array. This ensures the Worker develops Backend A → Frontend A → Backend B → Frontend B, rather than all backends then all frontends.
    - Aim for 10-200+ features; each independently verifiable and completable in one session
    - **Priority ordering**: follow the design document's Task Decomposition table (section 11.2) — P0/P1/P2/P3 maps to high/high/medium/low
@@ -315,7 +318,7 @@ Each feature:
 
 ## Integration
 
-**Called by:** long-task-design (Step 6) or using-long-task (when design doc exists, no feature-list.json)
-**Reads:** `docs/plans/*-srs.md` (requirements) + `docs/plans/*-design.md` (architecture)
+**Called by:** long-task-ats (Step 12) or using-long-task (when ATS doc exists, no feature-list.json)
+**Reads:** `docs/plans/*-srs.md` (requirements) + `docs/plans/*-design.md` (architecture) + `docs/plans/*-ats.md` (test strategy constraints)
 **Chains to:** long-task-work (after initialization complete)
 **Produces:** feature-list.json + all scaffolded artifacts listed above

@@ -13,6 +13,7 @@ Checks:
 Usage:
     python validate_st_cases.py <path/to/test-case-doc.md>
     python validate_st_cases.py <path/to/test-case-doc.md> --feature-list feature-list.json --feature 1
+    python validate_st_cases.py <path/to/test-case-doc.md> --feature-list feature-list.json --feature 1 --ats docs/plans/ats.md
 """
 
 import json
@@ -130,7 +131,41 @@ def _parse_case_blocks(content: str) -> list[dict]:
     return cases
 
 
-def validate(path: str, feature_list_path: str = None, feature_id: int = None) -> tuple[list[str], list[str]]:
+def _extract_ats_requirements(ats_path: str, feature_id: int = None) -> dict:
+    """Extract ATS requirements for cross-validation.
+
+    Returns dict: {req_id: {"categories": set, "min_cases": int}} or empty dict on failure.
+    """
+    ats_row_pattern = re.compile(r"^\|\s*((?:FR|NFR|IFR)-\d{3})\s*\|")
+    valid_cats = {"FUNC", "BNDRY", "UI", "SEC", "A11Y", "PERF"}
+    result = {}
+    try:
+        with open(ats_path, "r", encoding="utf-8") as f:
+            content = f.read()
+    except (FileNotFoundError, Exception):
+        return result
+
+    for line in content.split("\n"):
+        match = ats_row_pattern.match(line.strip())
+        if match:
+            req_id = match.group(1)
+            cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            if len(cells) >= 5:
+                categories = set()
+                for c in cells[3].split(","):
+                    c = c.strip().upper()
+                    if c in valid_cats:
+                        categories.add(c)
+                min_cases = 0
+                try:
+                    min_cases = int(cells[4])
+                except (ValueError, IndexError):
+                    pass
+                result[req_id] = {"categories": categories, "min_cases": min_cases}
+    return result
+
+
+def validate(path: str, feature_list_path: str = None, feature_id: int = None, ats_path: str = None) -> tuple[list[str], list[str]]:
     """Validate an ST test case document. Returns (errors, warnings)."""
     errors = []
     warnings = []
@@ -346,6 +381,38 @@ def validate(path: str, feature_list_path: str = None, feature_id: int = None) -
                             f"'{vstep_short}{'...' if len(vstep) > 40 else ''}'"
                         )
 
+    # ATS cross-validation (if --ats provided)
+    if ats_path and cases:
+        ats_reqs = _extract_ats_requirements(ats_path, feature_id)
+        if ats_reqs:
+            # Count actual cases by category in this document
+            actual_by_cat = {}
+            for case in cases:
+                cid = case.get("case_id") or ""
+                match = CASE_ID_PATTERN.match(cid)
+                if match:
+                    cat = match.group(1)
+                    actual_by_cat[cat] = actual_by_cat.get(cat, 0) + 1
+
+            # Find which ATS requirements are referenced in this document
+            for req_id, ats_info in ats_reqs.items():
+                if req_id in content:
+                    # This document covers this requirement — check categories
+                    for required_cat in ats_info["categories"]:
+                        if required_cat not in actual_by_cat or actual_by_cat[required_cat] == 0:
+                            errors.append(
+                                f"[ATS] ATS requires {required_cat} test cases for {req_id} "
+                                f"but none found in this document"
+                            )
+
+                    # Check total count against ATS minimum
+                    total_actual = sum(actual_by_cat.values())
+                    if ats_info["min_cases"] > 0 and total_actual < ats_info["min_cases"]:
+                        warnings.append(
+                            f"[ATS] ATS requires minimum {ats_info['min_cases']} cases for {req_id} "
+                            f"but only {total_actual} total cases found"
+                        )
+
     return errors, warnings
 
 
@@ -357,6 +424,7 @@ def main():
     path = sys.argv[1]
     feature_list_path = None
     feature_id = None
+    ats_path = None
 
     i = 2
     while i < len(sys.argv):
@@ -370,11 +438,14 @@ def main():
                 print(f"Error: --feature value must be an integer, got '{sys.argv[i + 1]}'")
                 sys.exit(1)
             i += 2
+        elif sys.argv[i] == "--ats" and i + 1 < len(sys.argv):
+            ats_path = sys.argv[i + 1]
+            i += 2
         else:
             print(f"Unknown argument: {sys.argv[i]}")
             sys.exit(1)
 
-    errors, warnings = validate(path, feature_list_path, feature_id)
+    errors, warnings = validate(path, feature_list_path, feature_id, ats_path)
 
     if errors:
         print(f"VALIDATION FAILED — {len(errors)} error(s):\n")

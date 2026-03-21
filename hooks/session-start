@@ -33,8 +33,10 @@ elif [ -f "feature-list.json" ]; then
         [ "$deprecated" != "0" ] && dep_note=" (${deprecated} deprecated)"
         status_hint="\\n\\nProject status: ${passing}/${total} active features passing${dep_note}. Phase: Worker."
     fi
+elif compgen -G "docs/plans/*-ats.md" > /dev/null 2>&1; then
+    status_hint="\\n\\nATS doc found. Phase: Initializer."
 elif compgen -G "docs/plans/*-design.md" > /dev/null 2>&1; then
-    status_hint="\\n\\nDesign doc found. Phase: Initializer."
+    status_hint="\\n\\nDesign doc found. Phase: ATS (Acceptance Test Strategy)."
 elif compgen -G "docs/plans/*-ucd.md" > /dev/null 2>&1; then
     status_hint="\\n\\nUCD style guide found. Phase: Design."
 elif compgen -G "docs/plans/*-srs.md" > /dev/null 2>&1; then

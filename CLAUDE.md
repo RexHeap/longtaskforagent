@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **Claude Code skill plugin** called `long-task-agent` that enables multi-session execution of complex software projects exceeding a single context window. It implements a six-phase architecture (Requirements → Design → Initializer → Worker → System Testing, with an Increment re-entry point) with persistent state bridging via on-disk artifacts.
+This is a **Claude Code skill plugin** called `long-task-agent` that enables multi-session execution of complex software projects exceeding a single context window. It implements a seven-phase architecture (Requirements → UCD → Design → ATS → Initializer → Worker → System Testing, with an Increment re-entry point) with persistent state bridging via on-disk artifacts.
 
-The skill system follows the **superpowers architectural pattern**: 12 independent skills loaded on-demand via the `Skill` tool, with a bootstrap router (`using-long-task`) injected at session start via hook.
+The skill system follows the **superpowers architectural pattern**: 13 independent skills loaded on-demand via the `Skill` tool, with a bootstrap router (`using-long-task`) injected at session start via hook.
 
 ## Key Commands
 
@@ -72,6 +72,19 @@ python long-task-agent/scripts/apply_tool_bindings.py --regenerate-defaults
 python long-task-agent/scripts/apply_tool_bindings.py tool-bindings.json --dry-run
 ```
 
+### Validate ATS document
+```bash
+python long-task-agent/scripts/validate_ats.py docs/plans/ats.md
+python long-task-agent/scripts/validate_ats.py docs/plans/ats.md --srs docs/plans/srs.md
+```
+
+### Check ATS coverage against features and ST cases
+```bash
+python long-task-agent/scripts/check_ats_coverage.py docs/plans/ats.md --feature-list feature-list.json
+python long-task-agent/scripts/check_ats_coverage.py docs/plans/ats.md --feature-list feature-list.json --feature 3
+python long-task-agent/scripts/check_ats_coverage.py docs/plans/ats.md --feature-list feature-list.json --strict
+```
+
 ### Check system testing readiness
 ```bash
 python long-task-agent/scripts/check_st_readiness.py feature-list.json
@@ -128,13 +141,15 @@ python -m pytest tests/test_validate_bugfix_request.py
 python -m pytest tests/test_validate_increment_request.py
 python -m pytest tests/test_validate_st_cases.py
 python -m pytest tests/test_check_real_tests.py
+python -m pytest tests/test_validate_ats.py
+python -m pytest tests/test_check_ats_coverage.py
 ```
 
 > **Path note**: the `python long-task-agent/skills/long-task-init/scripts/...` paths above are consumer-facing (run from the target project root after plugin install). When developing in this repo, replace `long-task-agent/` with `./` or omit it entirely.
 
 ## Architecture
 
-### 12-Skill System
+### 13-Skill System
 
 The skill system uses on-demand loading via the `Skill` tool. Only the bootstrap router is loaded at session start; other skills are loaded as needed.
 
@@ -148,7 +163,8 @@ The skill system uses on-demand loading via the `Skill` tool. Only the bootstrap
 | `long-task-requirements` | Phase 0a | No SRS, no design doc, no feature-list.json |
 | `long-task-ucd` | Phase 0b | SRS exists, no UCD doc, no design doc, no feature-list.json |
 | `long-task-design` | Phase 0c | SRS + UCD exist (or no UI features), no design doc, no feature-list.json |
-| `long-task-init` | Phase 1 | Design doc exists, no feature-list.json |
+| `long-task-ats` | Phase 0d | Design doc exists, no ATS doc, no feature-list.json |
+| `long-task-init` | Phase 1 | ATS doc exists (or auto-skipped for tiny projects), no feature-list.json |
 | `long-task-work` | Phase 2 | feature-list.json exists, some active features failing |
 | `long-task-st` | Phase 3 | feature-list.json exists, ALL active features passing |
 
@@ -166,8 +182,8 @@ The skill system uses on-demand loading via the `Skill` tool. Only the bootstrap
 
 ```
 using-long-task (router)
-   ├─→ long-task-requirements ──→ long-task-ucd ──→ long-task-design ──→ long-task-init ──→ long-task-work
-   │                              (auto-skip if no UI)                                        │
+   ├─→ long-task-requirements ──→ long-task-ucd ──→ long-task-design ──→ long-task-ats ──→ long-task-init ──→ long-task-work
+   │                              (auto-skip if no UI)                   (auto-skip ≤5 FR)                     │
    ├─→ long-task-hotfix (if bugfix-request.json exists — HIGHEST priority, above increment)
    │      └─→ validate → reproduce → root cause → enqueue as category=bugfix feature
    │          └─→ long-task-work (new failing bugfix feature detected)
@@ -187,7 +203,7 @@ using-long-task (router)
           └─→ long-task-work (if defects found → fix → return to ST)
 ```
 
-### Seven-Phase Workflow
+### Eight-Phase Workflow
 
 0a. **Requirements** (`long-task-requirements`):
    - Structured elicitation aligned with ISO/IEC/IEEE 29148
@@ -214,6 +230,19 @@ using-long-task (router)
    - Get section-by-section design approval
    - Save design doc to `docs/plans/YYYY-MM-DD-<topic>-design.md`
    - **Hard gate**: no coding until design approved
+
+0d. **Acceptance Test Strategy** (`long-task-ats`):
+   - Takes approved SRS + Design + UCD as input (WHAT + HOW + LOOK → TEST STRATEGY)
+   - Maps every FR/NFR/IFR to acceptance scenarios with required test categories and minimum case counts
+   - Category assignment: FUNC+BNDRY (all FRs), +SEC (input/auth), +UI+A11Y (ui:true), +PERF (NFR with metrics)
+   - NFR test method matrix with tools, thresholds, and load parameters
+   - Cross-feature integration scenarios pre-planned for ST phase
+   - Risk-driven test priority ordering
+   - Independent ATS reviewer subagent (7 dimensions: R1-R7) with custom review template support
+   - Auto-skip for tiny projects (≤5 FR): embeds simplified mapping in design doc
+   - Save ATS to `docs/plans/YYYY-MM-DD-<topic>-ats.md`
+   - **Hard gate**: no Init until ATS approved (or auto-skipped)
+   - Downstream: constrains Init verification_steps and feature-st test case derivation
 
 **Hotfix** (`long-task-hotfix`):
    - Triggered by `bugfix-request.json` signal file (HIGHEST routing priority — above increment)
@@ -260,7 +289,10 @@ using-long-task (router)
 - **Config gate before planning**: Never plan or code when required configs are missing; load the project config first (per `long-task-guide.md` Config Management section), prompt user for missing values via text input, save to the appropriate config file
 - **Requirements before UCD/design**: Run requirements elicitation; no UCD/design until SRS approved
 - **UCD before design (UI projects)**: Run UCD style guide generation; no design until UCD approved (auto-skips for non-UI projects)
-- **Design before implementation**: Run design phase; no coding until design approved
+- **Design before ATS**: Run design phase; no ATS until design approved
+- **ATS before implementation**: Run ATS phase; no coding until ATS approved (auto-skips for tiny projects ≤5 FR)
+- **ATS constrains downstream**: Init verification_steps and feature-st test case derivation must satisfy ATS category requirements and minimum case counts
+- **ATS reviewer is mandatory**: Independent subagent reviews ATS before approval; max 2 fix rounds then user escalation
 - **Strict TDD**: Always Red→Green→Refactor→Coverage→Mutation
 - **Coverage gate after TDD Green**: Run coverage tool, verify line >= 90%, branch >= 80%
 - **Mutation gate after TDD Refactor**: Run incremental mutation testing, verify score >= 80%
@@ -288,6 +320,7 @@ using-long-task (router)
 | `docs/plans/*-deferred.md` | Requirements | Deferred requirements backlog — structured tracking for next-round pickup via increment skill |
 | `docs/plans/*-ucd.md` | UCD | Approved UCD style guide — the LOOK (UI projects only; text-to-image prompts, style tokens) |
 | `docs/plans/*-design.md` | Design | Approved design — the HOW |
+| `docs/plans/*-ats.md` | ATS | Approved acceptance test strategy — the TEST PLAN (requirement→scenario mapping with category constraints, reviewed by ats-reviewer subagent) |
 | `bugfix-request.json` | Hotfix | Signal file triggering hotfix session (deleted after processing) |
 | `increment-request.json` | Increment | Signal file triggering incremental requirements (deleted after processing) |
 | `feature-list.json` | Init | Structured task inventory with status; includes `constraints[]`, `assumptions[]`, `waves[]` |
@@ -304,6 +337,8 @@ using-long-task (router)
 | `docs/test-cases/feature-*.md` | Worker | Per-feature ST test case documents (ISO/IEC/IEEE 29119) |
 | `docs/templates/srs-template.md` | — | Default SRS template (user-customizable) |
 | `docs/templates/design-template.md` | — | Default design document template (user-customizable) |
+| `docs/templates/ats-template.md` | — | Default ATS document template (user-customizable) |
+| `docs/templates/ats-review-template.md` | — | Default ATS review spec template (7 dimensions, user-customizable) |
 | `docs/templates/st-case-template.md` | — | Default ST test case template (ISO/IEC/IEEE 29119-3, user-customizable) |
 | `docs/templates/deferred-backlog-template.md` | — | Default deferred requirements backlog template (user-customizable) |
 
@@ -345,6 +380,9 @@ using-long-task (router)
       "check_hint": "How to set it up"
     }
   ],
+  "ats_template_path": "docs/templates/custom-ats-template.md (optional)",
+  "ats_review_template_path": "docs/templates/custom-ats-review-template.md (optional)",
+  "ats_example_path": "docs/templates/ats-example.md (optional)",
   "st_case_template_path": "docs/templates/custom-st-template.md (optional)",
   "st_case_example_path": "docs/templates/st-case-example.md (optional)",
   "features": [...]
@@ -408,6 +446,8 @@ long-task-agent/
 │   │   └── SKILL.md
 │   ├── long-task-increment/SKILL.md    # Phase 1.5: Incremental requirements development
 │   ├── long-task-design/SKILL.md      # Phase 0c: Design (takes SRS + UCD as input)
+│   ├── long-task-ats/                 # Phase 0d: Acceptance Test Strategy (takes SRS + Design + UCD as input)
+│   │   └── SKILL.md
 │   ├── long-task-init/                # Phase 1: Initialization (reads SRS + UCD + design)
 │   │   ├── SKILL.md
 │   │   ├── scripts/
@@ -447,11 +487,14 @@ long-task-agent/
 │       └── prompts/
 │           └── spec-reviewer-prompt.md
 ├── agents/
-│   └── code-reviewer.md              # Code reviewer agent definition
+│   ├── code-reviewer.md              # Code reviewer agent definition
+│   └── ats-reviewer.md               # ATS reviewer agent definition (7 dimensions: R1-R7)
 ├── docs/
 │   └── templates/                     # Document templates (user-customizable)
 │       ├── srs-template.md            # Default SRS template (ISO 29148)
 │       ├── design-template.md         # Default design document template
+│       ├── ats-template.md            # Default ATS document template (user-customizable)
+│       ├── ats-review-template.md     # Default ATS review spec template (user-customizable, 7 dimensions)
 │       ├── st-case-template.md        # Default ST test case template (ISO/IEC/IEEE 29119-3)
 │       └── deferred-backlog-template.md # Default deferred requirements backlog template
 ├── hooks/
@@ -467,6 +510,8 @@ long-task-agent/
 │   ├── check_devtools.py              # Chrome DevTools MCP checking
 │   ├── check_jinja2.py               # Jinja2 availability checking (enterprise MCP)
 │   ├── check_st_readiness.py          # System testing readiness checking
+│   ├── validate_ats.py               # ATS document structure validation
+│   ├── check_ats_coverage.py         # ATS↔feature-list↔ST coverage checking
 │   ├── check_real_tests.py            # Real test verification (existence + mock grep)
 │   ├── validate_bugfix_request.py     # Bugfix request signal validation
 │   ├── validate_increment_request.py  # Increment request signal validation
@@ -491,6 +536,8 @@ long-task-agent/
 - [ReadMe.md](ReadMe.md) - Overview and design rationale
 - [skills/using-long-task/references/architecture.md](skills/using-long-task/references/architecture.md) - Detailed TDD workflow, Chrome DevTools testing patterns
 - [skills/using-long-task/references/roadmap.md](skills/using-long-task/references/roadmap.md) - Future enhancements
+- [skills/long-task-ats/SKILL.md](skills/long-task-ats/SKILL.md) - Acceptance Test Strategy skill
+- [agents/ats-reviewer.md](agents/ats-reviewer.md) - ATS reviewer subagent (7 review dimensions)
 - [skills/long-task-feature-design/SKILL.md](skills/long-task-feature-design/SKILL.md) - Feature detailed design skill
 - [skills/long-task-work/references/systematic-debugging.md](skills/long-task-work/references/systematic-debugging.md) - Systematic debugging
 - [skills/long-task-work/references/subagent-development.md](skills/long-task-work/references/subagent-development.md) - Subagent-driven development
@@ -502,10 +549,10 @@ long-task-agent/
 <!-- long-task-agent -->
 ## Long-Task Agent
 
-This project uses a multi-session agent workflow with 12 skills loaded on-demand.
+This project uses a multi-session agent workflow with 13 skills loaded on-demand.
 The `using-long-task` skill is injected at session start and routes to the correct phase.
-Flow: Requirements (SRS) → UCD (UI projects) → Design → Init → Worker cycles → System Testing.
-Incremental development: place `increment-request.json` → Increment skill updates SRS/Design/UCD in place → new features appended → Worker cycles → ST.
+Flow: Requirements (SRS) → UCD (UI projects) → Design → ATS (Acceptance Test Strategy) → Init → Worker cycles → System Testing.
+Incremental development: place `increment-request.json` → Increment skill updates SRS/Design/ATS/UCD in place → new features appended → Worker cycles → ST.
 
-Key files: `docs/plans/*-srs.md` (SRS), `docs/plans/*-deferred.md` (deferred backlog), `docs/plans/*-ucd.md` (UCD style guide), `docs/plans/*-design.md` (design), `feature-list.json` (task inventory), `task-progress.md` (session log), `RELEASE_NOTES.md` (changelog), `docs/test-cases/feature-*.md` (per-feature ST test cases), `docs/plans/*-st-report.md` (ST report), `increment-request.json` (increment signal).
+Key files: `docs/plans/*-srs.md` (SRS), `docs/plans/*-deferred.md` (deferred backlog), `docs/plans/*-ucd.md` (UCD style guide), `docs/plans/*-design.md` (design), `docs/plans/*-ats.md` (ATS — acceptance test strategy with requirement→scenario mapping, reviewed by ats-reviewer subagent), `feature-list.json` (task inventory), `task-progress.md` (session log), `RELEASE_NOTES.md` (changelog), `docs/test-cases/feature-*.md` (per-feature ST test cases), `docs/plans/*-st-report.md` (ST report), `increment-request.json` (increment signal).
 <!-- /long-task-agent -->
