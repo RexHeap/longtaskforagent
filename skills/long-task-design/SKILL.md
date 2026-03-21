@@ -102,8 +102,11 @@ For non-trivial projects, break the design into sections and get approval per se
    - Must verify compatibility with the project's target runtime version
    - Must note license type for each dependency
    - Must include a dependency graph (Mermaid) for non-trivial dependency chains
-7. **Testing strategy** — test types, coverage targets, tooling
-   - Must cover all SRS acceptance criteria
+7. **Testing strategy** — high-level test approach decisions only
+   - Test philosophy: TDD with quality gates (Red → Green → Refactor → Coverage → Mutation)
+   - Tool selections: test framework, coverage tool, mutation tool (with versions — these are design decisions)
+   - Coverage thresholds: line >= X%, branch >= Y%, mutation >= Z%
+   - **Boundary**: "Detailed requirement-to-test-category mapping, minimum case counts, NFR test methods, and cross-feature integration scenarios are defined in the ATS phase — not here."
 8. **Deployment / infrastructure** (if applicable) — hosting, CI/CD, environments
 9. **Development plan** — milestones, task decomposition, priority ordering
    - Must define milestones with clear exit criteria
