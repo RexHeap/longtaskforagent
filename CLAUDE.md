@@ -45,6 +45,24 @@ python long-task-agent/scripts/check_devtools.py feature-list.json
 python long-task-agent/scripts/check_devtools.py feature-list.json --feature 3
 ```
 
+### Check enterprise MCP provider availability
+```bash
+python long-task-agent/scripts/check_mcp_providers.py tool-bindings.json
+python long-task-agent/scripts/check_mcp_providers.py tool-bindings.json --feature 3
+```
+
+### Render SKILL.md templates with enterprise tool bindings
+```bash
+# Enterprise MCP mode (renders to .long-task-bindings/)
+python long-task-agent/scripts/apply_tool_bindings.py tool-bindings.json
+
+# Default Chrome DevTools mode (renders to .long-task-bindings/)
+python long-task-agent/scripts/apply_tool_bindings.py --defaults
+
+# Dry run (shows what would be written)
+python long-task-agent/scripts/apply_tool_bindings.py tool-bindings.json --dry-run
+```
+
 ### Check system testing readiness
 ```bash
 python long-task-agent/scripts/check_st_readiness.py feature-list.json
@@ -70,6 +88,10 @@ python long-task-agent/scripts/validate_bugfix_request.py bugfix-request.json
 ```bash
 python long-task-agent/scripts/get_tool_commands.py feature-list.json
 python long-task-agent/scripts/get_tool_commands.py feature-list.json --json
+
+# Enterprise MCP mode (outputs MCP tool specs instead of CLI commands)
+python long-task-agent/scripts/get_tool_commands.py feature-list.json --bindings tool-bindings.json
+python long-task-agent/scripts/get_tool_commands.py feature-list.json --bindings tool-bindings.json --json
 ```
 
 ### Check real test compliance

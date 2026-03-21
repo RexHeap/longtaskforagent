@@ -43,6 +43,18 @@ else
     status_hint="\\n\\nNo SRS, design, or feature-list.json found. Phase: Requirements."
 fi
 
+# ── Render SKILL.md.template → .long-task-bindings/ (enterprise MCP support) ──
+# Renders only when tool-bindings.json exists in the project root.
+# Output goes to the project-local .long-task-bindings/ directory — NOT to the
+# plugin directory — so concurrent sessions on different projects don't race.
+# On failure, warn to stderr but never abort the session.
+RENDER_SCRIPT="${PLUGIN_ROOT}/scripts/apply_tool_bindings.py"
+if [ -f "$RENDER_SCRIPT" ] && [ -f "tool-bindings.json" ]; then
+    python3 "$RENDER_SCRIPT" "tool-bindings.json" \
+        --output-dir ".long-task-bindings" --quiet 2>/tmp/lt-render-warn.txt \
+        || echo "[long-task] Warning: tool binding render failed. See /tmp/lt-render-warn.txt" >&2
+fi
+
 # ── Copy init_project.py to project scripts dir ──────────────────────────────
 # Ensures that models following the SKILL.md instruction
 # `python scripts/init_project.py …` can find the script in the target project.

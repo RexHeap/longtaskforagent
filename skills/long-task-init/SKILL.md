@@ -34,6 +34,24 @@ You MUST create a TodoWrite task for each step and complete them in order:
    - Use `--line-cov`, `--branch-cov`, `--mutation-score` to override thresholds (defaults: 90/80/80)
    - Creates: `feature-list.json`, `CLAUDE.md` (appended), `task-progress.md`, `RELEASE_NOTES.md`, `examples/`, `docs/plans/`
    - Auto-copies helper scripts (`validate_features.py`, `check_configs.py`, `check_devtools.py`, `check_real_tests.py`, `validate_guide.py`, `get_tool_commands.py`, `validate_st_cases.py`, `validate_increment_request.py`, `check_st_readiness.py`) into project `scripts/`
+3b. **MCP Provider Setup** (SKIP if no enterprise MCP required):
+   - Ask user: "Does this project use enterprise MCP servers for test/coverage/mutation/UI automation?"
+   - If **YES**:
+     1. Collect per capability: MCP server name, install command, tool names, result field paths
+     2. Create `tool-bindings.json` at project root using `docs/templates/tool-bindings-template.json` as a guide
+     3. Render skill templates:
+        ```bash
+        python scripts/apply_tool_bindings.py tool-bindings.json --output-dir .long-task-bindings
+        ```
+        → Verify: "N templates rendered to .long-task-bindings/"
+     4. Check MCP server availability:
+        ```bash
+        python scripts/check_mcp_providers.py tool-bindings.json
+        ```
+        → Exit 1: present installation instructions to user (the script outputs exact `claude mcp add` commands); wait for user to install and restart session; re-run check to confirm exit 0
+        → Exit 0: continue
+   - If **NO**: skip (skills use plugin defaults — Chrome DevTools MCP for UI, CLI tools for testing)
+
 3. **Verify `tech_stack` and `quality_gates`** in `feature-list.json`:
    - Confirm `language`, `test_framework`, `coverage_tool`, `mutation_tool` match the design doc
    - Adjust `quality_gates` thresholds if needed (defaults: line 90%, branch 80%, mutation 80%)
@@ -52,7 +70,9 @@ You MUST create a TodoWrite task for each step and complete them in order:
      - `skills/long-task-quality/coverage-recipes.md` — coverage/mutation tool setup
      - `skills/using-long-task/references/architecture.md` — TDD workflow details
    - Include ONLY the project's language-specific coverage/mutation commands (get from `python scripts/get_tool_commands.py feature-list.json`)
-   - Include Chrome DevTools MCP testing section ONLY if the project has UI features (`"ui": true`)
+   - Include UI testing section ONLY if the project has UI features (`"ui": true`):
+     - If `tool-bindings.json` exists and `capability_bindings.ui_tools.tool_mapping` is present: use the enterprise tool names from `tool-bindings.json` throughout the guide (not Chrome DevTools MCP names)
+     - Otherwise: use Chrome DevTools MCP tool names (`navigate_page`, `click`, etc.)
    - **Must include all required sections**: Orient, Bootstrap, Config Gate, TDD Red, TDD Green, Coverage Gate, TDD Refactor, Mutation Gate, Verification Enforcement, Code Review, Examples, Persist, Critical Rules
    - **Must include `Environment Commands` section** with:
      - Environment activation command (e.g., `source .venv/bin/activate`, `conda activate myenv`, `nvm use 20`)
