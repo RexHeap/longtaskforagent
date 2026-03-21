@@ -1,28 +1,28 @@
 #!/usr/bin/env python3
 """
-Render SKILL.md.template files into .long-task-bindings/ using tool-bindings.json.
+Render SKILL.md.template files using Jinja2 with tool-bindings.json context.
 
-Templates use two mechanisms:
-1. BLOCK markers — select between CLI and MCP sections:
-      <!--BLOCK:capability:cli-->
-      ...default CLI content...
-      <!--BLOCK:capability:mcp-->
-      ...enterprise MCP content (with __CAP_UI_*__ placeholders)...
-      <!--/BLOCK:capability-->
-
-2. Placeholder substitution — __CAP_UI_NAVIGATE__ etc. replaced with actual
-   tool names from tool-bindings.json (or defaults for Chrome DevTools MCP).
+Templates use Jinja2 syntax:
+- {{ cap_ui_navigate }} etc. for UI tool name substitution
+- {{ cap_ci_coverage }} etc. for CI capability tool names
+- {% if enterprise_mcp %} for enterprise-only sections
+- {% if has_mcp_ci %} for CI MCP sections (hidden when no enterprise CI config)
+- {% if has_mcp_ui %} for enterprise UI tool sections
 
 Rendered .md files are written to the project-local output directory
 (default: .long-task-bindings/), NOT to the plugin directory.  This avoids
 concurrent-session race conditions when multiple projects are open.
+
+Use --regenerate-defaults to update the committed SKILL.md files in the
+plugin's skills/ directory (developer workflow after editing templates).
 
 Usage:
     python scripts/apply_tool_bindings.py tool-bindings.json
     python scripts/apply_tool_bindings.py tool-bindings.json --output-dir .long-task-bindings
     python scripts/apply_tool_bindings.py tool-bindings.json --dry-run
     python scripts/apply_tool_bindings.py --defaults
-    python scripts/apply_tool_bindings.py --quiet   # warnings to stderr, no abort
+    python scripts/apply_tool_bindings.py --regenerate-defaults
+    python scripts/apply_tool_bindings.py --quiet
 
 Exit codes:
     0 — all templates rendered successfully
@@ -31,134 +31,139 @@ Exit codes:
 
 import argparse
 import json
-import os
-import re
 import sys
 from pathlib import Path
 
+try:
+    from jinja2 import Environment, FileSystemLoader, StrictUndefined
+except ImportError:
+    print(
+        "ERROR: jinja2 is required. Install with: pip install jinja2",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
 # ---------------------------------------------------------------------------
-# Placeholder defaults (Chrome DevTools MCP tool names)
+# Default context (Chrome DevTools MCP tool names)
 # ---------------------------------------------------------------------------
 
-UI_DEFAULTS: dict[str, str] = {
-    "__CAP_UI_PLATFORM__":    "Chrome DevTools MCP",
-    "__CAP_UI_NAVIGATE__":    "navigate_page",
-    "__CAP_UI_WAIT__":        "wait_for",
-    "__CAP_UI_SNAPSHOT__":    "take_snapshot",
-    "__CAP_UI_SCREENSHOT__":  "take_screenshot",
-    "__CAP_UI_CLICK__":       "click",
-    "__CAP_UI_FILL__":        "fill",
-    "__CAP_UI_KEY__":         "press_key",
-    "__CAP_UI_EVAL__":        "evaluate_script",
-    "__CAP_UI_CONSOLE__":     "list_console_messages",
-    "__CAP_UI_HOVER__":       "hover",
-    "__CAP_UI_DRAG__":        "drag",
-    "__CAP_UI_NETWORK__":     "list_network_requests",
+DEFAULT_CONTEXT: dict[str, object] = {
+    # Flags
+    "enterprise_mcp": False,
+    "has_mcp_ui": False,
+    "has_mcp_ci": False,
+
+    # UI tools (Chrome DevTools MCP defaults — always provided)
+    "cap_ui_platform":    "Chrome DevTools MCP",
+    "cap_ui_navigate":    "navigate_page",
+    "cap_ui_wait":        "wait_for",
+    "cap_ui_snapshot":    "take_snapshot",
+    "cap_ui_screenshot":  "take_screenshot",
+    "cap_ui_click":       "click",
+    "cap_ui_fill":        "fill",
+    "cap_ui_key":         "press_key",
+    "cap_ui_eval":        "evaluate_script",
+    "cap_ui_console":     "list_console_messages",
+    "cap_ui_hover":       "hover",
+    "cap_ui_drag":        "drag",
+    "cap_ui_network":     "list_network_requests",
+
+    # CI tools (empty — not used without enterprise config)
+    "cap_ci_test":       "",
+    "cap_ci_coverage":   "",
+    "cap_ci_mutation":   "",
 }
 
-# Mapping from tool-bindings.json ui_tools.tool_mapping keys → placeholder names
-_TOOL_MAPPING_KEYS: dict[str, str] = {
-    "navigate_page":         "__CAP_UI_NAVIGATE__",
-    "wait_for":              "__CAP_UI_WAIT__",
-    "take_snapshot":         "__CAP_UI_SNAPSHOT__",
-    "take_screenshot":       "__CAP_UI_SCREENSHOT__",
-    "click":                 "__CAP_UI_CLICK__",
-    "fill":                  "__CAP_UI_FILL__",
-    "press_key":             "__CAP_UI_KEY__",
-    "evaluate_script":       "__CAP_UI_EVAL__",
-    "list_console_messages": "__CAP_UI_CONSOLE__",
-    "hover":                 "__CAP_UI_HOVER__",
-    "drag":                  "__CAP_UI_DRAG__",
-    "list_network_requests": "__CAP_UI_NETWORK__",
+# Mapping: tool-bindings.json ui_tools.tool_mapping canonical names → context var
+_CANONICAL_TO_VAR: dict[str, str] = {
+    "navigate_page":         "cap_ui_navigate",
+    "wait_for":              "cap_ui_wait",
+    "take_snapshot":         "cap_ui_snapshot",
+    "take_screenshot":       "cap_ui_screenshot",
+    "click":                 "cap_ui_click",
+    "fill":                  "cap_ui_fill",
+    "press_key":             "cap_ui_key",
+    "evaluate_script":       "cap_ui_eval",
+    "list_console_messages": "cap_ui_console",
+    "hover":                 "cap_ui_hover",
+    "drag":                  "cap_ui_drag",
+    "list_network_requests": "cap_ui_network",
 }
 
-# Regex for BLOCK markers (non-greedy, non-DOTALL within each block segment)
-_BLOCK_RE = re.compile(
-    r'<!--BLOCK:capability:cli-->(.*?)<!--BLOCK:capability:mcp-->(.*?)<!--/BLOCK:capability-->',
-    re.DOTALL,
-)
-
 
 # ---------------------------------------------------------------------------
-# Core rendering
+# Context building
 # ---------------------------------------------------------------------------
 
-def build_substitution_map(bindings: dict | None) -> dict[str, str]:
+def build_context(bindings: dict | None) -> dict[str, object]:
     """
-    Build placeholder → replacement map from tool-bindings.json or defaults.
+    Build Jinja2 template context from tool-bindings.json or defaults.
 
     Args:
         bindings: Parsed tool-bindings.json dict, or None for defaults.
 
     Returns:
-        Dict mapping __CAP_*__ → actual value.
+        Dict of template variables.
     """
-    subs = dict(UI_DEFAULTS)  # start with defaults
+    ctx: dict[str, object] = dict(DEFAULT_CONTEXT)
 
     if bindings is None:
-        return subs
+        return ctx
 
-    ui_tools = bindings.get("capability_bindings", {}).get("ui_tools", {})
-    tool_mapping = ui_tools.get("tool_mapping", {})
+    caps = bindings.get("capability_bindings", {})
 
-    # Resolve enterprise tool names
-    for canonical_name, placeholder in _TOOL_MAPPING_KEYS.items():
-        if canonical_name in tool_mapping:
-            subs[placeholder] = tool_mapping[canonical_name]
+    # UI tool mapping
+    ui_mapping = caps.get("ui_tools", {}).get("tool_mapping", {})
+    if ui_mapping:
+        ctx["has_mcp_ui"] = True
+        ctx["enterprise_mcp"] = True
+        for canonical_name, value in ui_mapping.items():
+            var_name = _CANONICAL_TO_VAR.get(canonical_name)
+            if var_name:
+                ctx[var_name] = value
 
-    # Platform name: derive from first ui_tools server name
-    server_name = ui_tools.get("tool_mapping", {})
-    mcp_servers = bindings.get("mcp_servers", {})
-    if mcp_servers:
-        first_server = next(iter(mcp_servers))
-        subs["__CAP_UI_PLATFORM__"] = f"{first_server} MCP"
+    # CI capabilities
+    for cap_key, var_name in [("test", "cap_ci_test"),
+                               ("coverage", "cap_ci_coverage"),
+                               ("mutation", "cap_ci_mutation")]:
+        cap = caps.get(cap_key, {})
+        if cap.get("type") == "mcp" and cap.get("tool"):
+            ctx["has_mcp_ci"] = True
+            ctx["enterprise_mcp"] = True
+            ctx[var_name] = cap["tool"]
 
-    return subs
+    # Platform name: derive from first MCP server name
+    if ui_mapping:
+        mcp_servers = bindings.get("mcp_servers", {})
+        if mcp_servers:
+            first_server = next(iter(mcp_servers))
+            ctx["cap_ui_platform"] = f"{first_server} MCP"
+
+    return ctx
 
 
-def render_blocks(content: str, use_mcp_block: bool) -> str:
+# ---------------------------------------------------------------------------
+# Jinja2 rendering
+# ---------------------------------------------------------------------------
+
+def render_template(template_path: Path, context: dict[str, object]) -> str:
     """
-    Process BLOCK markers in content.
-
-    When use_mcp_block=True:  keeps the MCP block, removes CLI block.
-    When use_mcp_block=False: keeps the CLI block, removes MCP block.
-    """
-    def replacer(m: re.Match) -> str:
-        cli_content = m.group(1)
-        mcp_content = m.group(2)
-        if use_mcp_block:
-            return mcp_content
-        else:
-            return cli_content
-
-    return _BLOCK_RE.sub(replacer, content)
-
-
-def apply_substitutions(content: str, subs: dict[str, str]) -> str:
-    """Replace all __CAP_*__ placeholders with their values."""
-    for placeholder, value in subs.items():
-        content = content.replace(placeholder, value)
-    return content
-
-
-def render_template(template_content: str, bindings: dict | None) -> str:
-    """
-    Render a single template file.
+    Render a single Jinja2 template file.
 
     Args:
-        template_content: Raw .md.template file content.
-        bindings: Parsed tool-bindings.json, or None for defaults.
+        template_path: Path to .md.template file.
+        context: Template variables from build_context().
 
     Returns:
         Rendered Markdown content.
     """
-    use_mcp = bindings is not None and bool(
-        bindings.get("capability_bindings", {}).get("ui_tools", {}).get("tool_mapping")
+    env = Environment(
+        loader=FileSystemLoader(str(template_path.parent)),
+        keep_trailing_newline=True,
+        undefined=StrictUndefined,
     )
-    subs = build_substitution_map(bindings)
-    content = render_blocks(template_content, use_mcp_block=use_mcp)
-    content = apply_substitutions(content, subs)
-    return content
+    tmpl = env.get_template(template_path.name)
+    return tmpl.render(**context)
 
 
 # ---------------------------------------------------------------------------
@@ -182,7 +187,6 @@ def find_templates(plugin_root: Path) -> list[tuple[Path, Path]]:
     skills_dir = plugin_root / "skills"
 
     for tmpl in skills_dir.rglob("*.md.template"):
-        # Output path: strip .template suffix
         rel = tmpl.relative_to(plugin_root / "skills")
         output_rel = rel.with_suffix("")  # removes .template → .md
         templates.append((tmpl, Path("skills") / output_rel))
@@ -213,6 +217,7 @@ def render_all(
         print(msg, file=sys.stderr)
         return 1
 
+    context = build_context(bindings)
     errors = 0
     rendered = 0
 
@@ -220,16 +225,7 @@ def render_all(
         out_path = output_dir / rel_output
 
         try:
-            with open(tmpl_path, "r", encoding="utf-8") as f:
-                raw = f.read()
-        except OSError as e:
-            print(f"[apply_tool_bindings] ERROR reading {tmpl_path}: {e}",
-                  file=sys.stderr)
-            errors += 1
-            continue
-
-        try:
-            rendered_content = render_template(raw, bindings)
+            rendered_content = render_template(tmpl_path, context)
         except Exception as e:  # noqa: BLE001
             print(f"[apply_tool_bindings] ERROR rendering {tmpl_path}: {e}",
                   file=sys.stderr)
@@ -262,13 +258,65 @@ def render_all(
     return errors
 
 
+def regenerate_defaults(plugin_root: Path, dry_run: bool = False) -> int:
+    """
+    Render all templates with default context and write back to plugin
+    skills/ directory (updating the committed SKILL.md files).
+
+    Returns:
+        Number of errors encountered.
+    """
+    templates = find_templates(plugin_root)
+    if not templates:
+        msg = f"No .md.template files found under {plugin_root / 'skills'}"
+        print(msg, file=sys.stderr)
+        return 1
+
+    context = build_context(None)  # default context
+    errors = 0
+    rendered = 0
+
+    for tmpl_path, rel_output in templates:
+        # Write to plugin directory (not output_dir)
+        out_path = plugin_root / rel_output
+
+        try:
+            rendered_content = render_template(tmpl_path, context)
+        except Exception as e:  # noqa: BLE001
+            print(f"[regenerate] ERROR rendering {tmpl_path}: {e}",
+                  file=sys.stderr)
+            errors += 1
+            continue
+
+        if dry_run:
+            print(f"[dry-run] Would write: {out_path}")
+            rendered += 1
+            continue
+
+        try:
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(out_path, "w", encoding="utf-8") as f:
+                f.write(rendered_content)
+            rendered += 1
+        except OSError as e:
+            print(f"[regenerate] ERROR writing {out_path}: {e}",
+                  file=sys.stderr)
+            errors += 1
+
+    label = "dry-run" if dry_run else "regenerated"
+    print(f"[apply_tool_bindings] {rendered} defaults {label}"
+          + (f", {errors} errors" if errors else ""))
+
+    return errors
+
+
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Render SKILL.md.template files with tool bindings"
+        description="Render SKILL.md.template files with Jinja2 tool bindings"
     )
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
@@ -278,6 +326,10 @@ def main() -> None:
     group.add_argument(
         "--defaults", action="store_true",
         help="Render with default Chrome DevTools MCP values (no tool-bindings.json needed)"
+    )
+    group.add_argument(
+        "--regenerate-defaults", action="store_true",
+        help="Regenerate committed SKILL.md files from templates using defaults"
     )
     parser.add_argument(
         "--output-dir", default=".long-task-bindings",
@@ -294,12 +346,18 @@ def main() -> None:
     args = parser.parse_args()
 
     plugin_root = find_plugin_root()
+
+    # Regenerate defaults mode
+    if args.regenerate_defaults:
+        errors = regenerate_defaults(plugin_root, dry_run=args.dry_run)
+        sys.exit(1 if errors else 0)
+
     output_dir = Path(args.output_dir).resolve()
 
     # Resolve bindings
     bindings: dict | None = None
     if args.defaults:
-        bindings = None  # use defaults
+        bindings = None
     elif args.bindings:
         try:
             with open(args.bindings, "r", encoding="utf-8") as f:
@@ -311,7 +369,6 @@ def main() -> None:
             print(f"ERROR: Cannot parse {args.bindings}: {e}", file=sys.stderr)
             sys.exit(1)
     else:
-        # No argument and no --defaults → treat as --defaults
         bindings = None
 
     errors = render_all(

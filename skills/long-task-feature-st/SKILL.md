@@ -129,11 +129,11 @@ Read all input artifacts for the target feature:
 - Only example → infer structure from example, use example's style
 - Neither → use the built-in default template (ISO/IEC/IEEE 29119-3)
 
-### 2b. Load Chrome DevTools Execution Protocol (for `"ui": true` features)
+### 2b. Load UI Execution Protocol (for `"ui": true` features)
 
 If the target feature has `"ui": true`, read `prompts/e2e-scenario-prompt.md`. This provides mandatory rules for generating Chrome DevTools MCP-executable E2E test scenarios. Apply these rules during Step 3 for all UI and A11Y category test cases.
 
-**Why**: Without this prompt, UI test cases tend to be simple page-load checks. The prompt ensures each test step maps to a concrete MCP tool call (navigate_page, click, fill, take_snapshot, evaluate_script, list_console_messages) and follows the three-layer detection model. Chrome DevTools MCP is the **primary** testing vehicle for UI features in this skill.
+**Why**: Without this prompt, UI test cases tend to be simple page-load checks. The prompt ensures each test step maps to a concrete MCP tool call (`navigate_page`, `click`, `fill`, `take_snapshot`, `evaluate_script`, `list_console_messages`) and follows the three-layer detection model. Chrome DevTools MCP is the **primary** testing vehicle for UI features in this skill.
 
 ### 3. Derive Test Cases
 
@@ -145,15 +145,15 @@ For each `verification_step` in the feature, generate **one or more** test cases
 |----------|--------|------------------|
 | `functional` | FUNC | Always — happy path + error path for every feature |
 | `boundary` | BNDRY | Always — edge cases, limits, empty/max/zero values |
-| `ui` | UI | Only when `"ui": true` — Chrome DevTools interaction + visual verification |
+| `ui` | UI | Only when `"ui": true` — Chrome DevTools MCP interaction + visual verification |
 | `security` | SEC | When feature handles user input, auth, or external data |
 | `accessibility` | A11Y | Only when `"ui": true` — WCAG 2.1 AA checks |
 | `performance` | PERF | Only when traceable to NFR-xxx with performance metrics |
 
 **UI test case enrichment (mandatory for `"ui": true` features):**
 - Every UI category test case MUST have ≥ 5 steps in the test step table
-- Every step MUST specify the Chrome DevTools MCP tool that executes it (navigate_page, click, fill, take_snapshot, evaluate_script, etc.)
-- Every test case MUST include all three detection layers (Layer 1: evaluate_script, Layer 2: EXPECT/REJECT, Layer 3: list_console_messages)
+- Every step MUST specify the Chrome DevTools MCP tool that executes it (`navigate_page`, `click`, `fill`, `take_snapshot`, `evaluate_script`, etc.)
+- Every test case MUST include all three detection layers (Layer 1: `evaluate_script`, Layer 2: EXPECT/REJECT, Layer 3: `list_console_messages`)
 - Test cases that verify data MUST include backend integration steps (real API data, not mocked)
 - Test cases MUST test at least one negative path via UI (e.g., submit invalid form → verify error message)
 - See `prompts/e2e-scenario-prompt.md` for detailed expansion rules and examples
@@ -190,7 +190,7 @@ For UI features, test cases consolidate previously separate concerns:
 
 **a) Functional UI testing** — navigation, interaction, state changes:
 - Navigation path from `ui_entry` or specific route
-- Interaction sequence: click, fill, press_key steps
+- Interaction sequence: `click`, `fill`, `press_key` steps
 - EXPECT/REJECT clauses (mandatory for every UI test step)
 
 **b) UCD compliance** — style token verification:
@@ -217,7 +217,7 @@ For UI features, test cases consolidate previously separate concerns:
 **f) MCP tool call mapping:**
 - Each test step's "操作" column must be specific enough to map to a single Chrome DevTools MCP tool call
 - BAD: "检查登录页面" — which tool? what to check?
-- GOOD: "navigate_page(url='/login') → wait_for(['Sign In']) → take_snapshot() → 验证 EXPECT: 邮箱输入框, 密码输入框, 登录按钮"
+- GOOD: "`navigate_page(url='/login')` → `wait_for(['Sign In'])` → `take_snapshot()` → 验证 EXPECT: 邮箱输入框, 密码输入框, 登录按钮"
 - The test step table becomes a **script** that can be mechanically translated into Chrome DevTools MCP calls
 - See `prompts/e2e-scenario-prompt.md` for the full MCP tool → test step mapping table
 

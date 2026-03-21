@@ -312,6 +312,7 @@ def main():
     helper_scripts = [
         "validate_features.py",
         "check_devtools.py",
+        "check_jinja2.py",
         "validate_guide.py",
         "get_tool_commands.py",
         "validate_st_cases.py",

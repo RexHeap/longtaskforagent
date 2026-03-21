@@ -16,16 +16,20 @@ NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE
 ```
 
 If you haven't run the verification command in this message, you cannot claim it passes.
+{% if has_mcp_ci %}
 
-## Get Tool Commands
+## MCP Tool Commands
 
-Before running any gate, get the exact commands for this project's tech stack:
+Use the following enterprise MCP tools for quality verification — activate the environment per `long-task-guide.md` first:
 
-```bash
-python scripts/get_tool_commands.py feature-list.json [--bindings tool-bindings.json]
-```
+| Gate | MCP Tool | Key Input |
+|------|----------|-----------|
+| Test | `{{ cap_ci_test }}` | project_path, feature_id |
+| Coverage | `{{ cap_ci_coverage }}` | project_path, line_threshold, branch_threshold |
+| Mutation | `{{ cap_ci_mutation }}` | project_path, scope (changed files), min_score |
 
-This outputs the concrete test, coverage, and mutation commands (or MCP tool specifications when `--bindings` is provided). Use these directly — activate the environment per `long-task-guide.md` first, then run the commands.
+Read thresholds from `feature-list.json` quality_gates.
+{% endif %}
 
 **On tool/environment errors**:
 1. **Read** error output — identify the specific tool or environment issue
@@ -86,8 +90,11 @@ Do NOT skip Gate 0 and proceed to coverage.
 ## Gate 1: Coverage
 
 After TDD Green (all tests pass), run the coverage tool.
-
-1. **Run** the `[coverage]` command from `get_tool_commands.py` output (activate env first)
+{% if has_mcp_ci %}
+1. **Call** the `{{ cap_ci_coverage }}` MCP tool (pass project_path, line/branch thresholds from quality_gates)
+{% else %}
+1. **Run** the coverage tool (activate env per `long-task-guide.md`)
+{% endif %}
 2. **Read** the FULL output (not just summary line)
 3. **Verify**: line coverage >= `[thresholds] line_coverage`, branch coverage >= `[thresholds] branch_coverage`
 4. **If FAIL**: identify uncovered lines/branches → add tests → re-run TDD cycle for those paths
@@ -105,8 +112,11 @@ After TDD Green (all tests pass), run the coverage tool.
 ## Gate 2: Mutation Testing
 
 After TDD Refactor, run mutation testing on changed files.
-
-1. **Run** the `[mutation-incremental]` command from `get_tool_commands.py` output (activate env first) — replace `{changed_files}` / `{changed_classes}` with actual paths
+{% if has_mcp_ci %}
+1. **Call** the `{{ cap_ci_mutation }}` MCP tool (pass project_path, scope=changed files, min_score from quality_gates)
+{% else %}
+1. **Run** incremental mutation testing on changed files (activate env per `long-task-guide.md`) — scope to actually changed source files
+{% endif %}
 2. **Read** the FULL output
 3. **Verify**: mutation score >= `[thresholds] mutation_score`
 4. **If surviving mutants**, analyze each:
@@ -135,10 +145,11 @@ After TDD Refactor, run mutation testing on changed files.
 The final gate before marking a feature as "passing".
 
 ```
-1. IDENTIFY → Get commands via `python scripts/get_tool_commands.py feature-list.json [--bindings tool-bindings.json]`:
-   - [test] command (full suite)
-   - [coverage] command
-   - [mutation-full] command
+{% if has_mcp_ci %}
+1. IDENTIFY → Use MCP tools: `{{ cap_ci_test }}` (full suite), `{{ cap_ci_coverage }}`, `{{ cap_ci_mutation }}` (full scope)
+{% else %}
+1. IDENTIFY → Get test, coverage, and mutation-full commands from `long-task-guide.md`
+{% endif %}
 
 2. RUN → Execute each command (fresh, in this message — not cached from earlier)
 

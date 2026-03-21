@@ -57,7 +57,7 @@ When you need the design section or SRS requirement for a feature, do NOT grep f
 - **Development environment readiness**: Check if environment is set up
   - If `init.sh` / `init.ps1` exists and environment is not ready: run it once
   - Record decision in `task-progress.md` if script was executed
-- **Confirm test commands available**: Run `python scripts/get_tool_commands.py feature-list.json` and verify the test/coverage/mutation commands are correct for the tech stack; use these commands directly throughout the cycle (no wrapper scripts)
+- **Confirm test commands available**: Activate environment per `long-task-guide.md` and verify the test/coverage/mutation commands are correct for the tech stack; use these directly throughout the cycle (no wrapper scripts)
 - **Service readiness**: Services are managed by `long-task-feature-st` (Step 10) — do not start them during Bootstrap. If you need a running service for manual smoke testing during implementation, use `env-guide.md` "Start All Services" with output capture, record PID in `task-progress.md`, and stop it using "Stop All Services" before Step 10 begins
 - Smoke-test previously passing features (activate environment per `long-task-guide.md` → run test command directly)
 
@@ -104,7 +104,7 @@ Context to carry forward:
 - Feature detailed design document from Step 4 (includes Test Inventory table, Interface Contract, Algorithm pseudocode)
 - Full `{srs_section}` from Document Lookup Protocol — TDD Red uses this as primary specification input alongside `verification_steps`
 - Full `{design_section}` from Document Lookup Protocol — architectural constraints and interface contracts
-- **Test commands**: from `python scripts/get_tool_commands.py feature-list.json` — use these directly (no wrapper scripts)
+- **Test commands**: from `long-task-guide.md` — use these directly (no wrapper scripts)
 
 ### 8. Quality Gates
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-quality` and follow it exactly.
@@ -113,7 +113,7 @@ Context to carry forward:
 - Feature ID and verification_steps
 - `quality_gates` thresholds from feature-list.json
 - `tech_stack` tool names for coverage/mutation commands
-- **Test commands**: from `python scripts/get_tool_commands.py feature-list.json` — use directly
+- **Test commands**: from `long-task-guide.md` — use directly
 
 ### 9. ST Acceptance Test Cases
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-feature-st` and follow it exactly.

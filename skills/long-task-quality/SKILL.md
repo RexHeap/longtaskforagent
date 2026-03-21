@@ -17,15 +17,6 @@ NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE
 
 If you haven't run the verification command in this message, you cannot claim it passes.
 
-## Get Tool Commands
-
-Before running any gate, get the exact commands for this project's tech stack:
-
-```bash
-python scripts/get_tool_commands.py feature-list.json
-```
-
-This outputs the concrete test, coverage, and mutation commands. Use these directly — activate the environment per `long-task-guide.md` first, then run the commands.
 
 **On tool/environment errors**:
 1. **Read** error output — identify the specific tool or environment issue
@@ -87,7 +78,8 @@ Do NOT skip Gate 0 and proceed to coverage.
 
 After TDD Green (all tests pass), run the coverage tool.
 
-1. **Run** the `[coverage]` command from `get_tool_commands.py` output (activate env first)
+1. **Run** the coverage tool (activate env per `long-task-guide.md`)
+
 2. **Read** the FULL output (not just summary line)
 3. **Verify**: line coverage >= `[thresholds] line_coverage`, branch coverage >= `[thresholds] branch_coverage`
 4. **If FAIL**: identify uncovered lines/branches → add tests → re-run TDD cycle for those paths
@@ -106,7 +98,8 @@ After TDD Green (all tests pass), run the coverage tool.
 
 After TDD Refactor, run mutation testing on changed files.
 
-1. **Run** the `[mutation-incremental]` command from `get_tool_commands.py` output (activate env first) — replace `{changed_files}` / `{changed_classes}` with actual paths
+1. **Run** incremental mutation testing on changed files (activate env per `long-task-guide.md`) — scope to actually changed source files
+
 2. **Read** the FULL output
 3. **Verify**: mutation score >= `[thresholds] mutation_score`
 4. **If surviving mutants**, analyze each:
@@ -135,10 +128,9 @@ After TDD Refactor, run mutation testing on changed files.
 The final gate before marking a feature as "passing".
 
 ```
-1. IDENTIFY → Get commands via `python scripts/get_tool_commands.py feature-list.json`:
-   - [test] command (full suite)
-   - [coverage] command
-   - [mutation-full] command
+
+1. IDENTIFY → Get test, coverage, and mutation-full commands from `long-task-guide.md`
+
 
 2. RUN → Execute each command (fresh, in this message — not cached from earlier)
 

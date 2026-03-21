@@ -1,16 +1,31 @@
-# __CAP_UI_PLATFORM__ E2E Scenario Derivation Prompt
+# {{ cap_ui_platform }} E2E Scenario Derivation Prompt
 
 ## Role
 
-You are a test engineer generating per-feature ST cases that will be **executed via __CAP_UI_PLATFORM__ tools** during TDD. Each UI test step must map to a concrete MCP tool call. The goal is executable E2E scenarios — not paper checklists.
+You are a test engineer generating per-feature ST cases that will be **executed via {{ cap_ui_platform }} tools** during TDD. Each UI test step must map to a concrete MCP tool call. The goal is executable E2E scenarios — not paper checklists.
 
-> **IMPORTANT**: UI test cases CANNOT be skipped for any reason. __CAP_UI_PLATFORM__ is the **mandatory** execution vehicle for UI features. There is no alternative or workaround for UI verification.
+> **IMPORTANT**: UI test cases CANNOT be skipped for any reason. {{ cap_ui_platform }} is the **mandatory** execution vehicle for UI features. There is no alternative or workaround for UI verification.
 
 ## MCP Tool → Test Step Mapping
 
-Every UI test step must specify which __CAP_UI_PLATFORM__ tool executes it:
+Every UI test step must specify which {{ cap_ui_platform }} tool executes it:
 
-<!--BLOCK:capability:cli-->
+{% if enterprise_mcp %}
+| User Action | MCP Tool | Test Step Format |
+|------------|----------|-----------------|
+| Open page | `{{ cap_ui_navigate }}(url)` | "导航至 {url}" |
+| Wait for load | `{{ cap_ui_wait }}(text)` | "等待 '{text}' 出现" |
+| Check page state | `{{ cap_ui_snapshot }}()` | "获取快照，验证: EXPECT: {criteria}" |
+| Click element | `{{ cap_ui_click }}(uid)` | "点击 {element description} (uid from snapshot)" |
+| Type text | `{{ cap_ui_fill }}(uid, value)` | "在 {field description} 中填入 '{value}'" |
+| Select option | `{{ cap_ui_fill }}(uid, value)` | "在 {select description} 中选择 '{value}'" |
+| Press key | `{{ cap_ui_key }}(key)` | "按 {key} 键" |
+| Check errors | `{{ cap_ui_eval }}(error_detector)` | "执行 Layer 1 错误检测脚本 → count 必须为 0" |
+| Check console | `{{ cap_ui_console }}(["error"])` | "检查控制台错误 → count 必须为 0" |
+| Screenshot | `{{ cap_ui_screenshot }}()` | "截图用于视觉验证" |
+| Hover | `{{ cap_ui_hover }}(uid)` | "悬停于 {element description}" |
+| Drag | `{{ cap_ui_drag }}(from_uid, to_uid)` | "将 {source} 拖动至 {target}" |
+{% else %}
 | User Action | MCP Tool | Test Step Format |
 |------------|----------|-----------------|
 | Open page | `navigate_page(url)` | "导航至 {url}" |
@@ -25,36 +40,21 @@ Every UI test step must specify which __CAP_UI_PLATFORM__ tool executes it:
 | Screenshot | `take_screenshot()` | "截图用于视觉验证" |
 | Hover | `hover(uid)` | "悬停于 {element description}" |
 | Drag | `drag(from_uid, to_uid)` | "将 {source} 拖动至 {target}" |
-<!--BLOCK:capability:mcp-->
-| User Action | MCP Tool | Test Step Format |
-|------------|----------|-----------------|
-| Open page | `__CAP_UI_NAVIGATE__(url)` | "导航至 {url}" |
-| Wait for load | `__CAP_UI_WAIT__(text)` | "等待 '{text}' 出现" |
-| Check page state | `__CAP_UI_SNAPSHOT__()` | "获取快照，验证: EXPECT: {criteria}" |
-| Click element | `__CAP_UI_CLICK__(uid)` | "点击 {element description} (uid from snapshot)" |
-| Type text | `__CAP_UI_FILL__(uid, value)` | "在 {field description} 中填入 '{value}'" |
-| Select option | `__CAP_UI_FILL__(uid, value)` | "在 {select description} 中选择 '{value}'" |
-| Press key | `__CAP_UI_KEY__(key)` | "按 {key} 键" |
-| Check errors | `__CAP_UI_EVAL__(error_detector)` | "执行 Layer 1 错误检测脚本 → count 必须为 0" |
-| Check console | `__CAP_UI_CONSOLE__(["error"])` | "检查控制台错误 → count 必须为 0" |
-| Screenshot | `__CAP_UI_SCREENSHOT__()` | "截图用于视觉验证" |
-| Hover | `__CAP_UI_HOVER__(uid)` | "悬停于 {element description}" |
-| Drag | `__CAP_UI_DRAG__(from_uid, to_uid)` | "将 {source} 拖动至 {target}" |
-<!--/BLOCK:capability-->
+{% endif %}
 
 ## E2E Scenario Structure (mandatory for every UI test case)
 
 Every UI category test case MUST follow this execution flow:
 
 ```
-1. __CAP_UI_NAVIGATE__ → target URL
-2. __CAP_UI_WAIT__ → page loaded signal (key text or element)
-3. __CAP_UI_EVAL__(error_detector) → Layer 1: zero errors after page load
-4. __CAP_UI_SNAPSHOT__ → verify EXPECT criteria, check REJECT criteria
-5. [interaction sequence: __CAP_UI_CLICK__/__CAP_UI_FILL__/__CAP_UI_KEY__ → __CAP_UI_SNAPSHOT__ → verify EXPECT/REJECT]
+1. {{ cap_ui_navigate }} → target URL
+2. {{ cap_ui_wait }} → page loaded signal (key text or element)
+3. {{ cap_ui_eval }}(error_detector) → Layer 1: zero errors after page load
+4. {{ cap_ui_snapshot }} → verify EXPECT criteria, check REJECT criteria
+5. [interaction sequence: {{ cap_ui_click }}/{{ cap_ui_fill }}/{{ cap_ui_key }} → {{ cap_ui_snapshot }} → verify EXPECT/REJECT]
    (repeat for each user action in the scenario)
-6. __CAP_UI_EVAL__(error_detector) → Layer 1 again after all interactions
-7. __CAP_UI_CONSOLE__(["error"]) → Layer 3: zero console errors
+6. {{ cap_ui_eval }}(error_detector) → Layer 1 again after all interactions
+7. {{ cap_ui_console }}(["error"]) → Layer 3: zero console errors
 8. [optional: navigate to result page → verify side effects persisted]
 ```
 
@@ -72,11 +72,11 @@ Must expand to a test case with ≥ 5 steps:
 
 | Step | 操作 | 预期结果 |
 |------|------|---------|
-| 1 | `__CAP_UI_NAVIGATE__(url='/orders')` | 页面开始加载 |
-| 2 | `__CAP_UI_WAIT__(['订单列表'])` → `__CAP_UI_EVAL__(error_detector)` | 页面加载完成，Layer 1 检测: count = 0 |
-| 3 | `__CAP_UI_SNAPSHOT__()` | EXPECT: 订单列表表格，列头 (名称, 日期, 金额, 状态)，至少 1 行数据; REJECT: 空表格体, "暂无订单" 提示, 加载中旋转图标卡死 |
-| 4 | `__CAP_UI_CLICK__(uid)` 点击第一行订单 | EXPECT: 订单详情面板打开，显示完整订单信息 |
-| 5 | `__CAP_UI_EVAL__(error_detector)` → `__CAP_UI_CONSOLE__(["error"])` | Layer 1: count = 0; Layer 3: 控制台无 error |
+| 1 | `{{ cap_ui_navigate }}(url='/orders')` | 页面开始加载 |
+| 2 | `{{ cap_ui_wait }}(['订单列表'])` → `{{ cap_ui_eval }}(error_detector)` | 页面加载完成，Layer 1 检测: count = 0 |
+| 3 | `{{ cap_ui_snapshot }}()` | EXPECT: 订单列表表格，列头 (名称, 日期, 金额, 状态)，至少 1 行数据; REJECT: 空表格体, "暂无订单" 提示, 加载中旋转图标卡死 |
+| 4 | `{{ cap_ui_click }}(uid)` 点击第一行订单 | EXPECT: 订单详情面板打开，显示完整订单信息 |
+| 5 | `{{ cap_ui_eval }}(error_detector)` → `{{ cap_ui_console }}(["error"])` | Layer 1: count = 0; Layer 3: 控制台无 error |
 
 ### Rule 2: Backend Integration Steps (非谈判性要求)
 
@@ -94,11 +94,11 @@ For UI features that depend on backend API features:
 Example multi-step:
 ```
 | Step | 操作 | 预期结果 |
-| 1 | __CAP_UI_NAVIGATE__('/users') → __CAP_UI_WAIT__(['用户列表']) | 页面加载完成 |
-| 2 | __CAP_UI_EVAL__(error_detector) | Layer 1: count = 0 |
-| 3 | __CAP_UI_SNAPSHOT__() | EXPECT: 用户表格由 GET /api/users 填充，显示至少 1 个用户; REJECT: 硬编码假数据 |
-| 4 | __CAP_UI_CLICK__(uid) 点击编辑按钮 → __CAP_UI_FILL__(uid, '新名称') → __CAP_UI_CLICK__(uid) 保存 | EXPECT: PUT /api/users/{id} 成功，弹出保存成功提示 |
-| 5 | __CAP_UI_NAVIGATE__(type='reload') → __CAP_UI_WAIT__(['用户列表']) | EXPECT: 刷新后显示更新后的名称; Layer 3: 控制台无 error |
+| 1 | {{ cap_ui_navigate }}('/users') → {{ cap_ui_wait }}(['用户列表']) | 页面加载完成 |
+| 2 | {{ cap_ui_eval }}(error_detector) | Layer 1: count = 0 |
+| 3 | {{ cap_ui_snapshot }}() | EXPECT: 用户表格由 GET /api/users 填充，显示至少 1 个用户; REJECT: 硬编码假数据 |
+| 4 | {{ cap_ui_click }}(uid) 点击编辑按钮 → {{ cap_ui_fill }}(uid, '新名称') → {{ cap_ui_click }}(uid) 保存 | EXPECT: PUT /api/users/{id} 成功，弹出保存成功提示 |
+| 5 | {{ cap_ui_navigate }}(type='reload') → {{ cap_ui_wait }}(['用户列表']) | EXPECT: 刷新后显示更新后的名称; Layer 3: 控制台无 error |
 ```
 
 ### Rule 3: Cross-Page Workflow
@@ -119,9 +119,9 @@ Every UI test case MUST include ALL three detection layers:
 
 | Layer | Tool | When | Hard Gate |
 |-------|------|------|-----------|
-| Layer 1 | `__CAP_UI_EVAL__(error_detector)` | After page load AND after each significant interaction | count > 0 = FAIL |
-| Layer 2 | EXPECT/REJECT in `__CAP_UI_SNAPSHOT__()` verification | Every snapshot step | Missing EXPECT = FAIL |
-| Layer 3 | `__CAP_UI_CONSOLE__(["error"])` | At end of test case (and optionally after interactions) | count > 0 = FAIL |
+| Layer 1 | `{{ cap_ui_eval }}(error_detector)` | After page load AND after each significant interaction | count > 0 = FAIL |
+| Layer 2 | EXPECT/REJECT in `{{ cap_ui_snapshot }}()` verification | Every snapshot step | Missing EXPECT = FAIL |
+| Layer 3 | `{{ cap_ui_console }}(["error"])` | At end of test case (and optionally after interactions) | count > 0 = FAIL |
 
 **A UI test case missing ANY layer is INCOMPLETE and must be rejected.**
 
@@ -137,7 +137,7 @@ If the feature creates, updates, or deletes data:
 ### Rule 6: UCD Compliance in E2E Context
 
 For UI test cases, integrate UCD compliance checks **within** the E2E flow rather than as separate static checks:
-- After each `__CAP_UI_SNAPSHOT__()`, verify that visible elements match UCD style tokens (colors, typography, spacing)
+- After each `{{ cap_ui_snapshot }}()`, verify that visible elements match UCD style tokens (colors, typography, spacing)
 - Reference specific UCD token names in EXPECT clauses: `EXPECT: 主按钮使用 primary-600 色值, 字体为 heading-md`
 - This ensures UCD compliance is verified under real rendering conditions, not just CSS inspection
 
@@ -147,11 +147,11 @@ Before finalizing each UI test case, verify:
 
 - [ ] ≥ 5 steps in the test step table
 - [ ] Every step specifies which MCP tool executes it
-- [ ] Layer 1 (`__CAP_UI_EVAL__`) appears at least twice (page load + post-interaction)
+- [ ] Layer 1 (`{{ cap_ui_eval }}`) appears at least twice (page load + post-interaction)
 - [ ] Layer 2 (EXPECT + REJECT) appears in every snapshot verification step
-- [ ] Layer 3 (`__CAP_UI_CONSOLE__`) appears at end of test case
+- [ ] Layer 3 (`{{ cap_ui_console }}`) appears at end of test case
 - [ ] At least one step verifies real backend data (not mocked)
 - [ ] At least one negative/error path test case exists for this feature
 - [ ] Preconditions are concrete (specific data, auth state) — not just "系统正常运行"
 - [ ] Expected results are specific and assertable — no "显示正确" or "工作正常"
-- [ ] **UI test case CANNOT be skipped** — __CAP_UI_PLATFORM__ is mandatory for UI verification
+- [ ] **UI test case CANNOT be skipped** — {{ cap_ui_platform }} is mandatory for UI verification

@@ -45,19 +45,28 @@ python long-task-agent/scripts/check_devtools.py feature-list.json
 python long-task-agent/scripts/check_devtools.py feature-list.json --feature 3
 ```
 
+### Check Jinja2 availability (for enterprise MCP template rendering)
+```bash
+python long-task-agent/scripts/check_jinja2.py
+python long-task-agent/scripts/check_jinja2.py --quiet
+```
+
 ### Check enterprise MCP provider availability
 ```bash
 python long-task-agent/scripts/check_mcp_providers.py tool-bindings.json
 python long-task-agent/scripts/check_mcp_providers.py tool-bindings.json --feature 3
 ```
 
-### Render SKILL.md templates with enterprise tool bindings
+### Render SKILL.md templates (Jinja2) with enterprise tool bindings
 ```bash
 # Enterprise MCP mode (renders to .long-task-bindings/)
 python long-task-agent/scripts/apply_tool_bindings.py tool-bindings.json
 
 # Default Chrome DevTools mode (renders to .long-task-bindings/)
 python long-task-agent/scripts/apply_tool_bindings.py --defaults
+
+# Regenerate committed SKILL.md defaults from templates (developer workflow)
+python long-task-agent/scripts/apply_tool_bindings.py --regenerate-defaults
 
 # Dry run (shows what would be written)
 python long-task-agent/scripts/apply_tool_bindings.py tool-bindings.json --dry-run
@@ -112,6 +121,7 @@ python -m pytest tests/test_init_project.py
 python -m pytest tests/test_check_configs.py
 python -m pytest tests/test_validate_guide.py
 python -m pytest tests/test_check_devtools.py
+python -m pytest tests/test_check_jinja2.py
 python -m pytest tests/test_check_st_readiness.py
 python -m pytest tests/test_get_tool_commands.py
 python -m pytest tests/test_validate_bugfix_request.py
@@ -455,6 +465,7 @@ long-task-agent/
 │   ├── validate_guide.py              # Guide structural validation
 │   ├── check_configs.py               # Required config checking
 │   ├── check_devtools.py              # Chrome DevTools MCP checking
+│   ├── check_jinja2.py               # Jinja2 availability checking (enterprise MCP)
 │   ├── check_st_readiness.py          # System testing readiness checking
 │   ├── check_real_tests.py            # Real test verification (existence + mock grep)
 │   ├── validate_bugfix_request.py     # Bugfix request signal validation
@@ -467,6 +478,7 @@ long-task-agent/
 │   ├── test_check_configs.py
 │   ├── test_validate_guide.py
 │   ├── test_check_devtools.py
+│   ├── test_check_jinja2.py
 │   ├── test_check_st_readiness.py
 │   ├── test_check_real_tests.py
 │   ├── test_validate_bugfix_request.py

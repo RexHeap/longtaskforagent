@@ -10,6 +10,7 @@ You are a test engineer generating per-feature ST cases that will be **executed 
 
 Every UI test step must specify which Chrome DevTools MCP tool executes it:
 
+
 | User Action | MCP Tool | Test Step Format |
 |------------|----------|-----------------|
 | Open page | `navigate_page(url)` | "导航至 {url}" |
@@ -24,6 +25,7 @@ Every UI test step must specify which Chrome DevTools MCP tool executes it:
 | Screenshot | `take_screenshot()` | "截图用于视觉验证" |
 | Hover | `hover(uid)` | "悬停于 {element description}" |
 | Drag | `drag(from_uid, to_uid)` | "将 {source} 拖动至 {target}" |
+
 
 ## E2E Scenario Structure (mandatory for every UI test case)
 
@@ -130,9 +132,9 @@ Before finalizing each UI test case, verify:
 
 - [ ] ≥ 5 steps in the test step table
 - [ ] Every step specifies which MCP tool executes it
-- [ ] Layer 1 (evaluate_script) appears at least twice (page load + post-interaction)
+- [ ] Layer 1 (`evaluate_script`) appears at least twice (page load + post-interaction)
 - [ ] Layer 2 (EXPECT + REJECT) appears in every snapshot verification step
-- [ ] Layer 3 (list_console_messages) appears at end of test case
+- [ ] Layer 3 (`list_console_messages`) appears at end of test case
 - [ ] At least one step verifies real backend data (not mocked)
 - [ ] At least one negative/error path test case exists for this feature
 - [ ] Preconditions are concrete (specific data, auth state) — not just "系统正常运行"

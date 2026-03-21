@@ -1,14 +1,35 @@
 #!/bin/bash
 ###############################################################################
-# update_claude_mcp.sh
-# 在 ~/.claude.json 中 upsert mcpServers.chrome-devtools
-# 仅用 Git Bash 内置工具，无第三方依赖
+# chrome-mcp-setup — upsert top-level mcpServers.chrome-devtools in ~/.claude.json
+# All diagnostic output goes to stderr; stdout is kept empty (hook-safe).
+# Uses only bash builtins + awk/grep (no python dependency).
 ###############################################################################
+
+set -euo pipefail
 
 CLAUDE_CONFIG="$HOME/.claude.json"
 
-# ── 完整新文件模板 ──
-FULL_TEMPLATE='{
+# ── Desired chrome-devtools block (2-space top-level indent) ──
+CD_BLOCK='    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest",
+        "--isolated=true",
+        "--no-usage-statistics"
+      ]
+    }'
+
+# ── Helper: check if a line is a top-level key (2-space indent) ──
+# In pretty-printed JSON, top-level keys sit at exactly 2 spaces.
+# Nested project mcpServers sit at 6+ spaces.
+
+# ═══════════════════════════════════════════════════════════════════
+# Case 1: file missing or empty → create from scratch
+# ═══════════════════════════════════════════════════════════════════
+if [ ! -f "$CLAUDE_CONFIG" ] || [ ! -s "$CLAUDE_CONFIG" ]; then
+    cat > "$CLAUDE_CONFIG" << 'TEMPLATE'
+{
   "mcpServers": {
     "chrome-devtools": {
       "command": "npx",
@@ -20,109 +41,78 @@ FULL_TEMPLATE='{
       ]
     }
   }
-}'
-
-# chrome-devtools 片段（4空格缩进，用于插入 mcpServers 内部）
-CD_BLOCK='    "chrome-devtools": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "chrome-devtools-mcp@latest",
-        "--isolated=true",
-        "--no-usage-statistics"
-      ]
-    }'
-
-# ═══════════════════════════════════════════════════════════════════
-# Case 1：文件不存在或为空 → 直接创建
-# ═══════════════════════════════════════════════════════════════════
-if [ ! -f "$CLAUDE_CONFIG" ] || [ ! -s "$CLAUDE_CONFIG" ]; then
-    echo "$FULL_TEMPLATE" > "$CLAUDE_CONFIG"
-    echo "[OK] 文件不存在/为空，已创建 $CLAUDE_CONFIG"
-    cat "$CLAUDE_CONFIG"
+}
+TEMPLATE
+    echo "[chrome-mcp-setup] created $CLAUDE_CONFIG" >&2
     exit 0
 fi
 
-# ═══════════════════════════════════════════════════════════════════
-# 读取原文件
-# ═══════════════════════════════════════════════════════════════════
 ORIGINAL=$(cat "$CLAUDE_CONFIG")
 
-has_mcp=0
-has_chrome=0
-echo "$ORIGINAL" | grep -q '"mcpServers"' && has_mcp=1
-echo "$ORIGINAL" | grep -q '"chrome-devtools"' && has_chrome=1
+# Only match TOP-LEVEL mcpServers (2-space indent, not deeper)
+has_top_mcp=0
+echo "$ORIGINAL" | grep -q '^  "mcpServers"' && has_top_mcp=1
+
+# Check for chrome-devtools INSIDE top-level mcpServers only.
+# Strategy: extract the top-level mcpServers block and grep within it.
+has_top_chrome=0
+if [ "$has_top_mcp" -eq 1 ]; then
+    # Check for chrome-devtools at 4-space indent (inside top-level mcpServers)
+    echo "$ORIGINAL" | grep -q '^    "chrome-devtools"' && has_top_chrome=1
+fi
 
 # ═══════════════════════════════════════════════════════════════════
-# Case 2：没有 mcpServers → 在最外层 } 前插入整段
+# Case 2: no top-level mcpServers → insert before closing }
 # ═══════════════════════════════════════════════════════════════════
-if [ "$has_mcp" -eq 0 ]; then
-    # 找最后一个 } 的行号
-    total=$(echo "$ORIGINAL" | wc -l)
-    last_brace=0
-    n=0
-    while IFS= read -r line; do
-        n=$((n + 1))
-        case "$line" in *"}"*) last_brace=$n ;; esac
-    done <<< "$ORIGINAL"
-
-    # 在最后 } 前一行末尾确保有逗号，然后插入
-    n=0
-    result=""
-    prev_content_line=0
-    while IFS= read -r line; do
-        n=$((n + 1))
-        if [ "$n" -eq "$last_brace" ]; then
-            # 回头给前一个非空内容行加逗号
-            # 这里简单处理：在 } 前插入新段
-            result="${result}  \"mcpServers\": {
-${CD_BLOCK}
-  }
-"
-        fi
-        result="${result}${line}
-"
-    done <<< "$ORIGINAL"
-
-    # 需要在 mcpServers 前面的行末加逗号（如果还没有）
-    # 用 awk 精确处理：找到 "mcpServers" 上方最近的非空行，确保逗号
-    result=$(echo "$result" | awk '
-        /"mcpServers"/ && !fixed {
-            # 回溯加逗号
-            for (j = NR-1; j >= 1; j--) {
-                s = saved[j]
-                gsub(/^[[:space:]]+|[[:space:]]+$/, "", s)
-                if (s != "") {
-                    last_ch = substr(s, length(s), 1)
-                    if (last_ch != "," && last_ch != "{" && last_ch != "[") {
-                        saved[j] = saved[j] ","
-                    }
-                    break
-                }
-            }
-            fixed = 1
+if [ "$has_top_mcp" -eq 0 ]; then
+    # Insert mcpServers block before the very last line (which is the closing })
+    # The last line of a pretty-printed JSON is always "}" at column 0.
+    result=$(echo "$ORIGINAL" | awk -v block="$CD_BLOCK" '
+    {
+        saved[NR] = $0
+    }
+    END {
+        # Find last line with just "}"
+        last = NR
+        for (i = NR; i >= 1; i--) {
+            s = saved[i]
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", s)
+            if (s == "}") { last = i; break }
         }
-        { saved[NR] = $0 }
-        END { for (i = 1; i <= NR; i++) print saved[i] }
-    ')
+        # Ensure comma on previous non-empty line
+        for (j = last - 1; j >= 1; j--) {
+            s = saved[j]
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", s)
+            if (s != "") {
+                ch = substr(s, length(s), 1)
+                if (ch != "," && ch != "{" && ch != "[") {
+                    saved[j] = saved[j] ","
+                }
+                break
+            }
+        }
+        for (i = 1; i < last; i++) print saved[i]
+        printf "  \"mcpServers\": {\n"
+        printf "%s\n", block
+        printf "  }\n"
+        print saved[last]
+    }')
 
     echo "$result" > "$CLAUDE_CONFIG"
-    echo "[OK] 已在 $CLAUDE_CONFIG 中添加 mcpServers.chrome-devtools"
-    cat "$CLAUDE_CONFIG"
+    echo "[chrome-mcp-setup] added top-level mcpServers.chrome-devtools" >&2
     exit 0
 fi
 
 # ═══════════════════════════════════════════════════════════════════
-# Case 3：有 mcpServers 但没有 chrome-devtools → 在 mcpServers { 后插入
+# Case 3: top-level mcpServers exists but no chrome-devtools → insert
 # ═══════════════════════════════════════════════════════════════════
-if [ "$has_mcp" -eq 1 ] && [ "$has_chrome" -eq 0 ]; then
+if [ "$has_top_mcp" -eq 1 ] && [ "$has_top_chrome" -eq 0 ]; then
     result=$(echo "$ORIGINAL" | awk -v block="$CD_BLOCK" '
     {
         print $0
-        if (!done && match($0, /"mcpServers"\s*:/)) {
-            # mcpServers 行自身含 { 则立即插入
+        # Match ONLY top-level mcpServers (2-space indent)
+        if (!done && /^  "mcpServers"/) {
             if (index($0, "{") > 0) {
-                # 看下一行（通过 getline 预读）
                 if ((getline nextline) > 0) {
                     tmp = nextline; gsub(/^[[:space:]]+/, "", tmp)
                     if (substr(tmp, 1, 1) == "}") {
@@ -137,8 +127,8 @@ if [ "$has_mcp" -eq 1 ] && [ "$has_chrome" -eq 0 ]; then
                 done = 1
             }
         }
-        # mcpServers 的 { 在下一行的情况
-        if (!done && found_mcp && index($0, "{") > 0) {
+        # Handle case where { is on next line
+        if (!done && found_top_mcp && index($0, "{") > 0) {
             if ((getline nextline) > 0) {
                 tmp = nextline; gsub(/^[[:space:]]+/, "", tmp)
                 if (substr(tmp, 1, 1) == "}") {
@@ -152,35 +142,49 @@ if [ "$has_mcp" -eq 1 ] && [ "$has_chrome" -eq 0 ]; then
             }
             done = 1
         }
-        found_mcp = match($0, /"mcpServers"\s*:/)
+        found_top_mcp = /^  "mcpServers"/
     }')
 
     echo "$result" > "$CLAUDE_CONFIG"
-    echo "[OK] 已在 mcpServers 中添加 chrome-devtools"
-    cat "$CLAUDE_CONFIG"
+    echo "[chrome-mcp-setup] inserted chrome-devtools into top-level mcpServers" >&2
     exit 0
 fi
 
 # ═══════════════════════════════════════════════════════════════════
-# Case 4：chrome-devtools 已存在 → 删除旧的，原位插入新的
+# Case 4: chrome-devtools exists in top-level mcpServers → replace
 # ═══════════════════════════════════════════════════════════════════
 result=$(echo "$ORIGINAL" | awk -v block="$CD_BLOCK" '
-BEGIN { skip = 0; depth = 0; inserted = 0 }
+BEGIN { skip = 0; depth = 0; inserted = 0; in_top_mcp = 0; top_mcp_depth = 0 }
 {
-    if (!skip && match($0, /"chrome-devtools"\s*:/)) {
+    # Track if we are inside top-level mcpServers (2-space indent)
+    if (/^  "mcpServers"/) {
+        in_top_mcp = 1
+        top_mcp_depth = 0
+        for (i = 1; i <= length($0); i++) {
+            c = substr($0, i, 1)
+            if (c == "{") top_mcp_depth++
+            if (c == "}") top_mcp_depth--
+        }
+    } else if (in_top_mcp) {
+        for (i = 1; i <= length($0); i++) {
+            c = substr($0, i, 1)
+            if (c == "{") top_mcp_depth++
+            if (c == "}") top_mcp_depth--
+        }
+        if (top_mcp_depth <= 0) in_top_mcp = 0
+    }
+
+    # Only replace chrome-devtools if inside top-level mcpServers
+    if (!skip && in_top_mcp && /^    "chrome-devtools"/) {
         skip = 1
         depth = 0
-        trailing_comma = 0
-        # 计算本行 { } 深度
         for (i = 1; i <= length($0); i++) {
             c = substr($0, i, 1)
             if (c == "{") depth++
             if (c == "}") depth--
         }
         if (depth <= 0) {
-            # 单行情况
             skip = 0
-            # 检查末尾逗号
             s = $0; gsub(/[[:space:]]+$/, "", s)
             comma = (substr(s, length(s), 1) == ",") ? "," : ""
             if (!inserted) { printf "%s%s\n", block, comma; inserted = 1 }
@@ -195,7 +199,6 @@ BEGIN { skip = 0; depth = 0; inserted = 0 }
         }
         if (depth <= 0) {
             skip = 0
-            # 检查末尾逗号
             s = $0; gsub(/[[:space:]]+$/, "", s)
             comma = (substr(s, length(s), 1) == ",") ? "," : ""
             if (!inserted) { printf "%s%s\n", block, comma; inserted = 1 }
@@ -206,5 +209,5 @@ BEGIN { skip = 0; depth = 0; inserted = 0 }
 }')
 
 echo "$result" > "$CLAUDE_CONFIG"
-echo "[OK] 已替换 chrome-devtools 配置"
-cat "$CLAUDE_CONFIG"
+echo "[chrome-mcp-setup] replaced chrome-devtools in top-level mcpServers" >&2
+exit 0

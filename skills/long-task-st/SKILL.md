@@ -92,7 +92,9 @@ Every FR-xxx, NFR-xxx, IFR-xxx must appear in the RTM. Requirements without a te
 
 ### 3. Regression Testing
 
-1. Run full project test suite: `python scripts/get_tool_commands.py feature-list.json` to get the command
+
+1. Run full project test suite using commands from `long-task-guide.md`
+
 2. Verify ALL tests pass — zero failures, zero errors
 3. Verify line and branch coverage thresholds met project-wide
 4. Check for new warnings, deprecation notices, dependency conflicts
