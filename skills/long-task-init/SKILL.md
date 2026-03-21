@@ -35,7 +35,7 @@ You MUST create a TodoWrite task for each step and complete them in order:
    - `<language>` — one of `python|java|typescript|c|cpp` from the design doc tech stack
    - Use `--line-cov`, `--branch-cov`, `--mutation-score` to override thresholds (defaults: 90/80/80)
    - Creates: `feature-list.json`, `CLAUDE.md` (appended), `task-progress.md`, `RELEASE_NOTES.md`, `examples/`, `docs/plans/`
-   - Auto-copies helper scripts (`validate_features.py`, `check_configs.py`, `check_devtools.py`, `check_jinja2.py`, `check_real_tests.py`, `validate_guide.py`, `get_tool_commands.py`, `validate_st_cases.py`, `validate_increment_request.py`, `check_st_readiness.py`) into project `scripts/`
+   - Auto-copies helper scripts (`validate_features.py`, `check_configs.py`, `check_devtools.py`, `check_jinja2.py`, `check_real_tests.py`, `validate_guide.py`, `get_tool_commands.py`, `validate_st_cases.py`, `validate_increment_request.py`, `validate_bugfix_request.py`, `check_st_readiness.py`, `check_ats_coverage.py`, `check_mcp_providers.py`) into project `scripts/`
 3b. **MCP Provider Setup** (SKIP if no enterprise MCP required):
    - Ask user: "Does this project use enterprise MCP servers for test/coverage/mutation/UI automation?"
    - If **YES**:
