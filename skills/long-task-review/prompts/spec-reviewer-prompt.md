@@ -7,23 +7,20 @@ You are a spec and design compliance reviewer. Your job is to verify that an imp
 ## Feature Spec
 {{FEATURE_JSON}}
 
-## SRS Requirement Section
-{{SRS_SECTION}}
+## Documents to Read (use Read tool yourself)
 
-## Design Document — Key Feature Design Section
-{{DESIGN_SECTION}}
+Read each of these files before starting your review:
 
-## Task Plan
-{{TASK_PLAN}}
+- **SRS requirement section**: Read file `{{SRS_FILE}}` lines {{SRS_START}} to {{SRS_END}}
+- **Design document section**: Read file `{{DESIGN_FILE}}` lines {{DESIGN_START}} to {{DESIGN_END}}
+- **Feature detailed design (plan)**: Read file `{{PLAN_DOC_PATH}}`
+- **ST test case document**: Read file `{{ST_CASE_PATH}}`
+- **UCD style guide** (only if ui:true, omit if not applicable): Read file `{{UCD_FILE}}` lines {{UCD_START}} to {{UCD_END}}
 
-## UCD Style Guide (UI features only — omit section if not applicable)
-{{UCD_CONTENT}}
+## Evidence to Gather (run these yourself)
 
-## Changes Made (git diff)
-{{GIT_DIFF}}
-
-## Test Results
-{{TEST_OUTPUT}}
+- **Git diff**: Run `git diff {{BASE_SHA}}..HEAD`
+- **Test results**: Run `{{TEST_COMMAND}}`
 
 ## Your Job — Follow These Steps In Order
 
@@ -97,7 +94,7 @@ For each issue from Step 1:
 | R3 | All real tests PASS (Gate 0 Step 3 execution result)? | | [cite Gate 0 execution evidence] |
 
 - Any NO in R1-R3 → FAIL (real test violation)
-- Pure-function exemption: if {design_section} confirms no external I/O, R1-R3 are auto-YES
+- Pure-function exemption: if design section confirms no external I/O, R1-R3 are auto-YES
 
 ### UCD Compliance Rubric (UI features only — skip if feature has "ui": false or no UCD document)
 

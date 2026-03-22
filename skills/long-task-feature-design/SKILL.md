@@ -3,233 +3,102 @@ name: long-task-feature-design
 description: "Use before TDD in a long-task project — produce feature-level detailed design with interface contracts, algorithm pseudocode, diagrams, and test inventory"
 ---
 
-# Feature-Level Detailed Design
+# Feature-Level Detailed Design — SubAgent Dispatch
 
-Produce a detailed design for a single feature, bridging system-level design (§4.N) and TDD implementation.
+Delegate feature detailed design production to a SubAgent with fresh context. The main Agent only dispatches and parses the structured result — it never reads design/SRS/UCD document sections or writes the design document directly.
 
-System design answers "WHAT classes exist and HOW they interact."
-This skill answers "WHAT each method does internally, WHAT can go wrong, and HOW to test it."
-
-**Announce at start:** "I'm using the long-task-feature-design skill to produce a detailed design for this feature."
+**Announce at start:** "I'm using the long-task-feature-design skill to produce a detailed design via SubAgent."
 
 ## When to Run
 
-- Worker Step 4, before TDD (Step 5-7)
-- For every feature
+- Worker Step 4, before TDD (Steps 5-7)
+- For every feature (condensed version for `category: "bugfix"` features)
 - Invoked by `long-task-work` as a sub-skill (not directly by router)
 
-## Inputs
+> **For `category: "bugfix"` features**: SubAgent should focus on: (1) root cause documentation (from `root_cause` field), (2) targeted fix approach, (3) regression test inventory from `verification_steps`. Skip full interface contracts, data flow diagrams, and state diagrams unless the bug directly touches those surfaces.
 
-Read ALL of these BEFORE writing any design content:
+## Step 1: Gather Path Parameters
 
-1. **Feature object** from feature-list.json — ID, title, description, verification_steps, ui flag, dependencies, priority
-2. **System design section** — full §4.N via Document Lookup Protocol (read the entire subsection, NOT grep)
-3. **SRS requirement** — full FR-xxx via Document Lookup Protocol
-4. **UCD sections** (if `"ui": true`) — component/page prompts from `docs/plans/*-ucd.md`
-5. **Constraints & assumptions** from feature-list.json root
-6. **Related NFRs** — NFR-xxx from SRS traceable to this feature
-7. **Existing code** — if dependency features are passing, read their public interfaces (imports, class/function signatures)
+Collect these from the current session state. Do NOT read document contents yourself:
 
-## Template
+- `feature_json` — current feature object from feature-list.json (compact JSON)
+- `quality_gates_json` — quality_gates from feature-list.json (compact JSON)
+- `tech_stack_json` — tech_stack from feature-list.json (compact JSON)
+- `design_doc_path` — path to design doc (`docs/plans/*-design.md`)
+- `design_start` / `design_end` — line range of the §4.N subsection (from Orient Document Lookup)
+- `srs_doc_path` — path to SRS doc (`docs/plans/*-srs.md`)
+- `srs_start` / `srs_end` — line range of the FR-xxx subsection (from Orient Document Lookup)
+- `ucd_doc_path` — path to UCD doc (only if `"ui": true`; omit otherwise)
+- `ucd_start` / `ucd_end` — line range of relevant UCD sections (if applicable)
+- `constraints` — constraints[] from feature-list.json root
+- `assumptions` — assumptions[] from feature-list.json root
+- `output_path` — target file: `docs/plans/YYYY-MM-DD-<feature-name>.md`
+- `working_dir` — project working directory
 
-Use `references/feature-design-template.md` as the structural template. Copy the template, fill each section for the target feature.
+## Step 2: Construct SubAgent Prompt
 
-## Checklist
-
-You MUST create a TodoWrite task for each step and complete them in order:
-
-### 1. Load Context
-
-Read all input artifacts listed in Inputs above.
-
-### 2. Component Data-Flow Diagram
-
-Show THIS feature's internal components and how data flows between them at runtime. This is NOT a copy of the system design class diagram — it is a **runtime data-flow view** showing what data enters, how it transforms, and what exits.
-
-Requirements:
-- Mermaid `graph` or `flowchart` format
-- Label edges with data types (what flows between components)
-- Include external dependencies as dashed-border boxes
-- Every component maps to a class or module to be implemented
-
-> **Skip rule**: If the feature is a single class with a single method and no internal component collaboration, write "N/A — single-class feature, see Interface Contract below"
-
-### 3. Interface Contract
-
-For each PUBLIC method this feature exposes or modifies:
-
-| Method | Signature | Preconditions | Postconditions | Raises |
-|--------|-----------|---------------|----------------|--------|
-| name   | full typed signature | what must be true before call | what is guaranteed after call | exception + condition |
-
-Rules:
-- Preconditions use Given/When style from SRS acceptance criteria
-- Postconditions are specific and testable (not "returns correct result")
-- Every verification_step must trace to at least one method's postcondition
-- Include internal methods only if they contain non-trivial logic
-
-### 4. Internal Sequence Diagram
-
-Show method-to-method calls WITHIN this feature's implementation. Unlike the system design's sequence diagram (system-wide flow), this shows the feature's own classes/functions collaborating.
-
-Requirements:
-- Mermaid `sequenceDiagram` format
-- Must cover the main success path
-- Must cover at least one error path per Raises entry in Interface Contract
-- Participants are the feature's OWN classes/functions
-
-> **Skip rule**: If the feature has only one class with no internal cross-method delegation worth diagramming, write "N/A — single-class implementation, error paths documented in Algorithm §5 error handling table"
-
-### 5. Algorithm / Core Logic
-
-For each non-trivial method (anything beyond simple delegation or CRUD):
-
-**a) Flow diagram** (Mermaid `flowchart TD`):
-- Decision nodes for every branching condition
-- Process nodes for transformations
-- Terminal nodes for return/raise
-
-**b) Pseudocode**:
 ```
-FUNCTION name(param1: Type, param2: Type) -> ReturnType
-  // Step 1: [major step]
-  // Step 2: [formula or key decision]
-  //         e.g., score = Σ 1/(k + rank_i) for each list
-  // Step 3: [edge case handling]
-  //         IF input_list is empty THEN return []
-  RETURN result
-END
+You are a Feature Design execution SubAgent.
+
+## Your Task
+1. Read the execution rules: Read {skills_root}/long-task-feature-design/references/feature-design-execution.md
+2. Read the template: Read {skills_root}/long-task-feature-design/references/feature-design-template.md
+3. Read design section: Read {design_doc_path} lines {design_start} to {design_end}
+4. Read SRS section: Read {srs_doc_path} lines {srs_start} to {srs_end}
+5. Read UCD sections: Read {ucd_doc_path} lines {ucd_start} to {ucd_end} (only if ui:true)
+6. Follow the execution rules to produce the detailed design document
+7. Write the document to: {output_path}
+8. Return your result using the Structured Return Contract in the execution rules
+
+## Input Parameters
+- Feature: {feature_json}
+- quality_gates: {quality_gates_json}
+- tech_stack: {tech_stack_json}
+- Constraints: {constraints}
+- Assumptions: {assumptions}
+- Working directory: {working_dir}
+
+## Key Constraints
+- Write the complete design document to {output_path}
+- Every section (§2-§6) must be COMPLETE or have "N/A — [reason]"
+- Test Inventory negative ratio must be >= 40%
+- Do NOT start TDD — only produce the design document
 ```
 
-**c) Boundary decisions table**:
+## Step 3: Dispatch SubAgent
 
-| Parameter | Min | Max | Empty/Null | At boundary |
-|-----------|-----|-----|------------|-------------|
-| [param]   | [val] | [val] | [behavior] | [behavior] |
+**Claude Code:** Use the `Agent` tool:
+```
+Agent(
+  description = "Feature Design for feature #{feature_id}",
+  prompt = [the constructed prompt above]
+)
+```
 
-**d) Error handling table**:
+**OpenCode:** Use `@mention` syntax or the platform's native subagent mechanism with the same prompt content.
 
-| Condition | Detection | Response | Recovery |
-|-----------|-----------|----------|----------|
-| [condition] | [how detected] | [exception or default] | [caller action] |
+## Step 4: Parse Result
 
-> **Skip rule**: If a method is pure delegation (calls another service, returns result), write "Delegates to [X] — see Feature #N" instead of a full algorithm section. An empty section without explicit skip is a defect.
+Read the SubAgent's returned text and locate the `### Verdict:` line:
 
-### 6. State Diagram (if applicable)
+- **`### Verdict: PASS`**
+  1. Verify the design document file exists at `output_path`
+  2. Extract Next Step Inputs: `feature_design_doc`, `test_inventory_count`, `tdd_task_count`
+  3. Record in `task-progress.md`: "Feature Design: PASS ({N} test scenarios, {M} TDD tasks)"
+  4. Proceed to TDD (Steps 5-7)
 
-For features that manage stateful objects (entities with lifecycle):
+- **`### Verdict: FAIL`**
+  1. Read the Issues table — identify which sections are incomplete
+  2. Re-dispatch SubAgent with additional context if needed (max 2 retries)
+  3. If still failing, escalate to user via `AskUserQuestion`
 
-- Mermaid `stateDiagram-v2` format
-- All valid states and transitions
-- Transition triggers (events/method calls)
-- Guard conditions on transitions
-
-> **Skip rule**: Write "N/A — stateless feature" if no object lifecycle exists. Most query/transform features are stateless.
-
-### 7. Test Inventory
-
-Build this table as the FINAL design step — it synthesizes all sections above into concrete test scenarios.
-
-| ID | Category | Traces To | Input / Setup | Expected | Kills Which Bug? |
-|----|----------|-----------|---------------|----------|-----------------|
-| A  | happy path | VS-1, FR-xxx | [specific values] | [exact result] | [wrong impl] |
-| B  | error | §3 Raises row | [trigger] | [exception type + msg] | [missing branch] |
-| C  | boundary | §5c boundary table | [edge value] | [behavior] | [off-by-one] |
-| D  | state | §6 transition | [pre-state + event] | [post-state] | [missing guard] |
-
-Rules:
-- Minimum 1 row per verification_step
-- Negative tests (error + boundary) >= 40% of total rows
-- "Traces To" references the design section the test derives from
-- "Kills Which Bug?" names a specific wrong implementation this test catches
-
-**Relationship with TDD**: This table is the PRIMARY INPUT for TDD Red (long-task-tdd Step 1). TDD Red uses this table as its starting point and may add tests per its own Rule 1-5 (category coverage, assertion quality, real test requirements). The Test Inventory provides the design-driven scenarios; TDD adds implementation-driven scenarios discovered during coding.
-
-### 8. TDD Task Decomposition
-
-After the design is complete, decompose into TDD tasks.
-
-**Task granularity**: Each task should be 2-5 minutes of work. If a task would take longer, split it.
-
-**Task structure**:
-
-#### Task 1: Write failing tests
-**Files**: [exact paths]
-**Steps**:
-1. Create test file with imports
-2. Write test code for each row in Test Inventory (§7):
-   - Include mock setup, specific input values, concrete assertions
-   - Test A: [matching table row A]
-   - Test B: [matching table row B]
-3. Run: `[test command]`
-4. **Expected**: All tests FAIL for the right reason
-
-#### Task 2: Implement minimal code
-**Files**: [exact paths]
-**Steps**:
-1. [Exact change referencing Algorithm §5 pseudocode]
-2. [Exact change referencing Interface Contract §3]
-3. Run: `[test command]`
-4. **Expected**: All tests PASS
-
-#### Task 3: Coverage Gate
-1. Run: `[coverage command]`
-2. Check thresholds. If below: return to Task 1.
-3. Record coverage output as evidence.
-
-#### Task 4: Refactor
-1. [Specific refactoring actions]
-2. Run full test suite. All tests PASS.
-
-#### Task 5: Mutation Gate
-1. Run: `[mutation command] --paths-to-mutate=<changed-files>`
-2. Check threshold. If below: improve assertions.
-3. Record mutation output as evidence.
-
-#### Task 6: Create example
-1. Create `examples/<NN>-<name>.<ext>`
-2. Update `examples/README.md`
-3. Run example to verify.
-
-### Verification Checklist
-- [ ] All verification_steps traced to Interface Contract postconditions
-- [ ] All verification_steps traced to Test Inventory rows
-- [ ] Algorithm pseudocode covers all non-trivial methods
-- [ ] Boundary table covers all algorithm parameters
-- [ ] Error handling table covers all Raises entries
-- [ ] Test Inventory negative ratio >= 40%
-- [ ] Every skipped section has explicit "N/A — [reason]"
-
-## Execution Modes
-
-### Mode A: Self-Execute (Default)
-The current agent produces the detailed design document inline.
-
-### Mode B: Subagent-Driven
-Dispatch a fresh subagent to produce the detailed design document. The subagent receives: feature object, {design_section}, {srs_section}, UCD sections, constraints/assumptions, and existing dependency interfaces. The subagent outputs the completed document to the plan file path.
-
-This mode is recommended when context window pressure is high (e.g., large system design section or many dependency interfaces to read).
-
-## Diagram Quality Rules
-
-Concrete, verifiable rules:
-
-- **Component/flow diagrams**: every edge labeled with data type; every node maps to a class/module
-- **Sequence diagrams**: include alt/opt/loop blocks for all branches; show return types; participant names match class names from §2
-- **Flow diagrams**: every decision node has exactly 2 exits; no transitions without labeled conditions
-- **State diagrams**: every state reachable from initial; every terminal reachable; no orphan states; guard conditions on ambiguous transitions
-
-## Skip-Explicitly Rule
-
-Every section (§2-§6) must either:
-- Contain COMPLETE content per the requirements above, OR
-- State "N/A — [specific reason why this section does not apply]"
-
-An empty or half-filled section is a design defect that blocks TDD. A section that says "N/A" without a reason is also a defect.
+- **`### Verdict: BLOCKED`**
+  1. Read the Issues table — identify the blocker
+  2. Escalate to user via `AskUserQuestion`
 
 ## Integration
 
 **Called by:** long-task-work (Step 4)
 **Requires:** System design doc, SRS, feature-list.json
-**Produces:** `docs/plans/YYYY-MM-DD-<feature-name>.md`
-**Chains to:** long-task-tdd (via Work Step 5-7)
+**Produces:** `docs/plans/YYYY-MM-DD-<feature-name>.md` (written by SubAgent)
+**Chains to:** long-task-tdd (via Work Steps 5-7)

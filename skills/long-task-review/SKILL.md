@@ -3,9 +3,9 @@ name: long-task-review
 description: "Use after quality gates pass in a long-task project - runs spec & design compliance review before persisting"
 ---
 
-# Spec & Design Compliance Review
+# Spec & Design Compliance Review — SubAgent Dispatch
 
-Review runs after every feature, before Persist. No exceptions. Verifies implementation matches the approved spec, design, plan, and UCD.
+Review runs after every feature, before Persist. No exceptions. The main Agent dispatches a review SubAgent with file paths — the SubAgent reads all documents and evidence itself in fresh context.
 
 **Announce at start:** "I'm using the long-task-review skill to review this feature."
 
@@ -15,53 +15,74 @@ Review runs after every feature, before Persist. No exceptions. Verifies impleme
 - Before the Persist phase (git commit)
 - No exceptions — even "simple" features need review
 
-## Stage 1: Spec & Design Compliance
+## Step 1: Gather Path Parameters
 
-**Questions**:
-1. Does the implementation do what the **feature spec** says? (SRS traceability)
-2. Does the implementation follow the **design document**? (architecture, class structure, interaction flows, dependency versions)
-3. Does the implementation follow the **plan document**? (task decomposition, agreed approach)
-4. For `"ui": true` features: Does the implementation follow the **UCD style guide**? (style tokens, component visual spec, page layouts)
+Collect these from the current session state. Do NOT read document contents yourself:
 
-Dispatch subagent with `skills/long-task-review/prompts/spec-reviewer-prompt.md`:
+- `feature_json` — current feature object from feature-list.json (compact JSON)
+- `feature_id` — feature ID
+- `feature_title` — feature title
+- `srs_file` — path to SRS doc (`docs/plans/*-srs.md`)
+- `srs_start` / `srs_end` — line range of the FR-xxx subsection (from Orient Document Lookup)
+- `design_file` — path to design doc (`docs/plans/*-design.md`)
+- `design_start` / `design_end` — line range of the §4.N subsection (from Orient Document Lookup)
+- `plan_doc_path` — path to feature detailed design (`docs/plans/YYYY-MM-DD-<feature-name>.md`)
+- `st_case_path` — path to ST test case document (`docs/test-cases/feature-{id}-{slug}.md`)
+- `ucd_file` / `ucd_start` / `ucd_end` — UCD doc path + line range (only for `"ui": true`; omit otherwise)
+- `base_sha` — git SHA before implementation began (for `git diff`)
+- `test_command` — test command from `long-task-guide.md`
 
+## Step 2: Construct SubAgent Prompt
+
+Read `skills/long-task-review/prompts/spec-reviewer-prompt.md` and fill the template variables with the path parameters collected above:
+
+| Template Variable | Value |
+|-------------------|-------|
+| `{{FEATURE_JSON}}` | feature object (compact JSON) |
+| `{{FEATURE_ID}}` | feature ID |
+| `{{FEATURE_TITLE}}` | feature title |
+| `{{SRS_FILE}}` | SRS doc path |
+| `{{SRS_START}}` / `{{SRS_END}}` | FR-xxx line range |
+| `{{DESIGN_FILE}}` | design doc path |
+| `{{DESIGN_START}}` / `{{DESIGN_END}}` | §4.N line range |
+| `{{PLAN_DOC_PATH}}` | feature design doc path |
+| `{{ST_CASE_PATH}}` | ST test case doc path |
+| `{{UCD_FILE}}` / `{{UCD_START}}` / `{{UCD_END}}` | UCD path + range (ui:true only) |
+| `{{BASE_SHA}}` | base SHA for git diff |
+| `{{TEST_COMMAND}}` | test command |
+
+**Key difference from before**: You are passing FILE PATHS and LINE RANGES, not file contents. The SubAgent will use the Read tool and Bash tool to read documents and gather evidence itself.
+
+## Step 3: Dispatch SubAgent
+
+**Claude Code:** Use the `Agent` tool:
 ```
-Task(
-  subagent_type="general-purpose",
-  prompt="""
-  You are a spec & design compliance reviewer.
-  Read the prompt at: skills/long-task-review/prompts/spec-reviewer-prompt.md
-
-  Feature spec:
-  {feature_json}
-
-  SRS requirement section (full FR-xxx from SRS):
-  {srs_section}
-
-  Design document (Key Feature Design section for this feature — full §4.N subsection, NOT a grep snippet):
-  {design_section}
-
-  Plan document:
-  {plan_content}
-
-  UCD style guide (only for ui:true features, omit if not applicable):
-  {ucd_content}
-
-  ST test case document (from Worker Step 10):
-  {st_case_content}
-
-  Git diff:
-  {diff_output}
-
-  Test results:
-  {test_summary}
-
-  Perform the review following the prompt template.
-  """
+Agent(
+  description = "Spec & Design Review for feature #{feature_id}",
+  prompt = [the filled prompt template]
 )
 ```
 
-### Spec Compliance Checklist (S1-S5)
+**OpenCode:** Use `@mention` syntax or the platform's native subagent mechanism with the same prompt content.
+
+## Step 4: Parse Result
+
+Read the SubAgent's review output:
+
+- **Verdict: PASS** (all S1-S5, D1-D5, R1-R3, and U1-U4 if applicable are YES)
+  1. Record in `task-progress.md`: "Review: PASS"
+  2. Proceed to Add Examples + Persist
+
+- **Verdict: FAIL** (any NO found)
+  1. Read the specific violations from the rubric
+  2. Fix the issues (code changes, test additions, etc.)
+  3. Re-run tests to confirm fixes
+  4. Re-dispatch SubAgent for re-review (only changed items need re-check)
+  5. Max 3 review rounds → escalate to user via `AskUserQuestion`
+
+## Review Dimensions
+
+### Spec Compliance (S1-S5)
 
 | # | Check |
 |---|-------|
@@ -71,7 +92,7 @@ Task(
 | S4 | Edge cases from the spec are handled |
 | S5 | Feature `description` matches actual behavior |
 
-### Design Compliance Checklist (D1-D5)
+### Design Compliance (D1-D5)
 
 | # | Check |
 |---|-------|
@@ -81,7 +102,7 @@ Task(
 | D4 | Architectural layers/boundaries respected as defined in the logical view |
 | D5 | No unauthorized design deviations (or deviations are documented with user approval in the plan) |
 
-### Detailed Design Compliance Checklist (P1-P6)
+### Detailed Design Compliance (P1-P6)
 
 | # | Check |
 |---|-------|
@@ -92,7 +113,7 @@ Task(
 | P5 | Error handling matches the error table (§5.4) — trigger conditions, recovery actions, error types |
 | P6 | State transitions (if any) match the state diagram (§6) — all states reachable, no undocumented transitions |
 
-### UCD Compliance Checklist (U1-U4) — only for `"ui": true` features with UCD document
+### UCD Compliance (U1-U4) — only for `"ui": true` features with UCD document
 
 | # | Check |
 |---|-------|
@@ -101,7 +122,7 @@ Task(
 | U3 | Spacing and layout (padding, margin, border radius, shadow) follow UCD spacing tokens |
 | U4 | Component structure and visual hierarchy match UCD component prompts for the implemented components |
 
-### Test Case Completeness Checklist (T1-T3) — requires ST test case document from Worker Step 10
+### Test Case Completeness (T1-T3)
 
 | # | Check |
 |---|-------|
@@ -122,23 +143,6 @@ Task(
 | Important | Fix before next feature | Yes |
 | Minor | Fix in refactor or next session | No |
 
-## Review Loop
-
-```
-Quality Gates Pass → Spec & Design Compliance Review
-                          ↓
-                     S1-S5, D1-D5, T1-T3 all PASS (and U1-U4 if ui:true)?
-                          ↓ YES                    ↓ NO
-                     Feature complete         Fix → Re-test → Re-review
-                                                     ↓
-                                                Max 3 rounds → Escalate to user
-```
-
-After 3 failed rounds, escalate via `AskUserQuestion` with:
-- All issues found across rounds
-- What was tried and fixed
-- What remains unresolved
-
 ## Anti-Patterns
 
 | Anti-Pattern | Correct Approach |
@@ -146,19 +150,17 @@ After 3 failed rounds, escalate via `AskUserQuestion` with:
 | Skip review for "simple" features | Always run review |
 | Bundle multiple issues into one finding | One concern per issue |
 | Performative agreement ("Great code!") | PASS or specific issues, no filler |
+| Read document contents into main agent context | Pass file paths to SubAgent |
 
 ## Integration
 
-**Called by:** long-task-work (Step 11)
+**Called by:** long-task-work (Step 10)
 **Dispatches:** spec-reviewer subagent (`skills/long-task-review/prompts/spec-reviewer-prompt.md`)
-**Requires:** Quality gates passed (long-task-quality)
-**Inputs:**
-- Feature spec from `feature-list.json`
-- SRS requirement section (full FR-xxx subsection from `docs/plans/*-srs.md`)
-- Design document section (full §4.N subsection from `docs/plans/*-design.md` — NOT a grep snippet)
-- Feature detailed design document (`docs/plans/YYYY-MM-DD-<feature-name>.md`) — includes Interface Contract, Algorithm, State Diagram, Test Inventory
-- ST test case document (`docs/test-cases/feature-{id}-{slug}.md`) — from Worker Step 10
-- UCD style guide (`docs/plans/*-ucd.md`) — only for `"ui": true` features
-- Git diff, test results
+**Requires:** Quality gates passed (long-task-quality), ST test cases executed (long-task-feature-st)
+**Inputs (paths only — SubAgent reads contents itself):**
+- Feature spec (compact JSON)
+- File paths + line ranges: SRS doc, design doc, plan doc, ST case doc, UCD doc (if ui:true)
+- Base SHA (for git diff)
+- Test command (from long-task-guide.md)
 **Produces:** Review verdict (PASS/FAIL with findings)
 **Returns to:** long-task-work for Add Examples + Persist steps

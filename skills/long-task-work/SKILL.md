@@ -108,17 +108,18 @@ python scripts/check_configs.py feature-list.json --feature <id>
 ### 4. Feature Detailed Design
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-feature-design` and follow it exactly.
 
-> **For `category: "bugfix"` features**: feature-design is condensed. Focus on: (1) root cause documentation (read from `root_cause` field), (2) targeted fix approach, (3) regression test inventory derived from `verification_steps`. Skip full interface contracts, data flow diagrams, and state diagrams unless the bug directly touches those surfaces.
+The Feature Design skill dispatches a SubAgent to produce the detailed design document. The main Agent does NOT read design/SRS/UCD document sections or write the design document — the SubAgent handles everything in its own fresh context and returns a structured summary.
 
-Context to carry forward:
-- Current feature object from feature-list.json
-- Full `{design_section}` from Document Lookup Protocol (the entire §4.N subsection — do NOT grep)
-- Full `{srs_section}` from Document Lookup Protocol (the entire FR-xxx subsection)
-- UCD sections (if `"ui": true`) — component/page prompts from `docs/plans/*-ucd.md`
-- `quality_gates` and `tech_stack` from feature-list.json
-- Existing passing features' public interfaces (for dependency awareness)
+> **For `category: "bugfix"` features**: feature-design is condensed. The SubAgent focuses on: (1) root cause documentation, (2) targeted fix approach, (3) regression test inventory. Full diagrams are skipped unless the bug directly touches those surfaces.
 
-Output: `docs/plans/YYYY-MM-DD-<feature-name>.md` — feature detailed design document containing interface contracts, algorithm pseudocode, diagrams, test inventory, and TDD task decomposition.
+Context to carry forward (paths only — SubAgent reads contents itself):
+- Feature object (compact JSON)
+- `quality_gates` and `tech_stack` (compact JSON)
+- File paths + section line ranges: design doc (§4.N), SRS doc (FR-xxx), UCD doc (if ui:true)
+- Constraints and assumptions from feature-list.json root
+- Output path: `docs/plans/YYYY-MM-DD-<feature-name>.md`
+
+Output: `docs/plans/YYYY-MM-DD-<feature-name>.md` (written by SubAgent) — feature detailed design document containing interface contracts, algorithm pseudocode, diagrams, test inventory, and TDD task decomposition.
 
 ### 5-7. TDD Cycle (Red → Green → Refactor)
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-tdd` and follow it exactly.
@@ -163,15 +164,15 @@ Output: `docs/test-cases/feature-{id}-{slug}.md` (written by SubAgent)
 ### 10. Spec & Design Compliance Review
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-review` and follow it exactly.
 
-Context to carry forward:
-- Feature object from feature-list.json
-- Full `{design_section}` text extracted via Document Lookup Protocol (the entire §4.N subsection, NOT a grep snippet)
-- Full `{srs_section}` text (the entire FR-xxx subsection from SRS)
-- Plan document (`docs/plans/YYYY-MM-DD-<feature-name>.md`) from Step 5
-- **ST test case document** (`docs/test-cases/feature-{id}-{slug}.md`) from Step 10
-- UCD style guide sections (`docs/plans/*-ucd.md`) — if feature has `"ui": true` and UCD exists
-- Git diff since before implementation began
-- Test results summary
+The Review skill dispatches a SubAgent that reads all documents and gathers evidence itself. The main Agent does NOT read design/SRS/UCD/plan/ST document contents or run git diff — it only passes file paths and line ranges.
+
+Context to carry forward (paths only — SubAgent reads contents itself):
+- Feature object (compact JSON)
+- File paths + section line ranges: design doc (§4.N start/end), SRS doc (FR-xxx start/end), UCD doc (if ui:true)
+- Plan document path (`docs/plans/YYYY-MM-DD-<feature-name>.md`) from Step 4
+- ST test case document path (`docs/test-cases/feature-{id}-{slug}.md`) from Step 9
+- Base SHA (for git diff)
+- Test command (from long-task-guide.md)
 
 ### 11. Add Examples
 Create runnable examples in `examples/` demonstrating the completed feature.
