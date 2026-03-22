@@ -240,6 +240,190 @@ class TestMockWarnings:
         assert "Mock warnings" not in out
 
 
+class TestSkipWarnings:
+    """Skip patterns correctly flagged as warnings in real test bodies (Anti-Pattern #16)."""
+
+    def test_env_guard_return_warns(self, tmp_path):
+        """if not os.environ.get(...): return → skip warning."""
+        make_test_file(tmp_path, "test_db.py", """
+            import os
+            import pytest
+
+            @pytest.mark.real_test
+            def test_real_db_write():
+                db_url = os.environ.get("DATABASE_URL")
+                if not os.environ.get("DATABASE_URL"):
+                    return
+                assert db_url is not None
+        """)
+        fl = make_feature_list(tmp_path, features=[
+            {"id": 1, "category": "core", "title": "F1", "description": "d",
+             "priority": "high", "status": "failing",
+             "verification_steps": ["step1"]}
+        ])
+        code, out, _ = run_script(fl)
+        assert code == 2  # WARN
+        assert "Skip warnings" in out
+        assert "test_real_db_write" in out
+
+    def test_pytest_skipif_warns(self, tmp_path):
+        """pytest.mark.skipif in real test body → skip warning."""
+        make_test_file(tmp_path, "test_service.py", """
+            import os
+            import pytest
+
+            @pytest.mark.real_test
+            @pytest.mark.skipif(not os.environ.get("API_KEY"), reason="no key")
+            def test_real_api():
+                assert True
+        """)
+        fl = make_feature_list(tmp_path, features=[
+            {"id": 1, "category": "core", "title": "F1", "description": "d",
+             "priority": "high", "status": "failing",
+             "verification_steps": ["step1"]}
+        ])
+        code, out, _ = run_script(fl)
+        assert code == 2  # WARN
+        assert "Skip warnings" in out
+        assert "skipif" in out.lower() or "skip_pattern" in out.lower()
+
+    def test_unittest_skip_warns(self, tmp_path):
+        """unittest.skip in real test body → skip warning."""
+        make_test_file(tmp_path, "test_compat.py", """
+            import unittest
+            import pytest
+
+            @pytest.mark.real_test
+            @unittest.skip("infra not available")
+            def test_real_compat():
+                assert True
+        """)
+        fl = make_feature_list(tmp_path, features=[
+            {"id": 1, "category": "core", "title": "F1", "description": "d",
+             "priority": "high", "status": "failing",
+             "verification_steps": ["step1"]}
+        ])
+        code, out, _ = run_script(fl)
+        assert code == 2  # WARN
+        assert "Skip warnings" in out
+
+    def test_no_skip_pattern_passes(self, tmp_path):
+        """Real test without skip patterns → no skip warnings."""
+        make_test_file(tmp_path, "test_clean.py", """
+            import pytest
+
+            @pytest.mark.real_test
+            def test_real_db():
+                assert True
+        """)
+        fl = make_feature_list(tmp_path, features=[
+            {"id": 1, "category": "core", "title": "F1", "description": "d",
+             "priority": "high", "status": "failing",
+             "verification_steps": ["step1"]}
+        ])
+        code, out, _ = run_script(fl)
+        assert code == 0
+        assert "Skip warnings" not in out
+
+    def test_skip_in_regular_test_not_flagged(self, tmp_path):
+        """Skip pattern in a non-real test should not generate warnings."""
+        make_test_file(tmp_path, "test_mixed.py", """
+            import os
+            import pytest
+
+            @pytest.mark.real_test
+            def test_real_clean():
+                assert True
+
+            def test_normal_with_skip():
+                if not os.environ.get("OPTIONAL_VAR"):
+                    return
+                assert True
+        """)
+        fl = make_feature_list(tmp_path, features=[
+            {"id": 1, "category": "core", "title": "F1", "description": "d",
+             "priority": "high", "status": "failing",
+             "verification_steps": ["step1"]}
+        ])
+        code, out, _ = run_script(fl)
+        assert code == 0
+        assert "Skip warnings" not in out
+
+    def test_custom_skip_patterns(self, tmp_path):
+        """Custom skip_patterns in config are respected."""
+        make_test_file(tmp_path, "test_custom.py", """
+            import pytest
+
+            @pytest.mark.real_test
+            def test_real_custom():
+                # SKIP_IF_NO_INFRA
+                assert True
+        """)
+        fl = make_feature_list(tmp_path, features=[
+            {"id": 1, "category": "core", "title": "F1", "description": "d",
+             "priority": "high", "status": "failing",
+             "verification_steps": ["step1"]}
+        ], real_test={
+            "marker_pattern": "real_test",
+            "mock_patterns": [],
+            "skip_patterns": ["SKIP_IF_NO_INFRA"],
+            "test_dir": "tests"
+        })
+        code, out, _ = run_script(fl)
+        assert code == 2  # WARN
+        assert "Skip warnings" in out
+
+    def test_skip_warning_json_output(self, tmp_path):
+        """JSON output includes skip_warnings field."""
+        make_test_file(tmp_path, "test_db.py", """
+            import os
+            import pytest
+
+            @pytest.mark.real_test
+            def test_real_db():
+                if not os.environ.get("DB_URL"):
+                    return
+                assert True
+        """)
+        fl = make_feature_list(tmp_path, features=[
+            {"id": 1, "category": "core", "title": "F1", "description": "d",
+             "priority": "high", "status": "failing",
+             "verification_steps": ["step1"]}
+        ])
+        code, out, _ = run_script(fl, "--json")
+        assert code == 2
+        data = json.loads(out)
+        assert data["verdict"] == "WARN"
+        assert "skip_warnings" in data
+        assert len(data["skip_warnings"]) >= 1
+        assert data["skip_warnings"][0]["func_name"] == "test_real_db"
+        assert "skip_pattern" in data["skip_warnings"][0]
+
+    def test_both_mock_and_skip_warns(self, tmp_path):
+        """Real test with both mock and skip patterns → WARN with both warning types."""
+        make_test_file(tmp_path, "test_both.py", """
+            import os
+            from unittest.mock import MagicMock
+            import pytest
+
+            @pytest.mark.real_test
+            def test_real_both():
+                if not os.environ.get("DB_URL"):
+                    return
+                client = MagicMock()
+                assert client is not None
+        """)
+        fl = make_feature_list(tmp_path, features=[
+            {"id": 1, "category": "core", "title": "F1", "description": "d",
+             "priority": "high", "status": "failing",
+             "verification_steps": ["step1"]}
+        ])
+        code, out, _ = run_script(fl)
+        assert code == 2  # WARN
+        assert "Mock warnings" in out
+        assert "Skip warnings" in out
+
+
 class TestFeatureFiltering:
     """--feature flag filters to specific feature."""
 

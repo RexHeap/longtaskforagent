@@ -49,18 +49,23 @@ For each mock warning flagged by the script:
    - Yes → real test is invalid; rewrite, re-run script
    - No (mock is on an unrelated auxiliary service) → mark as legitimate, proceed
 
-### Step 3: Run real tests
+### Step 3: Run real tests (with skip detection)
 
 Execute real tests in isolation using the run command declared in `long-task-guide.md` Real Test Convention section:
 - All real tests MUST PASS
 - Any FAIL → GATE 0 FAIL, fix and re-run
+- **Skip detection (mandatory)**: Read the full test runner output. If ANY real test is reported as `skipped`, `pending`, `disabled`, or `ignored` — treat it as a GATE 0 FAIL. Real tests must execute, not skip.
+  - Common skip indicators: pytest `s` marker or "skipped" count > 0; JUnit `@Disabled`; Jest/Vitest "skipped"/"pending" count > 0; gtest "DISABLED_" prefix
+  - If skip is caused by missing infrastructure → service/DB is not running. Read `env-guide.md`, start the service, re-run.
+  - If skip is caused by an environment guard (`if not env: return`) → rewrite the test to assert-fail instead (Anti-Pattern #16). Real tests must fail loudly, not silently pass.
 
 ### Evidence required
 ```
 Gate 0 Result:
 - Script output: [paste check_real_tests.py output]
 - Mock warning review: [for each warning — primary dep / auxiliary service]
-- Real test execution: passed N / failed N
+- Real test execution: passed N / failed N / skipped N
+- Skip verdict: 0 skipped (or: N skipped → FAIL, reason and fix applied)
 - Gate 0: PASS/FAIL
 ```
 

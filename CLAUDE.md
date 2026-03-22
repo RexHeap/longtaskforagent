@@ -377,7 +377,8 @@ using-long-task (router)
       "path": "path/to/file (for file type)",
       "description": "What this config is for",
       "required_by": [1, 3],
-      "check_hint": "How to set it up"
+      "check_hint": "How to set it up",
+      "connectivity_check": "curl -f http://localhost:5432/health (optional — LLM uses during Config Gate connectivity verification)"
     }
   ],
   "ats_template_path": "docs/templates/custom-ats-template.md (optional)",

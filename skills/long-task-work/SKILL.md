@@ -21,6 +21,12 @@ You MUST create a TodoWrite task for each step and complete them in order:
 - Read `feature-list.json` — note `constraints[]`, `assumptions[]`, `required_configs[]`, feature statuses
 - Read `long-task-guide.md` — project-specific workflow guidance
 - Read `env-guide.md` (if it exists) — note service names, ports, and health check URLs; required if the target feature has service dependencies
+- **Determine service dependencies**: A feature has service dependencies if ANY of the following are true:
+  1. Its `required_configs[]` entries include connection-string keys (key contains `URL`, `URI`, `DSN`, `CONNECTION`, `HOST`, or `PORT` — e.g., `DATABASE_URL`, `REDIS_HOST`)
+  2. Its `dependencies[]` include a feature whose title references database setup, schema migration, or service initialization
+  3. The design section (`{design_section}`) specifies external service interactions (DB queries, HTTP calls to own services, message queue operations)
+
+  Record determination (yes/no + which services) in `task-progress.md` under the current feature heading. This determination drives Bootstrap Step 2 and Config Gate Step 3.
 - Read design doc **Section 1** (`docs/plans/*-design.md`) — project overview and architecture snapshot for global context
 - Run `git log --oneline -10` — recent commit context
 - Pick next `"status": "failing"` feature by priority, then by array position in `features[]` (first eligible wins) — **skip features with `"deprecated": true`**
@@ -58,7 +64,21 @@ When you need the design section or SRS requirement for a feature, do NOT grep f
   - If `init.sh` / `init.ps1` exists and environment is not ready: run it once
   - Record decision in `task-progress.md` if script was executed
 - **Confirm test commands available**: Activate environment per `long-task-guide.md` and verify the test/coverage/mutation commands are correct for the tech stack; use these directly throughout the cycle (no wrapper scripts)
-- **Service readiness**: Services are managed by `long-task-feature-st` (Step 10) — do not start them during Bootstrap. If you need a running service for manual smoke testing during implementation, use `env-guide.md` "Start All Services" with output capture, record PID in `task-progress.md`, and stop it using "Stop All Services" before Step 10 begins
+- **Service readiness** (conditional — based on Orient service dependency determination):
+  - **No service dependencies**: Skip service startup. Feature-ST (Step 10) manages services for acceptance testing.
+  - **Has service dependencies**: Real tests (TDD Rule 5a) need running infrastructure. Ensure availability:
+    1. Read `env-guide.md` → locate "Verify Services Running" health checks
+    2. Run health checks. If all pass → record PID/port in `task-progress.md`; proceed
+    3. If health checks fail → start via `env-guide.md` "Start All Services" with output capture:
+       ```bash
+       [start command] > /tmp/svc-<slug>-start.log 2>&1 &
+       sleep 3
+       head -30 /tmp/svc-<slug>-start.log
+       ```
+    4. Re-run health checks — block until pass
+    5. If start fails → diagnose per `env-guide.md`; escalate via `AskUserQuestion` if unresolvable
+    6. Record running services, PIDs, ports in `task-progress.md`
+  - Feature-ST (Step 10) handles restart/cleanup. Services started here remain running through TDD and Quality Gates.
 - Smoke-test previously passing features (activate environment per `long-task-guide.md` → run test command directly)
 
 ### 3. Config Gate
@@ -79,6 +99,11 @@ python scripts/check_configs.py feature-list.json --feature <id>
    ```
 5. Ensure any secrets config file is listed in `.gitignore` if not already present.
 6. **Block until all configs pass.**
+7. **Connectivity verification** (features with service dependencies only):
+   After config keys pass existence checks, verify connection-string configs actually connect:
+   - For each `env`-type config whose key matches a connection-string pattern (`DATABASE_URL`, `REDIS_URL`, etc.): run the corresponding health check from `env-guide.md` "Verify Services Running"
+   - If health check fails: config value exists but service is unreachable — start service per Bootstrap service readiness protocol above
+   - **Block until connectivity confirmed** — a config pointing to a dead service is functionally missing
 
 ### 4. Feature Detailed Design
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-feature-design` and follow it exactly.

@@ -2,14 +2,15 @@
 """
 Check real test compliance for a long-task project.
 
-Scans test files for real test markers and checks for mock usage within
-real test function bodies. Real tests verify actual external dependency
-connectivity (DB, config, HTTP, filesystem) without mocking the primary
-dependency.
+Scans test files for real test markers and checks for mock usage and
+silent-skip patterns within real test function bodies. Real tests verify
+actual external dependency connectivity (DB, config, HTTP, filesystem)
+without mocking the primary dependency.
 
 Uses the `real_test` config from feature-list.json:
 - marker_pattern: regex to identify real test markers in test files
 - mock_patterns: regex patterns for mock framework calls to flag as warnings
+- skip_patterns: regex patterns for silent-skip guards to flag as warnings
 - test_dir: directory to scan for test files
 
 Usage:
@@ -35,10 +36,26 @@ import sys
 # Uses negative lookahead (?!\d) so feature_1 doesn't match feature_10
 DEFAULT_FEATURE_REF_PATTERN = r"feature[_:\s#-]*{id}(?!\d)"
 
+# Default silent-skip patterns to detect in real test bodies
+# These indicate a real test that silently passes without executing (Anti-Pattern #16)
+# Patterns match single lines — multi-line `if not env:\n    return` is caught by
+# the `if not` guard pattern (the return on a separate line is implicit)
+DEFAULT_SKIP_PATTERNS = [
+    r"if\s+not\s+(?:os\.environ|os\.getenv)",   # if not os.environ.get(...) guard
+    r"if\s*\(\s*!\s*process\.env\.",             # if (!process.env.X) guard
+    r"pytest\.mark\.skipif",                     # pytest conditional skip decorator
+    r"@Disabled",                                # JUnit @Disabled
+    r"test\.skip",                               # Jest/Vitest test.skip
+    r"\.skip\(",                                 # describe.skip( / it.skip(
+    r"GTEST_SKIP",                               # gtest skip macro
+    r"unittest\.skip",                           # Python unittest.skip decorator
+]
+
 # Default config used when feature-list.json has no real_test section
 DEFAULT_REAL_TEST_CONFIG = {
     "marker_pattern": "real_test",
     "mock_patterns": ["mock\\.patch", "MagicMock", "mocker\\.patch", "@patch"],
+    "skip_patterns": DEFAULT_SKIP_PATTERNS,
     "test_dir": "tests",
     "feature_ref_pattern": DEFAULT_FEATURE_REF_PATTERN,
 }
@@ -272,6 +289,58 @@ def check_mock_usage(real_tests, mock_patterns, test_files_content_cache):
     return warnings
 
 
+def check_skip_patterns(real_tests, skip_patterns, test_files_content_cache):
+    """
+    Check each real test for silent-skip patterns (Anti-Pattern #16).
+
+    Scans both the decorator zone (lines between marker and func def) and
+    the function body for skip patterns. Decorator-based skips like
+    @pytest.mark.skipif live above the def line, while guard-return skips
+    like ``if not os.environ.get(...): return`` live inside the body.
+
+    Returns list of warning dicts:
+        {file, line_no, func_name, skip_pattern, matched_text}
+    """
+    skip_regexes = []
+    for pat in skip_patterns:
+        try:
+            skip_regexes.append((pat, re.compile(pat, re.IGNORECASE)))
+        except re.error:
+            continue
+
+    warnings = []
+
+    for rt in real_tests:
+        fpath = rt["file"]
+        if fpath not in test_files_content_cache:
+            try:
+                with open(fpath, "r", encoding="utf-8", errors="replace") as f:
+                    test_files_content_cache[fpath] = f.readlines()
+            except (OSError, IOError):
+                continue
+
+        lines = test_files_content_cache[fpath]
+
+        # Scan both decorator zone (marker_line..func_body_start) and function body
+        marker_line_idx = rt["line_no"] - 1  # Convert 1-based to 0-based
+        scan_start = min(marker_line_idx, rt["func_body_start"])
+        scan_lines = lines[scan_start:rt["func_body_end"]]
+
+        for pat_str, pat_re in skip_regexes:
+            for i, line in enumerate(scan_lines):
+                if pat_re.search(line):
+                    warnings.append({
+                        "file": rt["file"],
+                        "line_no": scan_start + i + 1,
+                        "func_name": rt["func_name"],
+                        "skip_pattern": pat_str,
+                        "matched_text": line.strip(),
+                    })
+                    break  # One warning per pattern per function
+
+    return warnings
+
+
 def build_feature_ref_regex(pattern_template, feature_id):
     """Build a compiled regex for matching a specific feature ID reference."""
     pattern = pattern_template.replace("{id}", str(feature_id))
@@ -350,6 +419,7 @@ def check_real_tests(path, feature_id=None):
             active_features: int
             real_tests: list of {file, line_no, func_name}
             mock_warnings: list of {file, line_no, func_name, mock_pattern}
+            skip_warnings: list of {file, line_no, func_name, skip_pattern}
             issues: list of str
     """
     result = {
@@ -363,6 +433,7 @@ def check_real_tests(path, feature_id=None):
         "active_features": 0,
         "real_tests": [],
         "mock_warnings": [],
+        "skip_warnings": [],
         "per_feature": {},
         "features_without_real_tests": [],
         "issues": [],
@@ -398,6 +469,7 @@ def check_real_tests(path, feature_id=None):
 
     marker_pattern = rt_config.get("marker_pattern", DEFAULT_REAL_TEST_CONFIG["marker_pattern"])
     mock_patterns = rt_config.get("mock_patterns", DEFAULT_REAL_TEST_CONFIG["mock_patterns"])
+    skip_patterns = rt_config.get("skip_patterns", DEFAULT_REAL_TEST_CONFIG["skip_patterns"])
     test_dir = rt_config.get("test_dir", DEFAULT_REAL_TEST_CONFIG["test_dir"])
 
     result["marker_pattern"] = marker_pattern
@@ -468,6 +540,18 @@ def check_real_tests(path, feature_id=None):
         for w in mock_warnings
     ]
 
+    # Check skip patterns in real test bodies (Anti-Pattern #16)
+    skip_warnings = check_skip_patterns(real_tests, skip_patterns, content_cache)
+    result["skip_warnings"] = [
+        {
+            "file": os.path.relpath(w["file"], base_dir),
+            "line_no": w["line_no"],
+            "func_name": w["func_name"],
+            "skip_pattern": w["skip_pattern"],
+        }
+        for w in skip_warnings
+    ]
+
     # Per-feature real test association
     feature_ref_pattern = rt_config.get(
         "feature_ref_pattern", DEFAULT_FEATURE_REF_PATTERN
@@ -496,7 +580,7 @@ def check_real_tests(path, feature_id=None):
                 return result
 
     # Determine verdict
-    if mock_warnings:
+    if mock_warnings or skip_warnings:
         result["verdict"] = "WARN"
     else:
         result["verdict"] = "PASS"
@@ -561,14 +645,31 @@ def format_text_output(result):
             )
         lines.append("")
 
+    # Skip warnings (Anti-Pattern #16)
+    skip_warnings = result.get("skip_warnings", [])
+    if skip_warnings:
+        lines.append(f"Skip warnings ({len(skip_warnings)}) — Anti-Pattern #16 (silent skip):")
+        for w in skip_warnings:
+            lines.append(
+                f"  ⚠ {w['file']}:{w['line_no']} :: {w['func_name']} "
+                f"— \"{w['skip_pattern']}\" found in function body"
+            )
+        lines.append("")
+
     # Verdict
     verdict = result["verdict"]
+    total_warnings = len(mock_warnings) + len(skip_warnings)
     if verdict == "PASS":
-        summary = f"PASS — {len(real_tests)} real tests found, no mock warnings"
+        summary = f"PASS — {len(real_tests)} real tests found, no warnings"
     elif verdict == "WARN":
+        warn_parts = []
+        if mock_warnings:
+            warn_parts.append(f"{len(mock_warnings)} mock warnings")
+        if skip_warnings:
+            warn_parts.append(f"{len(skip_warnings)} skip warnings")
         summary = (
             f"WARN — {len(real_tests)} real tests found, "
-            f"{len(mock_warnings)} mock warnings require LLM review"
+            f"{', '.join(warn_parts)} require LLM review"
         )
     else:
         summary = f"FAIL — {', '.join(result['issues']) if result['issues'] else 'no real tests found'}"

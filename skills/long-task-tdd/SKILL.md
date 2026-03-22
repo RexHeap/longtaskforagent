@@ -146,6 +146,7 @@ Every feature with external dependencies MUST have identifiable real tests in it
 | **Isolatable** | Real tests MUST be runnable independently from regular UTs (via marker filter, folder separation, or naming convention) |
 | **No mock on primary dep** | Real test body MUST NOT mock the primary external dependency it verifies; `real_test.mock_patterns` defines detectable mock keywords |
 | **High-value assertions** | MUST NOT merely verify "no exception"; MUST assert actual return values, state changes, data persistence |
+| **No silent skip** | Real test MUST fail (not skip or return early) when its dependency is unavailable; use `assert env_var, "..."` not `if not env_var: return` |
 | **Test infrastructure** | Use project test environment (.env.test, test DB, localhost test server) — never production resources |
 
 **Minimum ≥1 real test per external dependency type:**
@@ -162,7 +163,7 @@ Every feature with external dependencies MUST have identifiable real tests in it
 
 **Verification**: `python scripts/check_real_tests.py feature-list.json` — mechanical scan + grep, not LLM self-check.
 
-Reference: `testing-anti-patterns.md` Anti-Pattern #15 (all-mock real test / mock label laundering).
+Reference: `testing-anti-patterns.md` Anti-Pattern #15 (all-mock real test / mock label laundering) and Anti-Pattern #16 (silent skip / environment guard bypass).
 
 **Rule 6: UI-Specific Test Rules** (when `"ui": true`)
 
