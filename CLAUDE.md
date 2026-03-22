@@ -145,6 +145,18 @@ python -m pytest tests/test_validate_ats.py
 python -m pytest tests/test_check_ats_coverage.py
 ```
 
+### Auto-loop (multi-feature automation)
+```bash
+# Claude Code: auto-loop with fresh context per feature, logs saved automatically
+python scripts/auto_loop.py feature-list.json
+python scripts/auto_loop.py feature-list.json --max-iterations 30 --log-dir logs
+python scripts/auto_loop.py feature-list.json --cooldown 10
+
+# OpenCode: auto-loop with fresh context per feature
+python scripts/auto_loop_opencode.py feature-list.json
+python scripts/auto_loop_opencode.py feature-list.json --model anthropic/claude-sonnet-4-6
+```
+
 > **Path note**: the `python long-task-agent/skills/long-task-init/scripts/...` paths above are consumer-facing (run from the target project root after plugin install). When developing in this repo, replace `long-task-agent/` with `./` or omit it entirely.
 
 ## Architecture
@@ -300,7 +312,7 @@ using-long-task (router)
 - **Compliance review after every feature**: Spec + design + UCD compliance (no subjective code quality review — objective gates handle quality)
 - **UCD compliance for frontend features**: UI features must pass UCD style token checks (U1-U4) during review
 - **Systematic debugging**: Never guess-and-fix; always trace root cause first
-- **One feature per cycle**: Prevents context exhaustion
+- **One feature per session**: End session after completing one feature; multi-feature automation is handled by the external auto-loop script (`scripts/auto_loop.py`)
 - **UI features require Chrome DevTools MCP testing**: Mark with `"ui": true`
 - **System testing before release**: When all features pass, run ST phase (regression, integration, E2E, NFR, exploratory); no release without Go verdict
 - **Hotfix before increment**: When both `bugfix-request.json` and `increment-request.json` exist, hotfix runs first; `increment-request.json` is preserved for next session
@@ -341,6 +353,7 @@ using-long-task (router)
 | `docs/templates/ats-review-template.md` | — | Default ATS review spec template (7 dimensions, user-customizable) |
 | `docs/templates/st-case-template.md` | — | Default ST test case template (ISO/IEC/IEEE 29119-3, user-customizable) |
 | `docs/templates/deferred-backlog-template.md` | — | Default deferred requirements backlog template (user-customizable) |
+| `logs/session-*.md` | auto_loop | Auto-captured session logs per iteration (one feature per file) |
 
 ### Feature List Schema
 
@@ -516,7 +529,9 @@ long-task-agent/
 │   ├── check_real_tests.py            # Real test verification (existence + mock grep)
 │   ├── validate_bugfix_request.py     # Bugfix request signal validation
 │   ├── validate_increment_request.py  # Increment request signal validation
-│   └── validate_st_cases.py          # ST test case document validation
+│   ├── validate_st_cases.py          # ST test case document validation
+│   ├── auto_loop.py                  # Auto-loop for Claude Code (fresh context per feature, logs, AskUserQuestion detection)
+│   └── auto_loop_opencode.py         # Auto-loop for OpenCode (fresh context per feature, logs, signal file detection)
 ├── tests/
 │   ├── test_validate_features.py
 │   ├── test_init_project.py

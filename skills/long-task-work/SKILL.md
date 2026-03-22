@@ -198,16 +198,21 @@ Create runnable examples in `examples/` demonstrating the completed feature.
   ```
 - Git commit again (progress files)
 
-### 13. Continue
-- If failing non-deprecated features remain and context allows → proceed to next feature (back to Step 1)
-- If **no failing non-deprecated features remain** → all active features are passing. **Invoke `long-task:long-task-st`** to begin system testing.
-- If context is exhausted → end session (ensure task-progress.md is updated)
+### 13. End Session
+- Stop any services you started directly during this cycle (services started during ST acceptance testing in Step 10 are stopped by `long-task-feature-st`)
+- Output a concise completion summary:
+  > **Feature #\<id\> (\<title\>) — DONE**
+  >
+  > Next: Feature #\<next_id\> (\<next_title\>)
+- If **no failing non-deprecated features remain**:
+  > All active features passing — next session begins System Testing.
+- End session — **never loop back to Step 1**
 
-**Note**: Stop any services you started directly during this cycle before ending the session. Services started during ST acceptance testing (Step 10) are stopped by `long-task-feature-st`.
+The auto-loop script (`scripts/auto_loop.py`) handles multi-feature automation externally — each invocation is a fresh context.
 
 ## Critical Rules
 
-- **One feature per cycle** — prevents context exhaustion
+- **One feature per session** — end session after completing one feature; multi-feature automation is handled by the external auto-loop script (`scripts/auto_loop.py`)
 - **Strict step order** — no skipping, no reordering
 - **Sub-skills are non-negotiable** — ST Test Cases, TDD, Quality, Compliance Review MUST be invoked via Skill tool
 - **Config gate before planning** — never plan or code when required configs are missing

@@ -1,8 +1,15 @@
 #!/usr/bin/env python3
 """Auto-loop script for long-task feature development using OpenCode.
 
-Repeatedly calls `opencode run --yolo "继续"` until all active features pass,
+Repeatedly calls `opencode run --yolo "go on"` until all active features pass,
 max iterations are reached, or an error occurs.
+
+Each invocation gets a fresh context (implicit /clear). Session logs are saved
+to the --log-dir directory automatically.
+
+AskUserQuestion detection: The OpenCode plugin writes a signal file
+(.claude/ask-user-signal.json) when an interactive tool is called.
+The loop detects this and pauses.
 
 Interrupt handling:
     1st Ctrl+C — graceful: finish current iteration, then stop
@@ -14,6 +21,7 @@ Usage:
     python scripts/auto_loop_opencode.py feature-list.json --cooldown 10
     python scripts/auto_loop_opencode.py feature-list.json --model anthropic/claude-sonnet-4-6
     python scripts/auto_loop_opencode.py feature-list.json --attach http://localhost:4096
+    python scripts/auto_loop_opencode.py feature-list.json --log-dir logs
 """
 
 import argparse
@@ -90,14 +98,80 @@ def detect_error(output: str) -> str | None:
     return None
 
 
+def detect_ask_user_signal(project_dir: str) -> dict | None:
+    """Check for OpenCode ask-user signal file.
+
+    The OpenCode plugin writes .claude/ask-user-signal.json when an
+    interactive tool is called. Returns signal content or None.
+    """
+    signal_file = os.path.join(project_dir, ".claude", "ask-user-signal.json")
+    if os.path.isfile(signal_file):
+        try:
+            with open(signal_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            os.remove(signal_file)
+            return data
+        except Exception:
+            try:
+                os.remove(signal_file)
+            except OSError:
+                pass
+            return {"question": "User input required (signal file)"}
+    return None
+
+
+def check_git_dirty(project_dir: str) -> str | None:
+    """Check for uncommitted changes. Returns status string or None if clean."""
+    try:
+        result = subprocess.run(
+            ["git", "status", "--porcelain"],
+            capture_output=True,
+            text=True,
+            cwd=project_dir,
+            timeout=10,
+        )
+        status = result.stdout.strip()
+        if status:
+            return status
+    except Exception:
+        pass
+    return None
+
+
+def write_log(log_dir: str, iteration: int, result_text: str,
+              feature_list_path: str) -> str:
+    """Write session log file. Returns log file path."""
+    os.makedirs(log_dir, exist_ok=True)
+    timestamp = time.strftime("%Y%m%d-%H%M%S")
+    log_file = os.path.join(log_dir, f"session-{timestamp}-iter-{iteration}.md")
+
+    with open(log_file, "w", encoding="utf-8") as lf:
+        lf.write(f"# Session Log — Iteration {iteration}\n\n")
+        lf.write(f"**Date**: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+        lf.write("---\n\n")
+        lf.write(result_text)
+        lf.write("\n")
+
+        # Feature status
+        try:
+            total, passing, failing = load_feature_status(feature_list_path)
+            lf.write(f"\n---\n\n**Status**: {passing}/{total} passing, {failing} failing\n")
+        except Exception:
+            pass
+
+    return log_file
+
+
 def run_iteration(
     iteration: int,
     project_dir: str,
     prompt: str,
+    log_dir: str,
+    feature_list_path: str,
     model: str | None = None,
     attach: str | None = None,
-) -> tuple[int, str]:
-    """Run one opencode iteration. Returns (exit_code, captured_output)."""
+) -> tuple[int, str, str]:
+    """Run one opencode iteration. Returns (exit_code, captured_output, log_file)."""
     global _active_proc
 
     cmd = ["opencode", "run", "--yolo"]
@@ -129,12 +203,15 @@ def run_iteration(
 
         proc.wait()
         _active_proc = None
-        return proc.returncode, "".join(captured)
+
+        result_text = "".join(captured)
+        log_file = write_log(log_dir, iteration, result_text, feature_list_path)
+        return proc.returncode, result_text, log_file
 
     except FileNotFoundError:
         _active_proc = None
         print("ERROR: 'opencode' command not found. Is OpenCode installed?", flush=True)
-        return -1, ""
+        return -1, "", ""
     except KeyboardInterrupt:
         # Should not normally reach here (signal handler takes over),
         # but keep as safety net.
@@ -145,7 +222,7 @@ def run_iteration(
             except subprocess.TimeoutExpired:
                 proc.kill()
         _active_proc = None
-        return -2, "".join(captured)
+        return -2, "".join(captured), ""
 
 
 def interruptible_sleep(seconds: int) -> bool:
@@ -162,7 +239,8 @@ def main() -> int:
     signal.signal(signal.SIGINT, _signal_handler)
 
     parser = argparse.ArgumentParser(
-        description="Auto-loop OpenCode for long-task feature development."
+        description="Auto-loop OpenCode for long-task feature development. "
+                    "Each invocation gets a fresh context (implicit /clear)."
     )
     parser.add_argument("feature_list", help="Path to feature-list.json")
     parser.add_argument(
@@ -179,8 +257,8 @@ def main() -> int:
     )
     parser.add_argument(
         "--prompt",
-        default="继续",
-        help="Prompt to send each iteration (default: 继续)",
+        default="go on",
+        help="Prompt to send each iteration (default: go on)",
     )
     parser.add_argument(
         "--model",
@@ -192,6 +270,11 @@ def main() -> int:
         default=None,
         help="Attach to a running opencode serve instance (e.g. http://localhost:4096)",
     )
+    parser.add_argument(
+        "--log-dir",
+        default="logs",
+        help="Directory for session logs (default: logs)",
+    )
     args = parser.parse_args()
 
     feature_list_path = os.path.abspath(args.feature_list)
@@ -200,6 +283,7 @@ def main() -> int:
         return 1
 
     project_dir = os.path.dirname(feature_list_path)
+    log_dir = os.path.join(project_dir, args.log_dir)
 
     # Show initial status
     try:
@@ -207,6 +291,7 @@ def main() -> int:
         print(f"Project dir: {project_dir}")
         print(f"Features: {total} total, {passing} passing, {failing} failing")
         print(f"Max iterations: {args.max_iterations}, Cooldown: {args.cooldown}s")
+        print(f"Log dir: {log_dir}")
         if args.model:
             print(f"Model: {args.model}")
         if args.attach:
@@ -220,15 +305,27 @@ def main() -> int:
         print("All features already passing. Nothing to do.")
         return 0
 
+    # Git dirty state check
+    dirty = check_git_dirty(project_dir)
+    if dirty:
+        print(f"\nWARNING: Dirty git state detected:")
+        for line in dirty.split("\n")[:5]:
+            print(f"  {line}")
+        print()
+
     for i in range(1, args.max_iterations + 1):
         # Check for pending graceful stop before starting next iteration
         if _interrupt_requested:
             print(f"\nSTOPPED: Graceful interrupt before iteration {i}.")
             return 130
 
-        exit_code, output = run_iteration(
-            i, project_dir, args.prompt, args.model, args.attach
+        exit_code, output, log_file = run_iteration(
+            i, project_dir, args.prompt, log_dir, feature_list_path,
+            args.model, args.attach,
         )
+
+        if log_file:
+            print(f"\n  Log: {log_file}", flush=True)
 
         # Check for keyboard interrupt
         if exit_code == -2:
@@ -237,6 +334,18 @@ def main() -> int:
         # Check for command not found
         if exit_code == -1:
             return 1
+
+        # Check for ask-user signal file from OpenCode plugin
+        ask_signal = detect_ask_user_signal(project_dir)
+        if ask_signal:
+            print(f"\n{'='*60}")
+            print(f"  USER INPUT REQUIRED — Loop paused")
+            print(f"{'='*60}")
+            q = ask_signal.get("question", ask_signal.get("text", str(ask_signal)))
+            print(f"  {q}")
+            print(f"\nPlease handle the request, then restart the loop:")
+            print(f"  python scripts/auto_loop_opencode.py {args.feature_list}")
+            return 4
 
         # Check for error patterns in output
         error_match = detect_error(output)

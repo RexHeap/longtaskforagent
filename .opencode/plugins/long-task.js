@@ -222,6 +222,32 @@ export const LongTaskPlugin = async ({ client, directory }) => {
       if (bootstrap) {
         (output.system ||= []).push(bootstrap);
       }
-    }
+    },
+
+    // ─── AskUserQuestion signal file for auto_loop detection ─────────
+    // When an interactive tool is called, write a signal file so that
+    // auto_loop_opencode.py can detect it and pause the loop.
+    'tool.execute.before': async (input, output) => {
+      const interactiveTools = ['ask_user', 'ask_question', 'user_input'];
+      const isInteractiveBash = input.tool === 'bash' &&
+        output.args?.command &&
+        /\bread\s+(-[rspn]\s+)*-?p\b/.test(output.args.command);
+
+      if (interactiveTools.includes(input.tool) || isInteractiveBash) {
+        const signalDir = path.join(directory, '.claude');
+        if (!fs.existsSync(signalDir)) {
+          fs.mkdirSync(signalDir, { recursive: true });
+        }
+        fs.writeFileSync(
+          path.join(signalDir, 'ask-user-signal.json'),
+          JSON.stringify({
+            tool: input.tool,
+            question: output.args?.question || output.args?.text || 'User input required',
+            timestamp: new Date().toISOString(),
+          }, null, 2),
+          'utf8'
+        );
+      }
+    },
   };
 };
