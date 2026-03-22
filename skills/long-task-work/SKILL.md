@@ -134,27 +134,27 @@ Context to carry forward:
 ### 8. Quality Gates
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-quality` and follow it exactly.
 
-Context to carry forward:
-- Feature ID and verification_steps
-- `quality_gates` thresholds from feature-list.json
-- `tech_stack` tool names for coverage/mutation commands
-- **Test commands**: from `long-task-guide.md` — use directly
+The Quality skill dispatches a SubAgent to execute all 4 gates (Real Test → Coverage → Mutation → Verify). The main Agent does NOT read coverage reports, mutation output, or test runner output — the SubAgent handles everything in its own fresh context and returns a structured summary.
+
+Context to carry forward (minimal — SubAgent reads files itself):
+- Feature ID from feature-list.json
+- `quality_gates` thresholds (compact JSON)
+- `tech_stack` (compact JSON)
+- Working directory path
 
 ### 9. ST Acceptance Test Cases
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-feature-st` and follow it exactly.
 
-Execute black-box acceptance testing for the feature **after** TDD and quality gates pass. The skill generates ISO/IEC/IEEE 29119 compliant test case documents.
+Execute black-box acceptance testing for the feature **after** TDD and quality gates pass. The skill dispatches a SubAgent that reads SRS/Design/UCD/ATS documents in its own fresh context, generates ISO/IEC/IEEE 29119 compliant test case documents, executes test cases, and manages service lifecycle. The main Agent does NOT read document sections, test case content, or execution output — only the structured summary.
 
-Context to carry forward:
-- Current feature object from feature-list.json
-- Full `{srs_section}` and `{design_section}` from Document Lookup Protocol
-- Plan file path from Step 5
-- UCD sections (if `"ui": true`)
-- `quality_gates` and `tech_stack` from feature-list.json
-- **Implementation code** — files created/modified during TDD (from git diff or plan document file list)
-- **Test results summary** — from TDD and Quality Gates (coverage %, mutation score)
+Context to carry forward (paths only — SubAgent reads file contents itself):
+- Feature ID and feature object (compact JSON)
+- `quality_gates` and `tech_stack` (compact JSON)
+- File paths: design doc, SRS doc, UCD doc (if ui:true), ATS doc (if exists), plan doc (from Step 4), env-guide.md
+- Working directory path
+- `st_case_template_path` and `st_case_example_path` from feature-list.json root (if set)
 
-Output: `docs/test-cases/feature-{id}-{slug}.md`
+Output: `docs/test-cases/feature-{id}-{slug}.md` (written by SubAgent)
 
 **Hard Gate:**
 - Any execution failure (environment or test case) must be reported to user via `AskUserQuestion`

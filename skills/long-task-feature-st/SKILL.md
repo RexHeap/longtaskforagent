@@ -3,348 +3,106 @@ name: long-task-feature-st
 description: "Use after quality gates pass in a long-task project — independently manages test environment lifecycle (start/cleanup), executes black-box acceptance testing per feature via Chrome DevTools MCP, generates ISO/IEC/IEEE 29119 compliant test case documents"
 ---
 
-# Feature-Level Black-Box Acceptance Testing
+# Feature-ST — SubAgent Dispatch
 
-Execute black-box acceptance testing for a completed feature **after** TDD implementation and quality gates pass. This skill independently manages its own environment lifecycle (start → test → cleanup) and generates ISO/IEC/IEEE 29119 compliant test case documents.
+Delegate black-box acceptance testing to a SubAgent with fresh context. The main Agent only dispatches and parses the structured result — it never reads SRS/Design/UCD sections, test case documents, or execution output directly.
 
-**Announce at start:** "I'm using the long-task-feature-st skill to run black-box acceptance testing for this feature."
+**Announce at start:** "I'm using the long-task-feature-st skill to run acceptance testing via SubAgent."
 
-## Standard
+## Step 1: Gather Path Parameters
 
-Default: **ISO/IEC/IEEE 29119-3** (Test Documentation).
+Collect file paths from the current session state (do NOT read the file contents yourself):
 
-Users may override the template and style via `feature-list.json` root fields:
-- `st_case_template_path` — custom template file (defines structure)
-- `st_case_example_path` — example file (defines style, language, detail level)
+- `feature_id` — current feature ID
+- `feature_json` — current feature object from feature-list.json (compact JSON)
+- `design_doc_path` — path to `docs/plans/*-design.md`
+- `srs_doc_path` — path to `docs/plans/*-srs.md`
+- `ucd_doc_path` — path to `docs/plans/*-ucd.md` (only if `"ui": true`; omit otherwise)
+- `ats_doc_path` — path to `docs/plans/*-ats.md` (if exists; omit otherwise)
+- `plan_doc_path` — path to `docs/plans/YYYY-MM-DD-<feature-name>.md` (from Feature Design step)
+- `env_guide_path` — `env-guide.md` (if exists)
+- `quality_gates_json` — quality_gates thresholds from feature-list.json
+- `tech_stack_json` — tech_stack from feature-list.json
+- `working_dir` — project working directory
+- `st_case_template_path` — from feature-list.json root (optional)
+- `st_case_example_path` — from feature-list.json root (optional)
 
-## When to Run
+## Step 2: Construct SubAgent Prompt
 
-- After **every** feature's Quality Gates step (Worker Step 9), before Review (Worker Step 11)
-- No exceptions — even "simple" features need acceptance test case documentation
-- Invoked by `long-task-work` as a sub-skill (not directly by router)
-
-## Black-Box Testing Philosophy
-
-TDD (long-task-tdd) has already verified the implementation from the inside:
-unit tests exercise code paths; coverage and mutation gates verify completeness.
-
-This skill verifies from the **outside** — as a user or external system would:
-- Inputs go in through the real interface (HTTP endpoints, UI, CLI args)
-- Outputs observed through the real interface (HTTP responses, rendered UI, stdout)
-- Internal implementation is NOT consulted during test design or execution
-- Chrome DevTools MCP is the primary execution environment for UI features
-
-**Rule:** If a test case requires reading source code to determine the expected result, it is not a black-box test — rewrite it using only the SRS specification.
-
-## Service Lifecycle (via env-guide.md)
-
-Manage services explicitly using `env-guide.md`. No hooks handle this automatically.
-
-**Pre-existing services**: If Worker Bootstrap already started services (because the feature has service dependencies for TDD), they may still be running when Feature-ST begins. The Start step below checks health first and only starts if not already running. Feature-ST owns **restart** (between test cycles) and **cleanup** (after all cases) — it does NOT assume sole responsibility for first start.
-
-**env-guide.md is the source of truth.** It must always reflect commands that actually work. If a command in env-guide.md fails, fix the command and update env-guide.md before proceeding.
-
-### Start (before first test case)
-
-1. **Read `env-guide.md`** — locate the "Start All Services" section
-2. **Check if services are already running**: run the "Verify Services Running" health checks
-   - If already running and healthy: record PID/port in `task-progress.md`; proceed
-3. **If not running**: execute each start command with output capture:
-   ```bash
-   # Unix/macOS
-   [start command] > /tmp/svc-<slug>-start.log 2>&1 &
-   sleep 3
-   head -30 /tmp/svc-<slug>-start.log
-
-   # Windows
-   cmd /c "start /b [command] > %TEMP%\svc-<slug>-start.log 2>&1"
-   timeout /t 3 /nobreak >nul
-   powershell "Get-Content $env:TEMP\svc-<slug>-start.log -TotalCount 30"
-   ```
-   - Extract PID and port from the first 30 lines; record both in `task-progress.md`
-   - Run "Verify Services Running" health checks from `env-guide.md` — must respond before proceeding
-4. **If start fails**: check the log file, diagnose root cause
-   - Try corrected commands (port conflict, missing env vars, env not activated, missing dependencies)
-   - Once a working command is found: **update `env-guide.md`** — fix the Services table row and Start command; if the fix requires >2 shell commands, extract to `scripts/svc-<slug>-start.sh` / `scripts/svc-<slug>-start.ps1` and update env-guide.md to call the script
-   - Report to user via `AskUserQuestion`: include original error, fix applied, note that env-guide.md was updated — do NOT proceed until service is healthy
-
-### Cleanup (after all test cases complete) — MANDATORY
-
-1. **Read `env-guide.md`** — locate "Stop All Services" and "Verify Services Stopped" sections
-2. **Stop services**: kill by PID (from `task-progress.md`) — preferred; or kill by port (fallback commands in `env-guide.md`)
-   - If the stop command fails (PID not found, kill returns error): try the port-based fallback; once a working command is confirmed, **update `env-guide.md`** Stop command to reflect the fix
-3. **Verify stopped**: run "Verify Services Stopped" commands — ports must not respond (max 5 seconds)
-4. **Record**: note cleanup status in `task-progress.md`
-
-**Why mandatory**: Leaving services running causes port conflicts in subsequent ST cycles.
-
-### Restart Protocol (between fix-and-retest cycles)
-
-When a test case fails, code is fixed, and services must restart:
-
-1. **Kill**: stop by PID (from `task-progress.md`) or by port (env-guide.md Stop commands)
-   - If kill fails: try port-based fallback; once working, **update `env-guide.md`** Stop command
-2. **Verify dead**: poll port — must not respond within 5 seconds
-3. **Start**: run start command with output capture (`head -30`) — extract new PID/port; update `task-progress.md`
-   - If start fails: diagnose, fix, **update `env-guide.md`** before retrying
-4. **Verify alive**: poll health endpoint — must respond within 10 seconds
-
-### Scripts Convention (for complex service sequences)
-
-If startup or cleanup requires >2 shell steps (e.g., DB migration + seed + server start), consolidate into versioned scripts rather than keeping complex inline commands in env-guide.md:
-
-- Create `scripts/svc-<slug>-start.sh` (Unix) / `scripts/svc-<slug>-start.ps1` (Windows) — full startup sequence
-- Create `scripts/svc-<slug>-stop.sh` / `scripts/svc-<slug>-stop.ps1` — full teardown sequence
-- Update `env-guide.md` "Start All Services" to call `bash scripts/svc-<slug>-start.sh` (or `pwsh scripts/svc-<slug>-start.ps1`)
-- Commit the scripts and updated env-guide.md together in the same commit
-
-## Checklist
-
-You MUST create a TodoWrite task for each step and complete them in order:
-
-### 1. Load Context
-
-Read all input artifacts for the target feature:
-
-- **Feature object** from `feature-list.json` — ID, title, description, verification_steps, ui flag, dependencies, priority
-- **SRS section** — full FR-xxx from `docs/plans/*-srs.md` via Document Lookup Protocol (read the entire subsection, NOT grep)
-- **Design section** — full §4.N from `docs/plans/*-design.md` via Document Lookup Protocol
-- **ATS constraints** (if `docs/plans/*-ats.md` exists) — read the ATS mapping table rows for the requirement(s) that map to this feature; extract required categories and minimum case counts. These constraints are **binding** for Step 3 (Derive Test Cases).
-- **Plan document** — from Step 5 (`docs/plans/YYYY-MM-DD-<feature-name>.md`)
-- **UCD sections** (only if `"ui": true`) — relevant component prompts and page prompts from `docs/plans/*-ucd.md`
-- **Root context** — `constraints[]`, `assumptions[]` from `feature-list.json` root
-- **Related NFRs** — check SRS for NFR-xxx requirements that trace to this feature
-- **Interface contracts** — API endpoints, CLI commands, UI entry points that form the observable surface of this feature
-- **Test results summary** — from TDD and Quality Gates (coverage %, mutation score)
-
-### 2. Load Template
-
-1. Check `feature-list.json` root for `st_case_template_path`:
-   - If present and file exists: read the custom template
-   - If absent: use default template at `docs/templates/st-case-template.md`
-2. Check `feature-list.json` root for `st_case_example_path`:
-   - If present and file exists: read the example file — adapt style, language, and detail level from it
-   - If absent: use standard professional style
-
-**Template + Example interaction:**
-- Both provided → use template's **structure**, example's **style**
-- Only template → use template structure with default style
-- Only example → infer structure from example, use example's style
-- Neither → use the built-in default template (ISO/IEC/IEEE 29119-3)
-
-### 2b. Load UI Execution Protocol (for `"ui": true` features)
-
-If the target feature has `"ui": true`, read `prompts/e2e-scenario-prompt.md`. This provides mandatory rules for generating Chrome DevTools MCP-executable E2E test scenarios. Apply these rules during Step 3 for all UI and A11Y category test cases.
-
-**Why**: Without this prompt, UI test cases tend to be simple page-load checks. The prompt ensures each test step maps to a concrete MCP tool call (`navigate_page`, `click`, `fill`, `take_snapshot`, `evaluate_script`, `list_console_messages`) and follows the three-layer detection model. Chrome DevTools MCP is the **primary** testing vehicle for UI features in this skill.
-
-### 3. Derive Test Cases
-
-For each `verification_step` in the feature, generate **one or more** test cases.
-
-**Category assignment rules:**
-
-| Category | Abbrev | When to generate |
-|----------|--------|------------------|
-| `functional` | FUNC | Always — happy path + error path for every feature |
-| `boundary` | BNDRY | Always — edge cases, limits, empty/max/zero values |
-| `ui` | UI | Only when `"ui": true` — Chrome DevTools MCP interaction + visual verification |
-| `security` | SEC | When feature handles user input, auth, or external data |
-| `accessibility` | A11Y | Only when `"ui": true` — WCAG 2.1 AA checks |
-| `performance` | PERF | Only when traceable to NFR-xxx with performance metrics |
-
-**UI test case enrichment (mandatory for `"ui": true` features):**
-- Every UI category test case MUST have ≥ 5 steps in the test step table
-- Every step MUST specify the Chrome DevTools MCP tool that executes it (`navigate_page`, `click`, `fill`, `take_snapshot`, `evaluate_script`, etc.)
-- Every test case MUST include all three detection layers (Layer 1: `evaluate_script`, Layer 2: EXPECT/REJECT, Layer 3: `list_console_messages`)
-- Test cases that verify data MUST include backend integration steps (real API data, not mocked)
-- Test cases MUST test at least one negative path via UI (e.g., submit invalid form → verify error message)
-- See `prompts/e2e-scenario-prompt.md` for detailed expansion rules and examples
-
-**ATS enforcement (if ATS document exists):**
-- Read the ATS mapping table rows loaded in Step 1
-- For each ATS-required category for this feature's requirement(s): generate at least one test case of that category
-- Total test cases per requirement MUST meet or exceed the ATS minimum case count
-- If ATS requires SEC but the feature does not handle user input, note the discrepancy in the test case document and generate at least one boundary-security case
-- **ATS minimum counts are hard gates** — validate via `python scripts/check_ats_coverage.py` in Step 6
-
-**Minimum coverage:**
-- Every feature MUST have at least one FUNC and one BNDRY test case
-- Every `verification_step` MUST map to at least one test case
-- UI features MUST have at least one UI and one A11Y test case
-- If ATS exists: all ATS-required categories and minimum counts are met
-
-**Case ID format:**
 ```
-ST-{CATEGORY}-{FEATURE_ID(3 digits)}-{SEQ(3 digits)}
-```
-Examples: `ST-FUNC-005-001`, `ST-UI-005-002`, `ST-SEC-012-001`
+You are a Feature-ST execution SubAgent for black-box acceptance testing.
 
-**Test case content rules:**
-- Test steps MUST be concrete and executable (no vague "verify it works")
-- Expected results MUST be specific and assertable (no "should look correct")
-- Preconditions MUST list real, verifiable states
-- Verification points MUST be observable and automatable where possible
+## Your Task
+1. Read the execution rules: Read {skills_root}/long-task-feature-st/references/feature-st-execution.md
+2. Follow the checklist exactly (Steps 1-7): Load Context → Load Template → Derive Test Cases → Write Document → Validate → Execute → Cleanup
+3. For UI features (ui: true), also read: {skills_root}/long-task-feature-st/prompts/e2e-scenario-prompt.md
+4. Return your result using the Structured Return Contract at the end of the execution rules
 
-**Acceptance-level focus:** Test cases confirm the implementation matches requirements from a user/system perspective — not duplicating unit test assertions. Focus on behavioral scenarios, integration paths, and end-to-end workflows.
+## Input Parameters
+- Feature ID: {feature_id}
+- Feature: {feature_json}
+- quality_gates: {quality_gates_json}
+- tech_stack: {tech_stack_json}
+- Working directory: {working_dir}
 
-**Test type labeling (real/mock)** — for each derived test case, set the `Test Type` metadata field:
-- Mark as `Real` if the test case executes against a real running system (real DB, real HTTP service, real browser via Chrome DevTools MCP, real file system)
-- Mark as `Mock` only if the test case's primary execution path uses a mock or stub service
-- Feature-ST test cases executed against a running service (Step 7 starts services before execution) are **always `Real`** — they connect to real services
+## Document Paths (read these yourself using the Read tool)
+- Design doc: {design_doc_path}
+- SRS doc: {srs_doc_path}
+- UCD doc: {ucd_doc_path} (omit if not UI)
+- ATS doc: {ats_doc_path} (omit if not present)
+- Feature design plan: {plan_doc_path}
+- Environment guide: {env_guide_path}
 
-**Black-box constraint:** Expected results must be derivable solely from the SRS (verification_steps, Given/When/Then, NFR thresholds) and the observable interface. If the expected result cannot be determined without reading implementation code, raise it as a specification gap via `AskUserQuestion`.
+## Template/Example (optional)
+- ST case template: {st_case_template_path} (omit if not set)
+- ST case example: {st_case_example_path} (omit if not set)
 
-### 4. UI Test Case Requirements (only if `"ui": true`)
-
-For UI features, test cases consolidate previously separate concerns:
-
-**a) Functional UI testing** — navigation, interaction, state changes:
-- Navigation path from `ui_entry` or specific route
-- Interaction sequence: `click`, `fill`, `press_key` steps
-- EXPECT/REJECT clauses (mandatory for every UI test step)
-
-**b) UCD compliance** — style token verification:
-- Reference which UCD color palette tokens apply to verified elements
-- Reference which typography scale values apply
-- Reference which spacing tokens apply
-- This replaces the separate U1-U4 review check for individual elements
-
-**c) Accessibility** — WCAG 2.1 AA:
-- Keyboard navigability for interactive elements
-- Color contrast verification against WCAG minimum ratios
-- ARIA attributes and semantic HTML verification
-- Screen reader compatibility notes
-
-**d) Console error gate:**
-- Every UI test case MUST include a post-step check: `list_console_messages(types=["error"])` must return 0
-- Exception: if test explicitly expects console errors, note with `[expect-console-error: <pattern>]`
-
-**e) Three-layer detection:**
-- Layer 1: Automated error detection script via `evaluate_script()` — reference `skills/long-task-tdd/references/ui-error-detection.md`
-- Layer 2: EXPECT/REJECT format in test steps
-- Layer 3: Console error gate
-
-**f) MCP tool call mapping:**
-- Each test step's "操作" column must be specific enough to map to a single Chrome DevTools MCP tool call
-- BAD: "检查登录页面" — which tool? what to check?
-- GOOD: "`navigate_page(url='/login')` → `wait_for(['Sign In'])` → `take_snapshot()` → 验证 EXPECT: 邮箱输入框, 密码输入框, 登录按钮"
-- The test step table becomes a **script** that can be mechanically translated into Chrome DevTools MCP calls
-- See `prompts/e2e-scenario-prompt.md` for the full MCP tool → test step mapping table
-
-### 5. Write Test Case Document
-
-Output file: `docs/test-cases/feature-{id}-{slug}.md`
-- `{id}` is the feature ID (as-is, not zero-padded in filename)
-- `{slug}` is a kebab-case version of the feature title
-
-**Document structure (following template):**
-
-1. **Header** — Feature ID, related requirements, date, standard
-2. **Summary table** — count by category
-3. **Test case blocks** — one per case, all required sections
-4. **Traceability matrix** — Case ID ↔ Requirement ↔ verification_step ↔ Automated test ↔ Result
-
-The traceability matrix `结果` column starts as `PENDING`. Execute each test case in Step 7 below and update to `PASS`/`FAIL` during this step.
-
-### 6. Validate
-
-Run the validation scripts:
-
-```bash
-python scripts/validate_st_cases.py docs/test-cases/feature-{id}-{slug}.md --feature-list feature-list.json --feature {id}
+## Key Constraints
+- Do NOT mark the feature as "passing" in feature-list.json — only report results
+- You MUST manage service lifecycle: start before tests, cleanup after all tests
+- UI test cases MUST use Chrome DevTools MCP — no skip, no alternative
+- If environment cannot start after 3 attempts, set Verdict to BLOCKED
+- ALL test cases must be executed one by one — no skipping
 ```
 
-If ATS document exists, also run ATS coverage check:
-```bash
-python scripts/check_ats_coverage.py docs/plans/*-ats.md --feature-list feature-list.json --feature {id} --strict
+## Step 3: Dispatch SubAgent
+
+**Claude Code:** Use the `Agent` tool:
+```
+Agent(
+  description = "Feature-ST for feature #{feature_id}",
+  prompt = [the constructed prompt above]
+)
 ```
 
-- **Both exit 0**: proceed to Execute Test Cases (Step 7)
-- **Any exit 1**: fix errors and re-validate (do NOT proceed with errors)
+**OpenCode:** Use `@mention` syntax or the platform's native subagent mechanism with the same prompt content.
 
-### 7. Execute Test Cases
+## Step 4: Parse Result
 
-Since implementation code already exists (TDD and Quality Gates are complete), execute each test case to verify acceptance:
+Read the SubAgent's returned text and locate the `### Verdict:` line:
 
-**HARD REQUIREMENT: Must execute test cases one by one as defined in `docs/test-cases/feature-{id}-{slug}.md`**
-- Each test case must be executed individually and results recorded
-- **UI test cases CANNOT be skipped for any reason** — UI verification is mandatory
-- No test case may be skipped
-- Do not merge or simplify the test case execution process
-- **UI test cases MUST use Chrome DevTools MCP for verification**
+- **`### Verdict: PASS`**
+  1. Extract Next Step Inputs: `st_case_path`, `st_case_count`, `environment_cleaned`
+  2. Record in `task-progress.md`: "Feature-ST: PASS ({N} cases, all passed)"
+  3. If `environment_cleaned` is false, run cleanup per `env-guide.md` yourself
+  4. Proceed to next step (Review)
 
-1. **Start services** per Service Management above — follow env-guide.md start protocol with output capture; record PID and port in `task-progress.md`
-2. For **non-UI test cases**: verify by running relevant test commands or manual checks against the running system
-3. For **UI test cases**: execute via Chrome DevTools MCP following the step tables — see `prompts/e2e-scenario-prompt.md` for MCP tool mapping
-4. Update the traceability matrix `结果` column to `PASS` or `FAIL` for each case
-4b. Update the **Real Test Case Execution Summary** table in the test case document:
-   - Count all `Real` cases from the traceability matrix and their PASS/FAIL status
-   - Fill in the summary table (total / passed / failed / pending)
-   - Any `Real` FAIL is a blocking failure — same consequence as any other test case failure
-5. **Stop services** per Service Management cleanup above
+- **`### Verdict: FAIL`**
+  1. Read the Issues table — identify which test cases failed (case IDs, actual vs expected)
+  2. Escalate to user via `AskUserQuestion`:
+     - Include failed case IDs, step details, actual vs expected from the Issues table
+     - Options: "Fix code and re-execute" / "Modify test case via long-task-increment skill" / "Terminate cycle"
+  3. If user chooses fix: apply fix, then re-dispatch SubAgent for re-execution
+  4. **No bypass allowed** — a FAIL here blocks the feature from proceeding to Review
 
-**If any test case FAILS:**
-- Report to user via `AskUserQuestion` with: failed case ID, step details, actual vs expected
-- Options: fix code and re-execute / modify test case via the `long-task-increment` skill / terminate cycle
-- A failure here blocks the feature from proceeding to Review
-
-**If all test cases PASS:**
-- Proceed to Review (Worker Step 11)
-
-Each automated test SHOULD reference its corresponding ST case ID via a comment:
-```python
-# ST-FUNC-005-001
-def test_valid_order_creation():
-    ...
-```
-
-## Execution Rules (Hard Gates)
-
-### Environment Gate
-
-Always start from a known-clean state. Do not assume services are already running.
-
-- Start services per Service Management above; verify health endpoint before running any test cases
-- If service fails to start after diagnosis: **BLOCKED** — report to user via `AskUserQuestion` with service details and options (fix/start manually/terminate)
-- After start: verify app is responding before running any test cases
-
-### Failure Is Not Bypassable
-
-- **Any test case execution failure** blocks the feature from being marked `"passing"`
-- **ALL bugs found in ST testing MUST be fixed** — regardless of whether they are:
-  - Frontend bugs (UI rendering, interaction, state)
-  - Backend bugs (API errors, data persistence, logic)
-  - Integration bugs (frontend-backend communication)
-- Must report to user via `AskUserQuestion`:
-  - Failed case ID(s), failed step number, actual vs expected
-  - Bug category (frontend/backend/integration)
-  - Options: fix code and re-execute / modify test case via the `long-task-increment` skill / terminate
-- **No bypass allowed** for any reason:
-  - "Simple feature" — still needs test cases
-  - "UI tests are complex" — **UI test cases CANNOT be skipped; use Chrome DevTools MCP**
-  - "Browser testing is too complex" — **UI test cases MUST use Chrome DevTools MCP for verification**
-  - "This is a frontend bug, not my code" — **ALL bugs must be fixed**
-  - "This is a backend bug, let someone else fix it" — **ALL bugs must be fixed**
-  - "Environment temporarily unavailable" — BLOCKED, not skipped
-  - "Test case might be wrong" — use the `long-task-increment` skill to modify, don't skip
-- All failures MUST be recorded in `task-progress.md`
-
-## Critical Rules
-
-- **Requirements-driven**: Test cases derive from SRS/Design, validating implementation against requirements — not duplicating unit test assertions
-- **Black-box only**: Expected results must be derivable from SRS and the observable interface alone — no reading implementation code
-- **Complete after Quality Gates**: All test cases must be written, validated, and executed after TDD and quality gates pass
-- **Immutable after generation**: Test case documents are written and executed in this step and not modified during Review. Changes require the `long-task-increment` skill
-- **Traceability mandatory**: Every test case traces to a requirement; every verification_step traces to a test case
-- **UI consolidation**: For UI features, this skill consolidates functional, UCD compliance, and accessibility testing into unified test cases
-- **Template flexibility**: Users can override the default ISO/IEC/IEEE 29119 template with custom templates and style examples
-- **UI tests are mandatory**: For features with `"ui": true`, UI category test cases are NON-SKIPPABLE — they MUST use Chrome DevTools MCP for browser-based verification. There is no alternative or workaround.
-- **ALL bugs must be fixed**: Any bug discovered during ST testing — whether frontend, backend, or integration — MUST be fixed before the feature can be marked as passing. There is no "not my code" exemption.
+- **`### Verdict: BLOCKED`**
+  1. Read the Issues table — identify the blocker (service won't start, MCP unavailable, etc.)
+  2. Escalate to user via `AskUserQuestion` with blocker details
+  3. If blocker resolved, re-dispatch SubAgent
 
 ## Integration
 
-**Called by:** `long-task-work` (Step 10)
-**Requires:** Quality Gates passed (long-task-quality Step 9 complete)
-**Produces:** `docs/test-cases/feature-{id}-{slug}.md` with executed results
-**Chains to:** `long-task-review` (Worker Step 11)
+**Called by:** `long-task-work` (Step 9)
+**Requires:** Quality Gates passed (long-task-quality complete)
+**Produces:** `docs/test-cases/feature-{id}-{slug}.md` with executed results + structured summary
+**Chains to:** `long-task-review` (Worker Step 10)
