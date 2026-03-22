@@ -222,7 +222,7 @@ When the design document is complete, return your result in EXACTLY this format:
 ### Summary
 [1-3 sentences — what was designed, key architectural decisions, document completeness]
 ### Artifacts
-- [docs/plans/YYYY-MM-DD-<feature-name>.md]: Feature detailed design document
+- [docs/features/YYYY-MM-DD-<feature-name>.md]: Feature detailed design document
 ### Metrics
 | Metric | Value | Threshold | Status |
 |--------|-------|-----------|--------|

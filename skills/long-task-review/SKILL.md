@@ -26,7 +26,7 @@ Collect these from the current session state. Do NOT read document contents your
 - `srs_start` / `srs_end` — line range of the FR-xxx subsection (from Orient Document Lookup)
 - `design_file` — path to design doc (`docs/plans/*-design.md`)
 - `design_start` / `design_end` — line range of the §4.N subsection (from Orient Document Lookup)
-- `plan_doc_path` — path to feature detailed design (`docs/plans/YYYY-MM-DD-<feature-name>.md`)
+- `plan_doc_path` — path to feature detailed design (`docs/features/YYYY-MM-DD-<feature-name>.md`)
 - `st_case_path` — path to ST test case document (`docs/test-cases/feature-{id}-{slug}.md`)
 - `ucd_file` / `ucd_start` / `ucd_end` — UCD doc path + line range (only for `"ui": true`; omit otherwise)
 - `base_sha` — git SHA before implementation began (for `git diff`)

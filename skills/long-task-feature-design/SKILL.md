@@ -32,7 +32,7 @@ Collect these from the current session state. Do NOT read document contents your
 - `ucd_start` / `ucd_end` — line range of relevant UCD sections (if applicable)
 - `constraints` — constraints[] from feature-list.json root
 - `assumptions` — assumptions[] from feature-list.json root
-- `output_path` — target file: `docs/plans/YYYY-MM-DD-<feature-name>.md`
+- `output_path` — target file: `docs/features/YYYY-MM-DD-<feature-name>.md`
 - `working_dir` — project working directory
 
 ## Step 2: Construct SubAgent Prompt
@@ -100,5 +100,5 @@ Read the SubAgent's returned text and locate the `### Verdict:` line:
 
 **Called by:** long-task-work (Step 4)
 **Requires:** System design doc, SRS, feature-list.json
-**Produces:** `docs/plans/YYYY-MM-DD-<feature-name>.md` (written by SubAgent)
+**Produces:** `docs/features/YYYY-MM-DD-<feature-name>.md` (written by SubAgent)
 **Chains to:** long-task-tdd (via Work Steps 5-7)

@@ -103,7 +103,7 @@ Read all input artifacts for the target feature:
 - **SRS section** — full FR-xxx from `docs/plans/*-srs.md` via Document Lookup Protocol (read the entire subsection, NOT grep)
 - **Design section** — full §4.N from `docs/plans/*-design.md` via Document Lookup Protocol
 - **ATS constraints** (if `docs/plans/*-ats.md` exists) — read the ATS mapping table rows for the requirement(s) that map to this feature; extract required categories and minimum case counts. These constraints are **binding** for Step 3 (Derive Test Cases).
-- **Plan document** — from Step 5 (`docs/plans/YYYY-MM-DD-<feature-name>.md`)
+- **Plan document** — from Step 5 (`docs/features/YYYY-MM-DD-<feature-name>.md`)
 - **UCD sections** (only if `"ui": true`) — relevant component prompts and page prompts from `docs/plans/*-ucd.md`
 - **Root context** — `constraints[]`, `assumptions[]` from `feature-list.json` root
 - **Related NFRs** — check SRS for NFR-xxx requirements that trace to this feature

@@ -9,7 +9,7 @@ You are a spec & design compliance reviewer. You review completed features again
 Dispatched as a subagent after each feature passes quality gates in the Worker cycle. Receives:
 - The feature spec (from `feature-list.json`)
 - The design document section (§ 4.N from `docs/plans/*-design.md`)
-- The implementation plan (`docs/plans/YYYY-MM-DD-<feature-name>.md`)
+- The implementation plan (`docs/features/YYYY-MM-DD-<feature-name>.md`)
 - The UCD style guide (`docs/plans/*-ucd.md`) — only for `"ui": true` features
 - The git diff of changes (`git diff <BASE_SHA>..HEAD`)
 - The test results summary

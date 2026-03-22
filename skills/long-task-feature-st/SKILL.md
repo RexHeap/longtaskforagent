@@ -19,7 +19,7 @@ Collect file paths from the current session state (do NOT read the file contents
 - `srs_doc_path` — path to `docs/plans/*-srs.md`
 - `ucd_doc_path` — path to `docs/plans/*-ucd.md` (only if `"ui": true`; omit otherwise)
 - `ats_doc_path` — path to `docs/plans/*-ats.md` (if exists; omit otherwise)
-- `plan_doc_path` — path to `docs/plans/YYYY-MM-DD-<feature-name>.md` (from Feature Design step)
+- `plan_doc_path` — path to `docs/features/YYYY-MM-DD-<feature-name>.md` (from Feature Design step)
 - `env_guide_path` — `env-guide.md` (if exists)
 - `quality_gates_json` — quality_gates thresholds from feature-list.json
 - `tech_stack_json` — tech_stack from feature-list.json

@@ -123,9 +123,9 @@ Context to carry forward (paths only — SubAgent reads contents itself):
 - `quality_gates` and `tech_stack` (compact JSON)
 - File paths + section line ranges: design doc (§4.N), SRS doc (FR-xxx), UCD doc (if ui:true)
 - Constraints and assumptions from feature-list.json root
-- Output path: `docs/plans/YYYY-MM-DD-<feature-name>.md`
+- Output path: `docs/features/YYYY-MM-DD-<feature-name>.md`
 
-Output: `docs/plans/YYYY-MM-DD-<feature-name>.md` (written by SubAgent) — feature detailed design document containing interface contracts, algorithm pseudocode, diagrams, test inventory, and TDD task decomposition.
+Output: `docs/features/YYYY-MM-DD-<feature-name>.md` (written by SubAgent) — feature detailed design document containing interface contracts, algorithm pseudocode, diagrams, test inventory, and TDD task decomposition.
 
 ### 5-7. TDD Cycle (Red → Green → Refactor)
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-tdd` and follow it exactly.
@@ -175,7 +175,7 @@ The Review skill dispatches a SubAgent that reads all documents and gathers evid
 Context to carry forward (paths only — SubAgent reads contents itself):
 - Feature object (compact JSON)
 - File paths + section line ranges: design doc (§4.N start/end), SRS doc (FR-xxx start/end), UCD doc (if ui:true)
-- Plan document path (`docs/plans/YYYY-MM-DD-<feature-name>.md`) from Step 4
+- Plan document path (`docs/features/YYYY-MM-DD-<feature-name>.md`) from Step 4
 - ST test case document path (`docs/test-cases/feature-{id}-{slug}.md`) from Step 9
 - Base SHA (for git diff)
 - Test command (from long-task-guide.md)
