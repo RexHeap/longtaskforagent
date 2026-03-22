@@ -32,13 +32,26 @@ Gate 0 runs BEFORE coverage. Coverage numbers are meaningless when the test suit
 ### Step 1: Run verification script
 
 ```bash
-python scripts/check_real_tests.py feature-list.json --feature {current_feature_id}
+python scripts/check_real_tests.py feature-list.json --feature {current_feature_id} --require-for-deps
 ```
+
+The `--require-for-deps` flag cross-checks the feature's `required_configs[]` for connection-string keys (URL, HOST, PORT, etc.). If found, real tests are **mandatory** — pure-function exemption is blocked.
 
 Read script output:
 - **FAIL** (no real tests) → GATE 0 FAIL, return to TDD Red to write real tests
+- **FAIL** with "has external dependencies" → see Step 1b below
 - **WARN** (mock warnings found) → proceed to Step 2
 - **PASS** (real tests found, no mock warnings) → proceed to Step 3
+
+### Step 1b: Dependency-blocked FAIL handling
+
+If Gate 0 FAIL reason includes "has external dependencies but no real tests":
+1. This is NOT a code problem — it's an infrastructure/config problem
+2. Run: `python scripts/check_configs.py feature-list.json --feature {current_feature_id}`
+3. If configs are missing → set Verdict to **BLOCKED** with message: "Feature #{id} requires external dependencies ({config_names}) but configs are not provided. Use AskUserQuestion to request the user to provide the missing configs."
+4. If configs exist but services aren't running → read `env-guide.md`, start services, re-run Gate 0
+5. NEVER proceed without real tests for features with external dependencies
+6. NEVER claim pure-function exemption for features that have connection-string `required_configs[]`
 
 ### Step 2: LLM sampling review (WARN only)
 

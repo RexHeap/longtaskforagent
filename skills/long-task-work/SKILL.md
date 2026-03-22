@@ -105,6 +105,12 @@ python scripts/check_configs.py feature-list.json --feature <id>
    - If health check fails: config value exists but service is unreachable — start service per Bootstrap service readiness protocol above
    - **Block until connectivity confirmed** — a config pointing to a dead service is functionally missing
 
+**Config Gate is non-negotiable for features with external dependencies.** If configs are missing:
+- MUST use `AskUserQuestion` to request values from the user
+- MUST NOT proceed to TDD without all configs resolved
+- MUST NOT claim "pure-function exemption" for features that have `required_configs[]` entries with connection-string keys (URL, HOST, PORT, DSN, URI, CONNECTION, ENDPOINT)
+- Quality Gates (Gate 0) will mechanically enforce this via `check_real_tests.py --require-for-deps`
+
 ### 4. Feature Detailed Design
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-feature-design` and follow it exactly.
 

@@ -120,6 +120,7 @@ python long-task-agent/scripts/get_tool_commands.py feature-list.json --bindings
 ```bash
 python long-task-agent/scripts/check_real_tests.py feature-list.json
 python long-task-agent/scripts/check_real_tests.py feature-list.json --feature 3
+python long-task-agent/scripts/check_real_tests.py feature-list.json --feature 3 --require-for-deps
 python long-task-agent/scripts/check_real_tests.py feature-list.json --json
 ```
 
@@ -323,6 +324,7 @@ using-long-task (router)
 - **Deprecated features excluded**: Worker skips deprecated features; ST readiness ignores them; routing counts only active features
 - **Service lifecycle via env-guide.md**: All service start/stop/restart operations use the commands in `env-guide.md`. No implicit hook-based cleanup exists. Always follow the 4-step Restart Protocol between test cycles. Always capture the first 30 lines of startup output to extract PID/port.
 - **Startup output in code**: Any code that starts a server or background service must print bound port, PID, and ready signal at startup — enables reliable extraction via `head -30` of the startup log.
+- **Real tests mandatory for features with external dependencies**: Features with `required_configs[]` containing connection-string keys (URL, HOST, PORT, DSN, URI, CONNECTION, ENDPOINT) cannot claim pure-function exemption. `check_real_tests.py --require-for-deps` enforces this mechanically. If configs are missing, use AskUserQuestion — never skip real tests.
 
 ### Generated Persistent Artifacts
 

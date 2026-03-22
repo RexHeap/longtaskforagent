@@ -400,13 +400,19 @@ def associate_real_tests_to_features(
     return per_feature
 
 
-def check_real_tests(path, feature_id=None):
+CONNECTION_KEYWORDS = {"URL", "URI", "DSN", "HOST", "PORT", "CONNECTION", "ENDPOINT"}
+
+
+def check_real_tests(path, feature_id=None, require_for_deps=False):
     """
     Main check function.
 
     Args:
         path: Path to feature-list.json
         feature_id: Optional feature ID to filter check
+        require_for_deps: If True, cross-check feature's required_configs
+            for connection-string keys. Features with external dependencies
+            cannot claim pure-function exemption — real tests are mandatory.
 
     Returns:
         dict with keys:
@@ -421,6 +427,8 @@ def check_real_tests(path, feature_id=None):
             mock_warnings: list of {file, line_no, func_name, mock_pattern}
             skip_warnings: list of {file, line_no, func_name, skip_pattern}
             issues: list of str
+            has_external_deps: bool (only when require_for_deps + deps found)
+            dep_configs: list of str (only when require_for_deps + deps found)
     """
     result = {
         "verdict": "FAIL",
@@ -520,6 +528,25 @@ def check_real_tests(path, feature_id=None):
         result["issues"].append(
             f"No real tests found (marker: {marker_pattern}) but {len(active_features)} active features exist"
         )
+        # Dependency cross-check on early FAIL path
+        if require_for_deps and feature_id is not None:
+            required_configs = data.get("required_configs", [])
+            dep_configs = []
+            for cfg in required_configs:
+                if feature_id not in cfg.get("required_by", []):
+                    continue
+                key = cfg.get("key", "").upper()
+                if any(kw in key for kw in CONNECTION_KEYWORDS):
+                    dep_configs.append(cfg)
+            if dep_configs:
+                config_names = [c.get("key", c.get("name", "?")) for c in dep_configs]
+                result["has_external_deps"] = True
+                result["dep_configs"] = config_names
+                result["issues"].append(
+                    f"Feature {feature_id} has external dependencies "
+                    f"(required_configs: {', '.join(config_names)}) "
+                    f"but no real tests found. Pure-function exemption is NOT allowed."
+                )
         result["verdict"] = "FAIL"
         return result
 
@@ -575,6 +602,35 @@ def check_real_tests(path, feature_id=None):
                 result["issues"].append(
                     f"No real tests associated with feature {feature_id} "
                     f"(add reference matching: {ref_example})"
+                )
+                result["verdict"] = "FAIL"
+                return result
+
+    # --- Dependency cross-check (--require-for-deps) ---
+    if require_for_deps and feature_id is not None:
+        required_configs = data.get("required_configs", [])
+        dep_configs = []
+        for cfg in required_configs:
+            required_by = cfg.get("required_by", [])
+            if feature_id not in required_by:
+                continue
+            key = cfg.get("key", "").upper()
+            if any(kw in key for kw in CONNECTION_KEYWORDS):
+                dep_configs.append(cfg)
+
+        if dep_configs:
+            config_names = [c.get("key", c.get("name", "?")) for c in dep_configs]
+            result["has_external_deps"] = True
+            result["dep_configs"] = config_names
+
+            # Feature has external deps — check if real tests exist for it
+            per_feature = result.get("per_feature", {})
+            feature_tests = per_feature.get(str(feature_id), [])
+            if not feature_tests:
+                result["issues"].append(
+                    f"Feature {feature_id} has external dependencies "
+                    f"(required_configs: {', '.join(config_names)}) "
+                    f"but no real tests found. Pure-function exemption is NOT allowed."
                 )
                 result["verdict"] = "FAIL"
                 return result
@@ -691,10 +747,17 @@ def main():
         "--json", action="store_true", dest="json_output",
         help="Output as JSON (for LLM parsing)"
     )
+    parser.add_argument(
+        "--require-for-deps", action="store_true", dest="require_for_deps",
+        help="Cross-check: if feature has required_configs with connection-string "
+             "keys, real tests are mandatory (pure-function exemption blocked)"
+    )
 
     args = parser.parse_args()
 
-    result = check_real_tests(args.path, feature_id=args.feature)
+    result = check_real_tests(
+        args.path, feature_id=args.feature, require_for_deps=args.require_for_deps
+    )
 
     if args.json_output:
         print(json.dumps(result, indent=2, ensure_ascii=False))

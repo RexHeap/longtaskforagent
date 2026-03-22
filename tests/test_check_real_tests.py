@@ -20,7 +20,8 @@ def run_script(feature_list_path, *extra_args):
     return proc.returncode, proc.stdout, proc.stderr
 
 
-def make_feature_list(tmp_path, features=None, real_test=None, language="python"):
+def make_feature_list(tmp_path, features=None, real_test=None, language="python",
+                      required_configs=None):
     """Create a minimal feature-list.json in tmp_path and return its path."""
     data = {
         "project": "test-project",
@@ -33,6 +34,8 @@ def make_feature_list(tmp_path, features=None, real_test=None, language="python"
     }
     if real_test is not None:
         data["real_test"] = real_test
+    if required_configs is not None:
+        data["required_configs"] = required_configs
 
     fl_path = tmp_path / "feature-list.json"
     fl_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
@@ -732,3 +735,121 @@ class TestEdgeCases:
         code, out, _ = run_script(fl)
         assert code == 0
         assert "Real tests found: 1" in out
+
+
+class TestRequireForDeps:
+    """Tests for --require-for-deps cross-check."""
+
+    def _feature(self, fid=1):
+        return {"id": fid, "category": "core", "title": f"F{fid}",
+                "description": "d", "priority": "high", "status": "failing",
+                "verification_steps": ["step1"]}
+
+    def _conn_configs(self, feature_id=1):
+        """required_configs with connection-string keys for a feature."""
+        return [
+            {"name": "Database URL", "type": "env", "key": "DATABASE_URL",
+             "description": "PostgreSQL", "required_by": [feature_id]},
+            {"name": "Redis Host", "type": "env", "key": "REDIS_HOST",
+             "description": "Redis cache", "required_by": [feature_id]},
+        ]
+
+    def test_deps_no_real_tests_fails(self, tmp_path):
+        """Feature with connection-string deps but no real tests -> FAIL."""
+        make_test_file(tmp_path, "test_f1.py", """
+            def test_unit():
+                assert True
+        """)
+        fl = make_feature_list(tmp_path, features=[self._feature()],
+                               required_configs=self._conn_configs())
+        code, out, _ = run_script(fl, "--feature", "1", "--require-for-deps")
+        assert code == 1
+        assert "has external dependencies" in out
+        assert "DATABASE_URL" in out
+        assert "Pure-function exemption is NOT allowed" in out
+
+    def test_deps_with_real_tests_passes(self, tmp_path):
+        """Feature with deps AND real tests -> PASS."""
+        make_test_file(tmp_path, "test_f1.py", """
+            import pytest
+
+            @pytest.mark.real_test
+            def test_real_db_feature_1():
+                assert True
+        """)
+        fl = make_feature_list(tmp_path, features=[self._feature()],
+                               required_configs=self._conn_configs())
+        code, out, _ = run_script(fl, "--feature", "1", "--require-for-deps")
+        assert code == 0
+        assert "PASS" in out
+
+    def test_no_deps_no_real_tests_existing_behavior(self, tmp_path):
+        """Feature without deps and no real tests -> existing FAIL (no dep message)."""
+        make_test_file(tmp_path, "test_f1.py", """
+            def test_unit():
+                assert True
+        """)
+        fl = make_feature_list(tmp_path, features=[self._feature()])
+        code, out, _ = run_script(fl, "--feature", "1", "--require-for-deps")
+        assert code == 1
+        assert "has external dependencies" not in out
+
+    def test_flag_off_no_crosscheck(self, tmp_path):
+        """Without --require-for-deps, deps don't affect verdict."""
+        make_test_file(tmp_path, "test_f1.py", """
+            def test_unit():
+                assert True
+        """)
+        fl = make_feature_list(tmp_path, features=[self._feature()],
+                               required_configs=self._conn_configs())
+        # Without --require-for-deps, existing behavior applies
+        code, out, _ = run_script(fl, "--feature", "1")
+        assert code == 1  # FAIL because no real tests for active feature
+        assert "has external dependencies" not in out
+
+    def test_non_connection_configs_no_enforcement(self, tmp_path):
+        """Configs without connection keywords don't trigger enforcement."""
+        make_test_file(tmp_path, "test_f1.py", """
+            def test_unit():
+                assert True
+        """)
+        non_conn_configs = [
+            {"name": "API Key", "type": "env", "key": "API_KEY",
+             "description": "API key", "required_by": [1]},
+        ]
+        fl = make_feature_list(tmp_path, features=[self._feature()],
+                               required_configs=non_conn_configs)
+        code, out, _ = run_script(fl, "--feature", "1", "--require-for-deps")
+        assert code == 1  # FAIL because no real tests
+        assert "has external dependencies" not in out  # no dep enforcement
+
+    def test_deps_for_different_feature_no_enforcement(self, tmp_path):
+        """Configs required_by a different feature don't affect current feature."""
+        make_test_file(tmp_path, "test_f2.py", """
+            def test_unit():
+                assert True
+        """)
+        configs = [
+            {"name": "DB", "type": "env", "key": "DATABASE_URL",
+             "description": "DB", "required_by": [1]},  # required by feature 1, not 2
+        ]
+        fl = make_feature_list(tmp_path, features=[self._feature(2)],
+                               required_configs=configs)
+        code, out, _ = run_script(fl, "--feature", "2", "--require-for-deps")
+        assert code == 1  # FAIL because no real tests
+        assert "has external dependencies" not in out
+
+    def test_json_output_includes_dep_info(self, tmp_path):
+        """JSON output includes has_external_deps and dep_configs."""
+        make_test_file(tmp_path, "test_f1.py", """
+            def test_unit():
+                assert True
+        """)
+        fl = make_feature_list(tmp_path, features=[self._feature()],
+                               required_configs=self._conn_configs())
+        code, out, _ = run_script(fl, "--feature", "1", "--require-for-deps", "--json")
+        assert code == 1
+        result = json.loads(out)
+        assert result["has_external_deps"] is True
+        assert "DATABASE_URL" in result["dep_configs"]
+        assert "REDIS_HOST" in result["dep_configs"]
