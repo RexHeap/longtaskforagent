@@ -456,3 +456,35 @@ When using `init_project.py --lang <language>`:
 | Line coverage | >= 90% | Most production code paths must be tested |
 | Branch coverage | >= 80% | Conditional logic must be exercised both ways |
 | Mutation score | >= 80% | Tests must catch 4 out of 5 injected bugs |
+| Mutation full threshold | 100 features | Projects with ≤ this many active features run full mutation per-feature |
+
+---
+
+## Per-Feature Mutation Test Scoping
+
+When the project's active feature count exceeds `mutation_full_threshold`, the Quality Gate scopes mutation testing to the current feature's changed files **and** tests. This avoids running the entire test suite per mutant, which becomes prohibitively slow in large projects.
+
+**Principle**: Mutate only changed source files, run only the feature's tests per mutant. Full mutation runs during ST phase (Step 3b) to catch project-wide regressions.
+
+### Identifying Feature Test Files
+
+- Test files created/modified during the TDD cycle for this feature
+- Convention-based: if source is `src/foo.ext`, tests are likely `tests/test_foo.ext`
+- Marker-based: if the project uses test markers/tags, filter by feature marker
+- The Worker passes feature test file paths to the Quality SubAgent
+
+### Per-Tool Scoping Reference
+
+| Tool | Mutation Target Scoping | Test Scoping Mechanism |
+|------|------------------------|------------------------|
+| mutmut | `--paths-to-mutate={files}` | `--runner='{test_runner} {test_files}'` |
+| pitest | `-DtargetClasses={classes}` | `-DtargetTests={test_classes}` |
+| stryker | `--mutate='{files}'` | `--coverageAnalysis perTest` (auto-selects relevant tests) |
+| mull | `--filters={files}` | Build feature-specific test binary |
+
+### Tool-Specific Notes
+
+- **mutmut** `--runner`: Provide the full test execution command including framework binary and file paths. The `{test_runner}` placeholder resolves to the project's test runner command (e.g., `python -m pytest -x --tb=short`, `npx vitest run`).
+- **pitest** `-DtargetTests`: Accepts comma-separated Java class patterns (e.g., `com.example.UserAuthTest,com.example.UserLoginTest`).
+- **Stryker** `--coverageAnalysis perTest`: Stryker automatically determines which tests cover each mutant and runs only those. No explicit test file list needed. Requires Stryker 6+.
+- **mull**: Link only feature-relevant test object files when compiling the test binary. This requires building a separate binary per feature scope.

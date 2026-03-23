@@ -47,24 +47,28 @@ COVERAGE_COMMANDS = {
 MUTATION_COMMANDS = {
     "mutmut": {
         "incremental": "mutmut run --paths-to-mutate={changed_files}",
+        "feature":     "mutmut run --paths-to-mutate={changed_files} --runner='{test_runner} {test_files}'",
         "full":        "mutmut run",
         "results":     "mutmut results",
         "show":        "mutmut show <mutant-id>",
     },
     "pitest": {
         "incremental": "mvn pitest:mutationCoverage -DtargetClasses={changed_classes}",
+        "feature":     "mvn pitest:mutationCoverage -DtargetClasses={changed_classes} -DtargetTests={target_test_classes}",
         "full":        "mvn pitest:mutationCoverage",
         "results":     "cat target/pit-reports/*/mutations.xml",
         "show":        "open target/pit-reports/*/index.html",
     },
     "stryker": {
         "incremental": "npx stryker run --mutate='{changed_files}'",
+        "feature":     "npx stryker run --mutate='{changed_files}' --coverageAnalysis perTest",
         "full":        "npx stryker run",
         "results":     "cat reports/mutation/mutation.json",
         "show":        "open reports/mutation/html/index.html",
     },
     "mull": {
         "incremental": "mull-runner ./test-binary --filters={changed_files}",
+        "feature":     "mull-runner ./{feature_test_binary} --filters={changed_files}",
         "full":        "mull-runner ./test-binary",
         "results":     "cat mull-report.json",
         "show":        "cat mull-report.json",
@@ -91,6 +95,7 @@ def get_commands(feature_list: dict) -> dict:
 
     mut_cmds = MUTATION_COMMANDS.get(mut_tool, {})
     mut_inc = mut_cmds.get("incremental", f"UNKNOWN: {mut_tool}")
+    mut_feature = mut_cmds.get("feature", f"UNKNOWN: {mut_tool}")
     mut_full = mut_cmds.get("full", f"UNKNOWN: {mut_tool}")
     mut_results = mut_cmds.get("results", f"UNKNOWN: {mut_tool}")
     mut_show = mut_cmds.get("show", f"UNKNOWN: {mut_tool}")
@@ -99,6 +104,7 @@ def get_commands(feature_list: dict) -> dict:
         "test": test_cmd,
         "coverage": cov_cmd,
         "mutation_incremental": mut_inc,
+        "mutation_feature": mut_feature,
         "mutation_full": mut_full,
         "mutation_results": mut_results,
         "mutation_show": mut_show,
@@ -106,6 +112,7 @@ def get_commands(feature_list: dict) -> dict:
             "line_coverage_min": qg.get("line_coverage_min", 90),
             "branch_coverage_min": qg.get("branch_coverage_min", 80),
             "mutation_score_min": qg.get("mutation_score_min", 80),
+            "mutation_full_threshold": qg.get("mutation_full_threshold", 100),
         },
         "tech_stack": {
             "language": ts.get("language", "TODO"),
@@ -143,12 +150,14 @@ def get_mcp_commands(feature_list: dict, bindings: dict) -> dict:
         "test": _mcp_spec("test"),
         "coverage": _mcp_spec("coverage"),
         "mutation_incremental": _mcp_spec("mutation"),
+        "mutation_feature": _mcp_spec("mutation"),
         "mutation_full": _mcp_spec("mutation"),
         "mutation_results": {"note": "see result_fields in test/mutation spec"},
         "thresholds": {
             "line_coverage_min": qg.get("line_coverage_min", 90),
             "branch_coverage_min": qg.get("branch_coverage_min", 80),
             "mutation_score_min": qg.get("mutation_score_min", 80),
+            "mutation_full_threshold": qg.get("mutation_full_threshold", 100),
         },
         "tech_stack": {
             "language": ts.get("language", "TODO"),
@@ -182,13 +191,14 @@ def format_mcp_text(cmds: dict) -> str:
         "[coverage]",
         f"  {_fmt_spec(cmds['coverage'])}",
         "",
-        "[mutation (incremental / full — same tool)]",
+        "[mutation (feature / incremental / full — same tool)]",
         f"  {_fmt_spec(cmds['mutation_incremental'])}",
         "",
         "[thresholds]",
         f"  line_coverage  >= {th['line_coverage_min']}%",
         f"  branch_coverage >= {th['branch_coverage_min']}%",
         f"  mutation_score  >= {th['mutation_score_min']}%",
+        f"  mutation_full_threshold = {th['mutation_full_threshold']} features",
         "",
         "Usage: call each MCP tool with the input_template fields resolved,",
         "then read results via result_fields JSON paths.",
@@ -215,6 +225,9 @@ def format_text(cmds: dict) -> str:
         f"[mutation-incremental]",
         f"  {cmds['mutation_incremental']}",
         "",
+        f"[mutation-feature]",
+        f"  {cmds['mutation_feature']}",
+        "",
         f"[mutation-full]",
         f"  {cmds['mutation_full']}",
         "",
@@ -228,6 +241,7 @@ def format_text(cmds: dict) -> str:
         f"  line_coverage  >= {th['line_coverage_min']}%",
         f"  branch_coverage >= {th['branch_coverage_min']}%",
         f"  mutation_score  >= {th['mutation_score_min']}%",
+        f"  mutation_full_threshold = {th['mutation_full_threshold']} features",
     ]
     return "\n".join(lines)
 

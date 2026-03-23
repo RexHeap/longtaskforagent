@@ -148,6 +148,8 @@ Context to carry forward (minimal — SubAgent reads files itself):
 - `quality_gates` thresholds (compact JSON)
 - `tech_stack` (compact JSON)
 - Working directory path
+- Feature test file paths (test files written/modified during TDD for this feature — for mutation_feature scoping)
+- Active feature count (total non-deprecated features in feature-list.json — for mutation_full_threshold decision)
 
 ### 9. ST Acceptance Test Cases
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-feature-st` and follow it exactly.

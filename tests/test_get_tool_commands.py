@@ -15,7 +15,7 @@ SCRIPT_PATH = os.path.join(os.path.dirname(__file__), "..", "scripts", "get_tool
 
 # Also import get_commands directly for unit tests
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
-from get_tool_commands import get_commands, format_text
+from get_tool_commands import get_commands, format_text, MUTATION_COMMANDS
 
 
 def make_feature_list(language="python", test_fw="pytest", cov_tool="pytest-cov",
@@ -58,6 +58,7 @@ def test_python_commands():
     assert "--cov-branch" in cmds["coverage"]
     assert "mutmut run --paths-to-mutate" in cmds["mutation_incremental"]
     assert cmds["mutation_full"] == "mutmut run"
+    assert "mutation_feature" in cmds
 
 
 def test_java_commands():
@@ -137,6 +138,53 @@ def test_tech_stack_in_output():
     assert cmds["tech_stack"]["test_framework"] == "pytest"
 
 
+def test_mutation_feature_key_present():
+    """All known mutation tools should have a mutation_feature command."""
+    for tool_name in MUTATION_COMMANDS:
+        assert "feature" in MUTATION_COMMANDS[tool_name], (
+            f"Missing 'feature' key in MUTATION_COMMANDS['{tool_name}']"
+        )
+
+
+def test_mutation_feature_distinct_from_others():
+    """mutation_feature should differ from incremental and full for all tools."""
+    for lang, fw, cov, mut in [
+        ("python", "pytest", "pytest-cov", "mutmut"),
+        ("java", "junit", "jacoco", "pitest"),
+        ("typescript", "vitest", "c8", "stryker"),
+        ("c", "ctest", "gcov", "mull"),
+    ]:
+        cmds = get_commands(make_feature_list(lang, fw, cov, mut))
+        assert cmds["mutation_feature"] != cmds["mutation_incremental"], (
+            f"{mut}: mutation_feature should differ from incremental"
+        )
+        assert cmds["mutation_feature"] != cmds["mutation_full"], (
+            f"{mut}: mutation_feature should differ from full"
+        )
+
+
+def test_unknown_tool_mutation_feature_returns_unknown():
+    """Unknown mutation tool should return UNKNOWN for mutation_feature."""
+    cmds = get_commands(make_feature_list("rust", "cargo-test", "tarpaulin", "cargo-mutants"))
+    assert cmds["mutation_feature"].startswith("UNKNOWN:")
+
+
+def test_mutation_full_threshold_default():
+    """Default mutation_full_threshold should be 100."""
+    data = {"tech_stack": {"test_framework": "pytest", "coverage_tool": "pytest-cov",
+                           "mutation_tool": "mutmut", "language": "python"}}
+    cmds = get_commands(data)
+    assert cmds["thresholds"]["mutation_full_threshold"] == 100
+
+
+def test_mutation_full_threshold_custom():
+    """Custom mutation_full_threshold should be respected."""
+    fl = make_feature_list()
+    fl["quality_gates"]["mutation_full_threshold"] = 50
+    cmds = get_commands(fl)
+    assert cmds["thresholds"]["mutation_full_threshold"] == 50
+
+
 def test_format_text_contains_sections():
     """Text format should contain all expected section labels."""
     cmds = get_commands(make_feature_list())
@@ -144,9 +192,11 @@ def test_format_text_contains_sections():
     assert "[test]" in text
     assert "[coverage]" in text
     assert "[mutation-incremental]" in text
+    assert "[mutation-feature]" in text
     assert "[mutation-full]" in text
     assert "[mutation-results]" in text
     assert "[thresholds]" in text
+    assert "mutation_full_threshold" in text
 
 
 # --- CLI integration tests ---
@@ -177,7 +227,9 @@ def test_cli_json_output():
         data = json.loads(stdout)
         assert "test" in data
         assert "coverage" in data
+        assert "mutation_feature" in data
         assert "thresholds" in data
+        assert "mutation_full_threshold" in data["thresholds"]
     finally:
         os.unlink(tmp.name)
 
@@ -212,6 +264,11 @@ if __name__ == "__main__":
         test_thresholds_from_quality_gates,
         test_default_thresholds,
         test_tech_stack_in_output,
+        test_mutation_feature_key_present,
+        test_mutation_feature_distinct_from_others,
+        test_unknown_tool_mutation_feature_returns_unknown,
+        test_mutation_full_threshold_default,
+        test_mutation_full_threshold_custom,
         test_format_text_contains_sections,
         test_cli_text_output,
         test_cli_json_output,

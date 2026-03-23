@@ -187,7 +187,7 @@ The skill system uses on-demand loading via the `Skill` tool. Only the bootstrap
 |-------|---------|
 | `long-task-feature-design` | Feature Detailed Design — interface contracts, algorithm pseudocode, state diagrams, boundary matrices, test inventory (bridges system design → TDD) |
 | `long-task-tdd` | TDD Red-Green-Refactor |
-| `long-task-quality` | Coverage Gate + Mutation Gate |
+| `long-task-quality` | Coverage Gate + Feature-Scoped Mutation Gate |
 | `long-task-feature-st` | Black-Box Feature Acceptance Testing — self-managed environment lifecycle, Chrome DevTools MCP + ISO/IEC/IEEE 29119 (per-feature, after Quality Gates) |
 | `long-task-review` | Spec & Design Compliance Review |
 
@@ -285,7 +285,7 @@ using-long-task (router)
 2. **Worker Session** (`long-task-work` orchestrator):
    - Orient → Bootstrap → Config Gate → DevTools Gate → Plan
    - **TDD** (`long-task-tdd`): Red → Green → Refactor (driven by verification_steps + SRS)
-   - **Quality** (`long-task-quality`): Coverage Gate → Mutation Gate
+   - **Quality** (`long-task-quality`): Coverage Gate → Feature-Scoped Mutation Gate
    - **ST Acceptance** (`long-task-feature-st`): Black-box acceptance testing — self-managed start/cleanup, Chrome DevTools MCP UI execution + ISO/IEC/IEEE 29119 per feature
    - **Review** (`long-task-review`): Spec & Design Compliance + Test Case Completeness (T1-T3)
    - Add Examples → Persist → Continue (chains to ST when all features pass)
@@ -308,7 +308,7 @@ using-long-task (router)
 - **ATS reviewer is mandatory**: Independent subagent reviews ATS before approval; max 2 fix rounds then user escalation
 - **Strict TDD**: Always Red→Green→Refactor→Coverage→Mutation
 - **Coverage gate after TDD Green**: Run coverage tool, verify line >= 90%, branch >= 80%
-- **Mutation gate after TDD Refactor**: Run incremental mutation testing, verify score >= 80%
+- **Mutation gate after TDD Refactor**: For projects with > `mutation_full_threshold` active features, run feature-scoped mutation (changed files + feature's tests only); for smaller projects run full mutation. Verify score >= 80%. Full mutation runs during ST phase (Step 3b) for all projects.
 - **Verification enforcement**: Never mark "passing" without fresh evidence
 - **Compliance review after every feature**: Spec + design + UCD compliance (no subjective code quality review — objective gates handle quality)
 - **UCD compliance for frontend features**: UI features must pass UCD style token checks (U1-U4) during review
@@ -374,7 +374,8 @@ using-long-task (router)
   "quality_gates": {
     "line_coverage_min": 90,
     "branch_coverage_min": 80,
-    "mutation_score_min": 80
+    "mutation_score_min": 80,
+    "mutation_full_threshold": 100
   },
   "waves": [
     {

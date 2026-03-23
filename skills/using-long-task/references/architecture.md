@@ -315,11 +315,11 @@ Each worker cycle follows this exact sequence.
 15. **Verification enforcement**: Execute each `verification_step`, read FULL output, confirm all green. If you catch yourself thinking "should pass" or "probably works" — STOP and re-run. See [verification-enforcement.md](verification-enforcement.md).
 
 ### Phase 5.5m: Mutation Gate — verify test effectiveness
-15a. Run mutation tool in **incremental mode** (only files changed for this feature)
+15a. **Scope decision**: If active features ≤ `quality_gates.mutation_full_threshold` (default 100) → run `mutation_full`; otherwise → run `mutation_feature` (changed files + feature's tests only)
 15b. Check: mutation score >= `quality_gates.mutation_score_min` (default 80%)
 15c. If BELOW threshold: improve test assertions to kill surviving mutants (return to Phase 3)
 15d. Record mutation report output as evidence
-15e. At project milestones: run full mutation testing (all source files)
+15e. Full mutation testing (all source files, all tests) runs during ST phase (Step 3b) — no per-feature milestone runs needed
 
 ### Phase 5.5: Spec & Design Compliance Review
 16. Run compliance review on the completed feature:
@@ -417,7 +417,7 @@ Requirements → SRS approved → Design → design approved → Initializer →
 
 ### For ALL features (Coverage & Mutation mandatory):
 - **Coverage**: Run language-specific coverage tool, verify line/branch thresholds met
-- **Mutation**: Run incremental mutation testing on changed files, verify mutation score threshold met
+- **Mutation**: Run feature-scoped mutation (large projects) or full mutation (small projects ≤ `mutation_full_threshold`), verify mutation score threshold met
 - See [coverage-and-mutation.md](coverage-and-mutation.md) for per-language tool setup and commands
 
 ### For data / pipeline features:
@@ -525,12 +525,12 @@ See [ui-error-detection.md](../../long-task-tdd/references/ui-error-detection.md
 
 Coverage and mutation tool commands per language. For full setup recipes, see [coverage-and-mutation.md](coverage-and-mutation.md).
 
-| Language | Coverage Command | Mutation Command (Incremental) |
-|----------|-----------------|-------------------------------|
-| Python | `pytest --cov=src --cov-branch --cov-report=term-missing` | `mutmut run --paths-to-mutate=<changed-files>` |
-| Java | `mvn test jacoco:report` | `mvn pitest:mutationCoverage -DtargetClasses=<changed>` |
-| TypeScript | `npx c8 --branches --reporter=text npm test` | `npx stryker run --mutate='<changed-files>'` |
-| C/C++ | `gcov -b src/*.c && lcov --capture -d . -o cov.info` | `mull-runner <test-binary>` |
+| Language | Coverage Command | Mutation Command (Feature) | Mutation Command (Full) |
+|----------|-----------------|---------------------------|------------------------|
+| Python | `pytest --cov=src --cov-branch --cov-report=term-missing` | `mutmut run --paths-to-mutate=<files> --runner='<runner> <test-files>'` | `mutmut run` |
+| Java | `mvn test jacoco:report` | `mvn pitest:mutationCoverage -DtargetClasses=<classes> -DtargetTests=<test-classes>` | `mvn pitest:mutationCoverage` |
+| TypeScript | `npx c8 --branches --reporter=text npm test` | `npx stryker run --mutate='<files>' --coverageAnalysis perTest` | `npx stryker run` |
+| C/C++ | `gcov -b src/*.c && lcov --capture -d . -o cov.info` | `mull-runner <feature-test-binary> --filters=<files>` | `mull-runner <test-binary>` |
 
 ## Release Notes Maintenance
 

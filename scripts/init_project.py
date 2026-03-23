@@ -99,6 +99,7 @@ def create_feature_list(
     line_coverage_min: int = 90,
     branch_coverage_min: int = 80,
     mutation_score_min: int = 80,
+    mutation_full_threshold: int = 100,
 ) -> dict:
     return {
         "project": project_name,
@@ -112,7 +113,8 @@ def create_feature_list(
         "quality_gates": {
             "line_coverage_min": line_coverage_min,
             "branch_coverage_min": branch_coverage_min,
-            "mutation_score_min": mutation_score_min
+            "mutation_score_min": mutation_score_min,
+            "mutation_full_threshold": mutation_full_threshold
         },
         "constraints": [],
         "assumptions": [],
@@ -234,6 +236,8 @@ def main():
                         help="Min branch coverage %% (default: 80)")
     parser.add_argument("--mutation-score", type=int, default=80,
                         help="Min mutation score %% (default: 80)")
+    parser.add_argument("--mutation-full-threshold", type=int, default=100,
+                        help="Feature count threshold for full mutation per-feature (default: 100)")
 
     args = parser.parse_args()
 
@@ -259,6 +263,7 @@ def main():
             line_coverage_min=args.line_cov,
             branch_coverage_min=args.branch_cov,
             mutation_score_min=args.mutation_score,
+            mutation_full_threshold=args.mutation_full_threshold,
         ), f, indent=2, ensure_ascii=False)
     print(f"Created: {fl_path}")
 
@@ -336,11 +341,6 @@ def main():
     plans_dir = os.path.join(out_dir, "docs", "plans")
     os.makedirs(plans_dir, exist_ok=True)
 
-    # docs/features dir (per-feature detailed design)
-    features_dir = os.path.join(out_dir, "docs", "features")
-    os.makedirs(features_dir, exist_ok=True)
-    print(f"Created: {features_dir}")
-
     # docs/test-cases dir
     test_cases_dir = os.path.join(out_dir, "docs", "test-cases")
     os.makedirs(test_cases_dir, exist_ok=True)
@@ -365,7 +365,7 @@ def main():
     print(f"Created: {examples_readme}")
 
     print(f"\nProject '{args.project_name}' initialized at {out_dir}")
-    print("Created: feature-list.json, CLAUDE.md, AGENTS.md, task-progress.md, RELEASE_NOTES.md, examples/, scripts/ (with helper scripts), docs/plans/, docs/features/, docs/test-cases/, docs/templates/")
+    print("Created: feature-list.json, CLAUDE.md, AGENTS.md, task-progress.md, RELEASE_NOTES.md, examples/, scripts/ (with helper scripts), docs/plans/, docs/test-cases/, docs/templates/")
     print("TODO (LLM generates during Initializer phase):")
     print("  - long-task-guide.md         (tailored Worker guide from SKILL.md + references + design doc)")
     print("  - init.sh / init.ps1         (environment bootstrap from design doc tech stack)")

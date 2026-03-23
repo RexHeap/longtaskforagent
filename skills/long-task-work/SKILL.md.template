@@ -126,6 +126,8 @@ Context to carry forward:
 - `quality_gates` thresholds from feature-list.json
 - `tech_stack` tool names for coverage/mutation commands
 - **Test commands**: from `long-task-guide.md` — use directly
+- Feature test file paths (test files written/modified during TDD for this feature — for mutation_feature scoping)
+- Active feature count (total non-deprecated features in feature-list.json — for mutation_full_threshold decision)
 
 ### 9. ST Acceptance Test Cases
 **REQUIRED SUB-SKILL:** Invoke `long-task:long-task-feature-st` and follow it exactly.

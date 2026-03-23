@@ -113,32 +113,52 @@ After TDD Green (all tests pass), run the coverage tool.
 
 ## Gate 2: Mutation Testing
 
-After TDD Refactor, run mutation testing on changed files.
+After TDD Refactor, run mutation testing scoped to this feature.
 
-1. **Run** incremental mutation testing on changed files (activate env per `long-task-guide.md`) — scope to actually changed source files
+### Scope Decision
 
-2. **Read** the FULL output
-3. **Verify**: mutation score >= `[thresholds] mutation_score`
-4. **If surviving mutants**, analyze each:
-   - **Equivalent mutant** (code change has no observable effect) → document and skip
-   - **Real gap** (test doesn't catch the mutation) → add/strengthen test, re-run
-   - **Unreachable code** → remove dead code
-5. **If PASS**: proceed to Verify & Mark
+Check `quality_gates.mutation_full_threshold` (default 100) against total active (non-deprecated) features in `feature-list.json`:
+- If active features ≤ threshold → use `mutation_full` command (small project — full suite is fast enough)
+- If active features > threshold → use `mutation_feature` command (large project — scope to feature's tests)
+
+### Running mutation_feature (large project)
+
+1. **Identify** changed source files for this feature (from git diff or TDD artifacts)
+2. **Identify** test files written/modified during TDD for this feature
+3. **Run** the `mutation_feature` command from `long-task-guide.md`, filling placeholders:
+   - `{changed_files}` → changed source file paths
+   - `{test_files}` → feature's test file paths (or test pattern/marker)
+   - Other tool-specific placeholders as needed per tech stack (see `coverage-recipes.md` Per-Feature Mutation Test Scoping section)
+4. **Read** full output, **verify** mutation score >= `[thresholds] mutation_score`
+
+### Running mutation_full (small project)
+
+1. **Run** the `mutation_full` command from `long-task-guide.md` (no placeholders needed)
+2. **Read** full output, **verify** mutation score >= `[thresholds] mutation_score`
+
+### Common steps (both modes)
+
+- **If surviving mutants**, analyze each:
+  - **Equivalent mutant** (code change has no observable effect) → document and skip
+  - **Real gap** (test doesn't catch the mutation) → add/strengthen test, re-run
+  - **Unreachable code** → remove dead code
+- **If PASS** → proceed to Verify & Mark
 
 **Evidence required:**
 ```
 - Mutation tool output showing killed/survived/total
 - Mutation score >= threshold
+- Scope: feature-scoped | full (state which mode was used and why)
 - List of surviving mutants (if any, with justification or fix)
 - Actual command that was run
-- Scope: incremental (changed files only)
 ```
 
-**Incremental vs Full:**
-| When | Scope |
-|------|-------|
-| Per feature (normal) | Incremental — changed files only |
-| Project milestones (every 5-10 features) | Full — entire codebase |
+**Mutation Scope by Phase:**
+| Phase | Mode | Mutated Files | Tests Run |
+|-------|------|---------------|-----------|
+| Per feature (Gate 2, large project) | `mutation_feature` | Changed source files | Feature's tests only |
+| Per feature (Gate 2, small project) | `mutation_full` | All source files | Full test suite |
+| System Testing (ST Step 3b) | `mutation_full` | All source files | Full test suite |
 
 ## Gate 3: Verify & Mark
 
@@ -146,7 +166,7 @@ The final gate before marking a feature as "passing".
 
 ```
 
-1. IDENTIFY → Get test, coverage, and mutation-full commands from `long-task-guide.md`
+1. IDENTIFY → Get test, coverage, and mutation commands from `long-task-guide.md` (use the same mutation mode as Gate 2 — `mutation_feature` or `mutation_full` based on the threshold decision)
 
 
 2. RUN → Execute each command (fresh, in this message — not cached from earlier)
