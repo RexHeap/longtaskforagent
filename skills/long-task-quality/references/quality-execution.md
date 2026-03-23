@@ -253,6 +253,16 @@ When all gates are complete (or if blocked), return your result in EXACTLY this 
 | Line Coverage | N% | ≥X% | PASS/FAIL |
 | Branch Coverage | N% | ≥X% | PASS/FAIL |
 | Mutation Score | N% | ≥X% | PASS/FAIL |
+### Risks
+<!-- Output even on PASS. Omit this section only if the list is empty. -->
+| # | Category | Location | Description |
+|---|----------|----------|-------------|
+| 1 | Mutant \| Coverage \| Dependency | file:line or metric name | [one-sentence explanation] |
+
+<!-- Category rules:
+  Mutant   — surviving mutants judged equivalent or known gap (file:line + reason)
+  Coverage — any metric within +5% of its threshold, or known uncovered boundary
+  Dependency — third-party library with a known security patch or breaking change not yet applied -->
 ### Issues (only if FAIL or BLOCKED)
 | # | Severity | Description |
 |---|----------|-------------|

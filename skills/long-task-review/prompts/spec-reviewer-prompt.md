@@ -128,6 +128,16 @@ For each violation, be precise:
 - Cite the implementation evidence (or lack thereof) from the git diff
 - Suggest the minimal fix needed
 
+### Risks
+<!-- Output even on PASS. Omit this section only if the list is empty. -->
+| # | Category | Description |
+|---|----------|-------------|
+| 1 | Review \| Dependency | [one-sentence description] |
+
+<!-- Category rules:
+  Review     — issues downgraded to Minor and waived (dimension + brief description)
+  Dependency — D3 findings: version deviation from design spec, or known security update pending -->
+
 ## Rules
 - **Find issues first** — 5+ issues across all applicable dimensions before any verdict (Step 1)
 - **Multi-dimensional review** — check spec, design, plan, AND UCD (for UI features) compliance; never skip a dimension

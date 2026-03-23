@@ -197,7 +197,22 @@ Create runnable examples in `examples/` demonstrating the completed feature.
   > `- [<bug_severity>] <title without "Fix: "> (fixes #<fixed_feature_id>) — <root_cause one-line>`
 - Update `task-progress.md`:
   - Update `## Current State` header: progress count (X/Y passing), last completed feature (#id title, date), next feature (#id title)
-  - Append session entry below the log separator
+  - Append session entry below the log separator; session entry format:
+    ```
+    ### Feature #id: Title — PASS
+    - Completed: YYYY-MM-DD
+    - TDD: green ✓
+    - Quality Gates: N% line, N% branch, N% mutation
+    - Feature-ST: N cases, all PASS
+    - Review: PASS
+    - Git: <sha> feat: title
+    #### Risks                        ← include only if any risks were reported
+    - ⚠ [Mutant] file:line — reason
+    - ⚠ [Coverage] metric N% — thin margin / uncovered boundary
+    - ⚠ [Review] Minor: dimension — waived issue description
+    - ⚠ [Dependency] lib==ver — known patch / breaking change pending
+    ```
+  - **Collecting risks**: after Step 9 (Quality) and Step 10 (Review) complete, extract every row from their `### Risks` tables; merge into a single list; append as `#### Risks` bullets only if the list is non-empty
 - Mark feature `"status": "passing"` in `feature-list.json`
 - Set `"st_case_path"` and `"st_case_count"` on the feature object in `feature-list.json`
 - Validate:
