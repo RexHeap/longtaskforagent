@@ -221,6 +221,16 @@ Create runnable examples in `examples/` demonstrating the completed feature.
   ```
 - Git commit again (progress files)
 
+### 12.5 Session Reflection (Conditional)
+
+If `retro_authorized` is `true` in `feature-list.json`:
+1. Read `skills/long-task-retrospective/prompts/reflection-prompt.md`
+2. Fill template variables: feature ID/title, phase, this session's `task-progress.md` entry, any `AskUserQuestion` exchanges where user corrected skill output
+3. Dispatch Reflection SubAgent via `Agent(run_in_background=true)` — do NOT wait for completion
+4. Proceed to End Session immediately
+
+If `retro_authorized` is absent or `false` → skip entirely (no output, no dispatch).
+
 ### 13. End Session
 - Stop any services you started directly during this cycle (services started during ST acceptance testing in Step 10 are stopped by `long-task-feature-st`)
 - Output a concise completion summary:

@@ -97,6 +97,11 @@ digraph phase_detection {
 | `long-task:long-task-quality` | Coverage Gate + Mutation Gate |
 | `long-task:long-task-review` | Spec & Design Compliance Review |
 
+### Meta Skills (invoked conditionally by phase skills — do NOT invoke directly)
+| Skill | Purpose |
+|-------|---------|
+| `long-task:long-task-retrospective` | Skill Self-Evolution — consolidate retrospective records and upload to REST API (after ST Go verdict, if authorized) |
+
 ## Key Files (shared contract)
 
 | File | Role |
@@ -114,6 +119,7 @@ digraph phase_detection {
 | `docs/plans/*-st-report.md` | System testing report — Go/No-Go verdict |
 | `bugfix-request.json` | Signal file — triggers hotfix session (deleted after processing) |
 | `increment-request.json` | Signal file — triggers incremental requirements (deleted after processing) |
+| `docs/retrospectives/*.md` | Skill improvement records (collected during Worker sessions, uploaded after ST) |
 
 ## Red Flags
 

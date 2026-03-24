@@ -124,6 +124,26 @@ python long-task-agent/scripts/check_real_tests.py feature-list.json --feature 3
 python long-task-agent/scripts/check_real_tests.py feature-list.json --json
 ```
 
+### Check retrospective authorization
+```bash
+python long-task-agent/scripts/check_retro_auth.py feature-list.json
+```
+
+### Validate retrospective record
+```bash
+python long-task-agent/scripts/validate_retrospective_record.py docs/retrospectives/record.md
+```
+
+### Check retrospective readiness
+```bash
+python long-task-agent/scripts/check_retrospective_readiness.py
+```
+
+### Post retrospective report
+```bash
+python long-task-agent/scripts/post_retrospective_report.py --feature-list feature-list.json
+```
+
 ### Run tests
 ```bash
 # Run all tests (from this repo's root)
@@ -144,6 +164,9 @@ python -m pytest tests/test_validate_st_cases.py
 python -m pytest tests/test_check_real_tests.py
 python -m pytest tests/test_validate_ats.py
 python -m pytest tests/test_check_ats_coverage.py
+python -m pytest tests/test_check_retro_auth.py
+python -m pytest tests/test_validate_retrospective_record.py
+python -m pytest tests/test_check_retrospective_readiness.py
 ```
 
 ### Auto-loop (multi-feature automation)
@@ -190,6 +213,12 @@ The skill system uses on-demand loading via the `Skill` tool. Only the bootstrap
 | `long-task-quality` | Coverage Gate + Feature-Scoped Mutation Gate |
 | `long-task-feature-st` | Black-Box Feature Acceptance Testing — self-managed environment lifecycle, Chrome DevTools MCP + ISO/IEC/IEEE 29119 (per-feature, after Quality Gates) |
 | `long-task-review` | Spec & Design Compliance Review |
+
+#### Meta Skills (invoked conditionally by phase skills)
+
+| Skill | Purpose |
+|-------|---------|
+| `long-task-retrospective` | Skill Self-Evolution — consolidate retrospective records and upload to REST API (after ST Go verdict, if authorized) |
 
 #### Skill Call Graph
 
@@ -337,6 +366,8 @@ using-long-task (router)
 | `docs/plans/*-ats.md` | ATS | Approved acceptance test strategy — the TEST PLAN (requirement→scenario mapping with category constraints, reviewed by ats-reviewer subagent) |
 | `bugfix-request.json` | Hotfix | Signal file triggering hotfix session (deleted after processing) |
 | `increment-request.json` | Increment | Signal file triggering incremental requirements (deleted after processing) |
+| `docs/retrospectives/*.md` | Worker | Skill improvement records (collected during sessions, uploaded after ST) |
+| `docs/retrospectives/reported/*.md` | Retrospective | Uploaded improvement records (audit trail) |
 | `feature-list.json` | Init | Structured task inventory with status; includes `constraints[]`, `assumptions[]`, `waves[]` |
 | `CLAUDE.md` | Init | Cross-session navigation index (appended by `init_project.py`) |
 | `task-progress.md` | Init | `## Current State` header (updated by Worker each session) + session log |
@@ -403,6 +434,8 @@ using-long-task (router)
   "ats_example_path": "docs/templates/ats-example.md (optional)",
   "st_case_template_path": "docs/templates/custom-st-template.md (optional)",
   "st_case_example_path": "docs/templates/st-case-example.md (optional)",
+  "retro_api_endpoint": "https://api.example.com/retro (optional — enables skill feedback collection)",
+  "retro_authorized": false,
   "features": [...]
 }
 ```
@@ -500,13 +533,18 @@ long-task-agent/
 │   ├── long-task-quality/             # Quality gates
 │   │   ├── SKILL.md
 │   │   └── coverage-recipes.md        # Multi-language tool setup
-│   └── long-task-review/              # Spec & design compliance review
+│   ├── long-task-review/              # Spec & design compliance review
+│   │   ├── SKILL.md
+│   │   └── prompts/
+│   │       └── spec-reviewer-prompt.md
+│   └── long-task-retrospective/       # Skill self-evolution — collect & upload improvement records
 │       ├── SKILL.md
 │       └── prompts/
-│           └── spec-reviewer-prompt.md
+│           └── reflection-prompt.md
 ├── agents/
 │   ├── code-reviewer.md              # Code reviewer agent definition
-│   └── ats-reviewer.md               # ATS reviewer agent definition (7 dimensions: R1-R7)
+│   ├── ats-reviewer.md               # ATS reviewer agent definition (7 dimensions: R1-R7)
+│   └── reflection-analyst.md         # Reflection analyst agent definition (session retrospective)
 ├── docs/
 │   └── templates/                     # Document templates (user-customizable)
 │       ├── srs-template.md            # Default SRS template (ISO 29148)
@@ -534,6 +572,10 @@ long-task-agent/
 │   ├── validate_bugfix_request.py     # Bugfix request signal validation
 │   ├── validate_increment_request.py  # Increment request signal validation
 │   ├── validate_st_cases.py          # ST test case document validation
+│   ├── check_retro_auth.py            # Retrospective feedback authorization check
+│   ├── validate_retrospective_record.py # Retrospective record validation
+│   ├── check_retrospective_readiness.py # Retrospective readiness check
+│   ├── post_retrospective_report.py   # POST retrospective records to REST API
 │   ├── auto_loop.py                  # Auto-loop for Claude Code (fresh context per feature, logs, AskUserQuestion detection)
 │   └── auto_loop_opencode.py         # Auto-loop for OpenCode (fresh context per feature, logs, signal file detection)
 ├── tests/
@@ -548,7 +590,10 @@ long-task-agent/
 │   ├── test_check_real_tests.py
 │   ├── test_validate_bugfix_request.py
 │   ├── test_validate_increment_request.py
-│   └── test_validate_st_cases.py
+│   ├── test_validate_st_cases.py
+│   ├── test_check_retro_auth.py
+│   ├── test_validate_retrospective_record.py
+│   └── test_check_retrospective_readiness.py
 ```
 
 ## See Also

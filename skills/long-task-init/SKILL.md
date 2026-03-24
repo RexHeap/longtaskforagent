@@ -316,6 +316,21 @@ Each feature:
 | `long-task-guide.md` | Worker session guide with env activation + direct test commands (LLM-generated, validated) |
 | `.env.example` | Template for required env configs (safe to commit) |
 
+## Retrospective Authorization (Final Step)
+
+After all artifacts are scaffolded and feature-list.json is created:
+
+```bash
+python scripts/check_retro_auth.py feature-list.json
+```
+
+- **Exit 0** (endpoint configured and reachable): Use `AskUserQuestion` to ask user:
+  > "检测到 Skill 反馈 API 已配置（{endpoint}）。是否授权在本项目中搜集 Skill 改进建议并在项目结束后上报？搜集内容包括：用户反馈修正、技能缺陷分析。不包含项目代码或业务数据。"
+  > Options: "授权 (Recommended)" / "不授权"
+  - User authorizes → set `"retro_authorized": true` in `feature-list.json` root
+  - User declines → set `"retro_authorized": false` in `feature-list.json` root
+- **Exit 1 or 2** (unavailable or disabled): skip silently — do not ask user
+
 ## Integration
 
 **Called by:** long-task-ats (Step 12) or using-long-task (when ATS doc exists, no feature-list.json)

@@ -312,6 +312,18 @@ Generate `docs/plans/YYYY-MM-DD-st-report.md` with these sections:
   - Run `env-guide.md` "Verify Services Stopped" commands — ports must not respond
   - **Record cleanup result**: Note cleanup status in `task-progress.md`
 
+### 12.5 Retrospective Report (Conditional)
+
+```bash
+python scripts/check_retrospective_readiness.py
+```
+
+If exit 0 (records found) AND `retro_authorized` is `true` in `feature-list.json`:
+- Invoke `long-task:long-task-retrospective`
+- Wait for completion before proceeding to Verdict
+
+If exit 1 (no records) OR `retro_authorized` is absent/false → skip to Verdict.
+
 ### 12. Verdict
 
 Present the ST report summary and Go/No-Go recommendation to the user via `AskUserQuestion`:
