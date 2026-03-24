@@ -329,6 +329,7 @@ def main():
         "check_mcp_providers.py",
         "auto_loop.py",
         "auto_loop_opencode.py",
+        "run_with_report.py",
     ]
     for script_name in helper_scripts:
         src = os.path.join(plugin_scripts_dir, script_name)

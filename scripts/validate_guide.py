@@ -59,6 +59,8 @@ REQUIRED_SECTIONS = [
      [r"critical\s*rule", r"iron\s*rule", r"must\s*never"]),
     ("Real Test Convention",
      [r"real\s*test\s*convention", r"real.test.identification", r"real.test.marker"]),
+    ("Report Wrapper",
+     [r"report\s*wrapper", r"run_with_report", r"long-task-reports"]),
 ]
 
 

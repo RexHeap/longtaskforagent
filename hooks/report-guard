@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+# PreToolUse hook for Bash tool: intercept test/coverage/mutation commands
+# and block them if not already wrapped with run_with_report.py.
+#
+# Input: JSON on stdin with tool_input.command
+# Output: JSON with decision (allow/block) and reason
+#
+# Only active when feature-list.json exists (Worker/ST phases).
+
+set -euo pipefail
+
+INPUT=$(cat)
+
+# Extract the command — delegate to Python for safe JSON parsing
+COMMAND=$(python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    print(data.get('tool_input', {}).get('command', ''))
+except Exception:
+    print('')
+" <<< "$INPUT" 2>/dev/null || echo "")
+
+# Fast-path: empty command or extraction failed
+if [ -z "$COMMAND" ]; then
+    echo '{"decision":"allow"}'
+    exit 0
+fi
+
+# Fast-path: already wrapped
+if echo "$COMMAND" | grep -q "run_with_report\.py"; then
+    echo '{"decision":"allow"}'
+    exit 0
+fi
+
+# Fast-path: not in Worker/ST phase
+if [ ! -f "feature-list.json" ]; then
+    echo '{"decision":"allow"}'
+    exit 0
+fi
+
+# Detect test/coverage/mutation tool keywords
+# Order matters: more specific patterns before general ones
+DETECTED=""
+TAIL=20
+
+if echo "$COMMAND" | grep -qE '\bpytest\b.*--cov'; then
+    DETECTED="coverage"
+elif echo "$COMMAND" | grep -qE '\bnpx\s+vitest\s+run\b.*--coverage'; then
+    DETECTED="coverage"
+elif echo "$COMMAND" | grep -qE '\bnpx\s+c8\b'; then
+    DETECTED="coverage"
+elif echo "$COMMAND" | grep -qE '\bmvn\s+test\b.*jacoco'; then
+    DETECTED="coverage"
+elif echo "$COMMAND" | grep -qE '\blcov\b.*(--summary|--capture)'; then
+    DETECTED="coverage"
+elif echo "$COMMAND" | grep -qE '\bgcov\b'; then
+    DETECTED="coverage"
+elif echo "$COMMAND" | grep -qE '\bmutmut\s+run\b'; then
+    DETECTED="mutation"; TAIL=30
+elif echo "$COMMAND" | grep -qE '\bnpx\s+stryker\s+run\b'; then
+    DETECTED="mutation"; TAIL=30
+elif echo "$COMMAND" | grep -qE '\bmvn\s+pitest:mutationCoverage\b'; then
+    DETECTED="mutation"; TAIL=30
+elif echo "$COMMAND" | grep -qE '\bmull-runner\b'; then
+    DETECTED="mutation"; TAIL=30
+elif echo "$COMMAND" | grep -qE '\bpytest\b'; then
+    DETECTED="test"
+elif echo "$COMMAND" | grep -qE '\bnpx\s+(vitest|jest)\s+run\b'; then
+    DETECTED="test"
+elif echo "$COMMAND" | grep -qE '\bmvn\s+test\b'; then
+    DETECTED="test"
+elif echo "$COMMAND" | grep -qE '\bctest\b'; then
+    DETECTED="test"
+fi
+
+# No match → allow
+if [ -z "$DETECTED" ]; then
+    echo '{"decision":"allow"}'
+    exit 0
+fi
+
+# Build wrapped command and emit block decision
+# Use Python for safe JSON serialization (avoids shell injection in COMMAND)
+python3 -c "
+import json, sys
+
+detected = sys.argv[1]
+tail = sys.argv[2]
+command = sys.argv[3]
+report_path = '.long-task-reports/' + detected + '.txt'
+wrapped = 'python scripts/run_with_report.py ' + report_path + ' --tail ' + tail + ' -- ' + command
+reason = 'Detected ' + detected + ' command without report wrapper. Use:\n' + wrapped
+
+print(json.dumps({'decision': 'block', 'reason': reason}))
+" "$DETECTED" "$TAIL" "$COMMAND"
+
+exit 0

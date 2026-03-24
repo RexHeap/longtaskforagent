@@ -12,6 +12,8 @@ You are implementing a task for the {{PROJECT_NAME}} project.
 {{FULL_TASK_TEXT}}
 
 ## Exit Criteria
+> Note: Test/coverage/mutation commands are automatically wrapped by hooks — full output is saved to `.long-task-reports/`, only a summary is returned. If FAIL, Read the report file for details.
+
 1. Run `{{TEST_COMMAND}}` — all tests pass
 2. Run `{{COVERAGE_COMMAND}}` — line coverage >= {{LINE_COV_MIN}}%, branch >= {{BRANCH_COV_MIN}}%
 3. Run `{{MUTATION_COMMAND}}` — mutation score >= {{MUTATION_MIN}}% (incremental, changed files only)

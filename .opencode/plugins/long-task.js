@@ -106,6 +106,18 @@ const skillsDir = path.resolve(__dirname, '../../skills');
 
 const pluginRoot = path.resolve(__dirname, '../..');
 
+// ─── Clean stale report captures from previous session ───────────────────────
+const cleanReportDir = (directory) => {
+  try {
+    const reportDir = path.join(directory, '.long-task-reports');
+    if (fs.existsSync(reportDir)) {
+      fs.rmSync(reportDir, { recursive: true, force: true });
+    }
+  } catch {
+    // Non-fatal — never break the session
+  }
+};
+
 const copyInitScript = (directory) => {
   try {
     const src = path.join(pluginRoot, 'skills', 'long-task-init', 'scripts', 'init_project.py');
@@ -216,6 +228,7 @@ ${toolMapping}
 export const LongTaskPlugin = async ({ client, directory }) => {
   setupChromeMcp();
   copyInitScript(directory);
+  cleanReportDir(directory);
   return {
     'experimental.chat.system.transform': async (_input, output) => {
       const bootstrap = getBootstrapContent(directory);
@@ -227,7 +240,14 @@ export const LongTaskPlugin = async ({ client, directory }) => {
     // ─── AskUserQuestion signal file for auto_loop detection ─────────
     // When an interactive tool is called, write a signal file so that
     // auto_loop_opencode.py can detect it and pause the loop.
+    //
+    // ─── Report guard: transparent command rewrite ─────────────────────
+    // When a test/coverage/mutation command is detected without the
+    // run_with_report.py wrapper, transparently rewrite it so output is
+    // captured to .long-task-reports/ and only a summary reaches the LLM.
+    // Only active when feature-list.json exists (Worker/ST phases).
     'tool.execute.before': async (input, output) => {
+      // --- AskUserQuestion signal detection (existing) ---
       const interactiveTools = ['ask_user', 'ask_question', 'user_input'];
       const isInteractiveBash = input.tool === 'bash' &&
         output.args?.command &&
@@ -247,6 +267,41 @@ export const LongTaskPlugin = async ({ client, directory }) => {
           }, null, 2),
           'utf8'
         );
+      }
+
+      // --- Report guard: transparent rewrite for test/coverage/mutation ---
+      if (input.tool === 'bash' && output.args?.command) {
+        const cmd = output.args.command;
+
+        // Skip if already wrapped or not in Worker/ST phase
+        if (cmd.includes('run_with_report.py')) return;
+        if (!fs.existsSync(path.join(directory, 'feature-list.json'))) return;
+
+        // Pattern table: order matters (specific before general)
+        const PATTERNS = [
+          { regex: /\bpytest\b.*--cov/,                      cat: 'coverage', tail: 20 },
+          { regex: /\bnpx\s+vitest\s+run\b.*--coverage/,     cat: 'coverage', tail: 20 },
+          { regex: /\bnpx\s+c8\b/,                           cat: 'coverage', tail: 20 },
+          { regex: /\bmvn\s+test\b.*jacoco/,                  cat: 'coverage', tail: 20 },
+          { regex: /\blcov\b.*(?:--summary|--capture)/,       cat: 'coverage', tail: 20 },
+          { regex: /\bgcov\b/,                                cat: 'coverage', tail: 20 },
+          { regex: /\bmutmut\s+run\b/,                        cat: 'mutation', tail: 30 },
+          { regex: /\bnpx\s+stryker\s+run\b/,                cat: 'mutation', tail: 30 },
+          { regex: /\bmvn\s+pitest:mutationCoverage\b/,       cat: 'mutation', tail: 30 },
+          { regex: /\bmull-runner\b/,                         cat: 'mutation', tail: 30 },
+          { regex: /\bpytest\b/,                              cat: 'test',     tail: 20 },
+          { regex: /\bnpx\s+(?:vitest|jest)\s+run\b/,        cat: 'test',     tail: 20 },
+          { regex: /\bmvn\s+test\b/,                          cat: 'test',     tail: 20 },
+          { regex: /\bctest\b/,                               cat: 'test',     tail: 20 },
+        ];
+
+        for (const { regex, cat, tail } of PATTERNS) {
+          if (regex.test(cmd)) {
+            const reportPath = `.long-task-reports/${cat}.txt`;
+            output.args.command = `python scripts/run_with_report.py ${reportPath} --tail ${tail} -- ${cmd}`;
+            break;
+          }
+        }
       }
     },
   };

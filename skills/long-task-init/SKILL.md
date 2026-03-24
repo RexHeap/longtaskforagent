@@ -91,6 +91,11 @@ You MUST create a TodoWrite task for each step and complete them in order:
    - **Must include `Service Commands` section** (only if project has server processes): reference `env-guide.md` as the authoritative source for start/stop/restart commands; list health check URLs; include reminder about the Restart Protocol
    - **Must include `Config Management` section**: describe how to add/update a config value for this project (e.g., "append `KEY=value` to `.env`" for dotenv projects, "set `key=value` in `application.properties`" for Spring Boot projects, "export KEY=value" for system-env-only projects). This section is referenced by the Worker Config Gate when prompting users for missing values.
    - **Must include `Real Test Convention` section**: identification method (marker/folder/naming, adapted to project language), run command to execute only real tests, example real test for this project's tech stack
+   - **Must include `Report Wrapper` section** with:
+     - Explanation: hooks automatically wrap test/coverage/mutation commands with `run_with_report.py`
+     - Report directory: `.long-task-reports/` (auto-created, git-ignored)
+     - On FAIL: use Read tool on the report file for full details
+     - Manual usage (for when hooks are unavailable): `python scripts/run_with_report.py <report-path> --tail N -- <command>`
    - Validate:
      ```bash
      python scripts/validate_guide.py long-task-guide.md --feature-list feature-list.json
