@@ -69,7 +69,7 @@ Agent(
 
 Read the SubAgent's review output:
 
-- **Verdict: PASS** (all S1-S5, D1-D5, R1-R3, and U1-U4 if applicable are YES)
+- **Verdict: PASS** (all S1-S5, D1-D5, T1-T3, R1-R3, and U1-U4 if applicable are YES)
   1. Record in `task-progress.md`: "Review: PASS"
   2. Proceed to Add Examples + Persist
 

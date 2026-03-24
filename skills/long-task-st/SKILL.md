@@ -67,20 +67,26 @@ Create `docs/plans/YYYY-MM-DD-st-plan.md` with:
 Map EVERY SRS requirement to ST test approach. Reference per-feature test case documents from Worker Step 10:
 
 ```markdown
-| Req ID | Requirement | Feature ST Status | System ST Category | Test Approach | Priority |
-|--------|-------------|-------------------|--------------------|---------------|----------|
-| FR-001 | ... | docs/test-cases/feature-1-xxx.md (PASS) | E2E | Scenario: ... | High |
-| NFR-001 | ... | docs/test-cases/feature-5-xxx.md (PASS) | Performance | Load test: ... | Critical |
-| IFR-001 | ... | N/A (cross-feature) | Integration | Contract test: ... | High |
+| Req ID | Requirement | Feature ST Status | System ST Category | ATS Categories | Test Approach | Priority |
+|--------|-------------|-------------------|--------------------|----------------|---------------|----------|
+| FR-001 | ... | docs/test-cases/feature-1-xxx.md (PASS) | E2E | FUNC,BNDRY,SEC | Scenario: ... | High |
+| NFR-001 | ... | docs/test-cases/feature-5-xxx.md (PASS) | Performance | PERF | Load test: ... | Critical |
+| IFR-001 | ... | N/A (cross-feature) | Integration | FUNC,BNDRY | Contract test: ... | High |
 ```
 
 Every FR-xxx, NFR-xxx, IFR-xxx must appear in the RTM. Requirements without a test approach = **gap**.
+
+**ATS compliance gate** (if ATS document exists):
+```bash
+python scripts/check_ats_coverage.py docs/plans/*-ats.md --feature-list feature-list.json --strict
+```
+Must exit 0. Any ATS category gap = finding to resolve before proceeding.
 
 #### 2c. Entry / Exit Criteria
 
 **Entry** (must ALL be true): all features passing, environment provisioned, all required configs present.
 
-**Exit** (must ALL be true for Go verdict): all regression/integration/E2E tests pass, all NFR thresholds met with measured evidence, no Critical or Major defects open, RTM shows 100% requirement coverage.
+**Exit** (must ALL be true for Go verdict): all regression/integration/E2E tests pass, all NFR thresholds met with measured evidence, no Critical or Major defects open, RTM shows 100% requirement coverage, **ATS category compliance verified** (if ATS exists: `check_ats_coverage.py --strict` exits 0).
 
 #### 2d. Risk-Based Prioritization
 
@@ -120,14 +126,82 @@ See `references/st-recipes.md` section "Full Mutation Regression" for per-tool c
 
 ### 4. Integration Testing
 
-Test cross-feature interactions. Read `references/st-recipes.md` for language-specific patterns.
+Test cross-feature interactions. Read `references/st-recipes.md` for language-specific patterns and real-vs-contract test classification.
+
+**Terminology** (see st-recipes.md §1 for details):
+- **Contract test** = mock-based, verifies call signatures — supplementary, not sufficient
+- **Integration test** = real-service, verifies actual data flow — required per boundary
+
+<HARD-GATE>
+Every internal cross-feature boundary MUST have at least one real integration test (real DB, real HTTP, real file system). Contract tests (mocks) do NOT satisfy this gate.
+
+For external third-party boundaries: first ask the user (via `AskUserQuestion`) to provide test credentials or sandbox environment. Only if the user confirms they cannot provide credentials may contract-only tests be used — record the user's confirmation in the ST plan as mock authorization.
+</HARD-GATE>
 
 For each pair of features sharing data, state, or API boundaries:
 - **Data flow**: Feature A produces data → Feature B consumes it → verify data integrity end-to-end; shared DB/state consistency
 - **API contracts**: internal API calls between modules — verify request/response schemas; error propagation; version compatibility
 - **Dependency chains**: walk `dependencies[]` graph in `feature-list.json`; verify features work in dependency order; test each dependency edge
 
-Write integration tests in `tests/integration/` or `tests/st/`. Run and record results.
+**Classification table** (include in ST plan):
+
+| Boundary | Features | Type | Real Tests | Contract Tests | Mock Authorization | Status |
+|----------|----------|------|-----------|----------------|-------------------|--------|
+| shared DB | F1 → F3 | Internal | 2 | 1 | N/A | PASS |
+| REST API | F2 → F4 | Internal | 1 | 0 | N/A | PASS |
+| GitHub API | F5 → ext | External | 1 | 0 | N/A (user provided token) | PASS |
+| Stripe API | F7 → ext | External | 0 | 2 | User confirmed no sandbox | PASS |
+
+**Minimum per internal boundary:**
+- ≥1 real test that writes/reads through the real shared resource
+- If real service cannot start: boundary is **BLOCKED** (not skipped) — diagnose via env-guide.md
+
+**External boundary protocol:**
+1. Use `AskUserQuestion` to ask user for test credentials/sandbox environment
+2. If user provides → write real integration tests (preferred)
+3. If user confirms cannot provide → use contract tests; record in Mock Authorization column
+4. Never assume mock is acceptable without asking user first
+
+Write integration tests in `tests/integration/` or `tests/st/`. Tag each test:
+```python
+# Integration: Feature A → Feature B (shared DB) [Real]
+def test_feature_a_data_consumed_by_feature_b():
+    ...
+
+# Contract: Feature C → External API [Contract]
+def test_external_api_response_shape():
+    ...
+```
+
+Run and record results per boundary.
+
+### 4b. Full-Pipeline Smoke Test
+
+Before E2E scenario testing, verify at least one complete data flow path through the entire system. This catches integration bugs that per-boundary tests miss.
+
+<HARD-GATE>
+At least ONE smoke test must exercise a real end-to-end data path (input → processing → storage → retrieval → output) using only real services. No mocks.
+</HARD-GATE>
+
+1. Identify the **critical path** — the single most important data flow through the system (e.g., "create entity → store → query → return")
+2. Write one smoke test that:
+   - Starts from external input (API call, CLI command, UI action)
+   - Passes through all intermediate processing
+   - Persists to real storage (if applicable)
+   - Retrieves and verifies the persisted result
+   - Uses ONLY real services — no mocks
+3. Run the smoke test against running services (started in Step 1)
+4. If it fails → **Critical** severity defect — diagnose before proceeding to E2E
+
+**Scaling:**
+| Project Size | Smoke Tests |
+|---|---|
+| Tiny (1-5 features) | 1 critical path |
+| Small (5-15) | 1-2 critical paths |
+| Medium (15-50) | 2-3 critical paths |
+| Large (50+) | 3-5 critical paths covering major subsystems |
+
+**Record:** smoke test description, real services used, pass/fail, execution evidence.
 
 ### 5. Cross-Feature E2E Scenario Testing
 
@@ -190,6 +264,21 @@ If ANY defects were found in Steps 3-8:
 | **Minor** | Non-core affected, workaround exists | Document — fix now or defer (decide with user) |
 | **Cosmetic** | Visual/text issue, no functional impact | Document — defer to next release |
 
+**Escape analysis** — for each defect, classify where it should have been caught:
+
+| Escaped From | Meaning | Systemic Action |
+|---|---|---|
+| Unit | TDD should have caught this | Add unit test; review coverage for similar gaps |
+| Feature-ST | Per-feature acceptance testing gap | Add test case via increment skill |
+| Mock-Leaked | Mock test passed but real integration fails | Replace mock with real integration test |
+| Integration | Cross-feature boundary not tested | Add integration test for boundary |
+| Spec | Requirement ambiguous or missing | Clarify SRS via increment skill |
+
+Include the "Escaped From" column in the defect table:
+
+| # | Severity | Escaped From | Category | Description | Status | Fix Ref |
+|---|----------|-------------|----------|-------------|--------|---------|
+
 **Fix loop** (if Critical/Major defects exist):
 1. Mark affected features `"status": "failing"` in `feature-list.json`; document in `task-progress.md`
 2. Invoke `long-task:long-task-work` to fix
@@ -204,9 +293,9 @@ Before writing, verify: every SRS requirement appears in RTM; every NFR has a me
 
 Generate `docs/plans/YYYY-MM-DD-st-report.md` with these sections:
 1. **Executive Summary** — 1-3 sentences: overall quality assessment and release recommendation
-2. **Requirements Traceability Matrix** — full RTM table with Feature ST status, System ST category, result, evidence; coverage count (X/Y requirements, Z%); list any gaps
+2. **Requirements Traceability Matrix** — full RTM table with Feature ST status, System ST category, ATS categories, result, evidence; coverage count (X/Y requirements, Z%); list any gaps; include ATS compliance check result (`check_ats_coverage.py --strict` output)
 3. **Test Execution Summary** — table: category, tests run, passed, failed, skipped, notes (one row per category from Step 2a); include a final row **Real Test Cases** — aggregate `Real` test case counts (total / passed / failed) from all feature ST documents (`docs/test-cases/feature-*.md` Real Test Case Execution Summary tables)
-4. **Defect Summary** — table: severity, category, description, status (fixed/deferred), fix reference; totals; open Critical/Major count (must be 0 for Go)
+4. **Defect Summary** — table: severity, **escaped from**, category, description, status (fixed/deferred), fix reference; totals; open Critical/Major count (must be 0 for Go); if ≥2 defects share the same "Escaped From" source, flag as systemic gap in Risk Assessment
 5. **Quality Metrics** — line/branch coverage vs thresholds, **full mutation score** vs threshold (from Step 3b), total test count; real test cases: total / passed / failed (aggregated from all `docs/test-cases/feature-*.md` Real Test Case Execution Summary tables)
 6. **Risk Assessment** — residual risks with likelihood, impact, mitigation
 7. **Recommendations** — post-release monitoring, known limitations, suggested improvements
@@ -234,10 +323,10 @@ Present the ST report summary and Go/No-Go recommendation to the user via `AskUs
 
 | Project Size | Features | ST Depth |
 |---|---|---|
-| Tiny (1-5) | 1-5 features | Regression + lightweight integration + 2-3 E2E scenarios + 1-2 exploratory charters |
-| Small (5-15) | 5-15 features | Full regression + integration per shared boundary + E2E per persona + NFR spot-checks + 3-5 charters |
-| Medium (15-50) | 15-50 features | Full regression + systematic integration + comprehensive E2E + full NFR + compatibility matrix + 5-10 charters |
-| Large (50+) | 50+ features | Full regression + integration test suite + E2E automation + full NFR load testing + full compatibility + security audit + 10+ charters |
+| Tiny (1-5) | 1-5 features | Regression + lightweight integration + 1 smoke test + 2-3 E2E scenarios + 1-2 exploratory charters |
+| Small (5-15) | 5-15 features | Full regression + integration per shared boundary + 1-2 smoke tests + E2E per persona + NFR spot-checks + 3-5 charters |
+| Medium (15-50) | 15-50 features | Full regression + systematic integration + 2-3 smoke tests + comprehensive E2E + full NFR + compatibility matrix + 5-10 charters |
+| Large (50+) | 50+ features | Full regression + integration test suite + 3-5 smoke tests + E2E automation + full NFR load testing + full compatibility + security audit + 10+ charters |
 
 ## Critical Rules
 
@@ -252,6 +341,10 @@ Present the ST report summary and Go/No-Go recommendation to the user via `AskUs
 - **Exploratory testing is mandatory** — scripted tests cannot find everything
 - **ST report before verdict** — document first, then decide; never skip the report
 - **No new features during ST** — ST tests the integrated system as-is
+- **ATS categories are binding** — if ATS exists, `check_ats_coverage.py --strict` must exit 0; every required category must have test coverage
+- **Real integration tests required per boundary** — internal boundaries need ≥1 real test; external boundaries need user confirmation before mock is allowed
+- **Full-pipeline smoke test mandatory** — at least one real end-to-end data path must be verified before E2E scenarios
+- **Defect escape analysis required** — every defect must be classified by "Escaped From" source to identify systemic testing gaps
 
 ## Integration
 

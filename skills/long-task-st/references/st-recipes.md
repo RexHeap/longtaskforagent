@@ -4,6 +4,26 @@ Per-language/framework recipes for each ST test category. Select recipes based o
 
 ## 1. Integration Test Patterns
 
+### Real vs Contract Test Classification
+
+- **Contract test** — verifies call signatures and data shapes using mocks/stubs (`unittest.mock`, `requests-mock`, `msw`, `gmock`). Validates interfaces but does NOT verify real data flow.
+- **Integration test** — verifies actual data flow between real components (real DB, real HTTP, real file system). Catches contract mismatches, type errors, and protocol bugs that mocks hide.
+
+**Preferred tools for real integration:**
+- `testcontainers` (Python, Java, JS/TS) — real DB/service in Docker
+- `sqlite:///:memory:` — real SQL engine, in-memory (acceptable for SQL integration)
+- `httpx` against running server — preferred over `requests-mock` for internal APIs
+- `supertest` against running Express/Fastify — preferred over `msw` for internal APIs
+
+**External third-party service testing strategy (priority order):**
+1. **Prefer real tests** — ask user (via `AskUserQuestion`) for test credentials / sandbox environment (e.g., Stripe test key, GitHub personal token)
+2. **User confirms unavailable** — only when user explicitly confirms they cannot provide credentials, use contract tests (mocks)
+3. **Record decision** — note in ST plan Classification table: `External (user confirmed no credentials)` as mock authorization
+
+**Mocks are allowed ONLY when:**
+- External third-party service (e.g., Stripe API, GitHub API) AND user confirmed via `AskUserQuestion` that test credentials are unavailable
+- Must record user confirmation in ST plan as mock authorization basis
+
 ### Python
 ```bash
 # Directory structure
@@ -20,9 +40,9 @@ pytest tests/integration/ --cov=src --cov-report=term-missing
 
 **Patterns:**
 - Use `pytest` fixtures for shared state setup/teardown
-- Use `unittest.mock.patch` for external service boundaries
-- Use `sqlite:///:memory:` or `testcontainers` for database integration
-- Use `httpx` or `requests-mock` for HTTP API contract tests
+- Use `sqlite:///:memory:` or `testcontainers` for database integration [Real]
+- Use `httpx` against running server for internal API integration [Real]
+- Use `unittest.mock.patch` or `requests-mock` for external service boundaries only [Contract] — requires user confirmation that real credentials are unavailable
 
 ### JavaScript / TypeScript
 ```bash
@@ -40,9 +60,9 @@ npx jest tests/integration/ --verbose
 
 **Patterns:**
 - Use `beforeAll`/`afterAll` for shared state
-- Use `msw` (Mock Service Worker) for HTTP contract tests
-- Use `testcontainers` for database integration
-- Use `supertest` for Express/Fastify API integration
+- Use `testcontainers` for database integration [Real]
+- Use `supertest` against running Express/Fastify app for internal API integration [Real]
+- Use `msw` (Mock Service Worker) for external service boundaries only [Contract] — requires user confirmation that real credentials are unavailable
 
 ### Java
 ```bash
@@ -58,9 +78,9 @@ mvn test -Dtest="integration.*" -pl module-name
 ```
 
 **Patterns:**
-- Use `@SpringBootTest` for Spring integration
-- Use `Testcontainers` for database/service integration
-- Use `RestAssured` for API contract tests
+- Use `@SpringBootTest` for Spring integration [Real]
+- Use `Testcontainers` for database/service integration [Real]
+- Use `RestAssured` against running server for internal API integration [Real]; against mock server for external boundaries [Contract]
 - Use `@DirtiesContext` for state isolation between tests
 
 ### C / C++
@@ -76,8 +96,8 @@ ctest --test-dir build -R integration -V
 
 **Patterns:**
 - Use `gtest` fixtures for shared state
-- Use mock libraries (`gmock`, `fff`) for external boundaries
-- Test IPC, shared memory, file I/O between modules
+- Test IPC, shared memory, file I/O between modules [Real]
+- Use mock libraries (`gmock`, `fff`) for external boundaries only [Contract] — requires user confirmation that real credentials are unavailable
 
 ---
 

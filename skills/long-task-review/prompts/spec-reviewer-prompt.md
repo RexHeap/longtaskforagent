@@ -27,7 +27,7 @@ Read each of these files before starting your review:
 ### Step 1: Find Issues First (MANDATORY — minimum 5)
 
 List at least 5 potential compliance issues across all applicable dimensions. For each:
-- **Dimension**: Spec / Design / Plan / UCD / Real-Test
+- **Dimension**: Spec / Design / Plan / UCD / Real-Test / Test-Case
 - Which requirement, design element, plan task, or style token is affected
 - What was expected vs what was implemented
 - Severity: Critical / Important / Minor
@@ -105,9 +105,21 @@ For each issue from Step 1:
 | U3 | Spacing and layout follow UCD spacing tokens? | | [cite padding, margin, border-radius, box-shadow values vs UCD tokens] |
 | U4 | Component structure and visual hierarchy match UCD component prompts? | | [cite UCD component prompt vs implemented component structure] |
 
+### Test Case Completeness Rubric
+
+| # | Check | YES/NO | Evidence |
+|---|-------|--------|----------|
+| T1 | Every verification_step has at least one corresponding ST test case in the ST case document? | | [cite ST case IDs mapped to each verification_step via traceability matrix] |
+| T2 | Every ST test case has at least one automated test implementing it (check test file comments for `# ST-xxx` references)? | | [cite test functions with ST-xxx comments] |
+| T3 | UI test cases (if any) include EXPECT/REJECT clauses, console error gate, and accessibility checkpoint? | | [cite specific UI test case steps] |
+
+- Any NO in T1-T3 → FAIL (test case coverage gap)
+- If no ST case document exists yet (st_case_path not set), T1-T3 are auto-FAIL
+
 **Verdict rules**:
 - Any NO in S1-S5 → FAIL (spec violation)
 - Any NO in D1-D5 → FAIL (design violation)
+- Any NO in T1-T3 → FAIL (test case coverage gap)
 - Any NO in R1-R3 → FAIL (real test violation)
 - Any NO in U1-U4 → FAIL (UCD violation, for ui:true features only)
 - Any NO in P1-P3 → Important finding (must fix, but does not block Stage 2)
@@ -122,6 +134,7 @@ If FAIL:
 - **Design violations**: List specific design elements not followed — cite the design document section and what was implemented differently
 - **UCD violations**: List specific style tokens or component prompts not followed — cite the UCD section and what was implemented differently
 - **Plan deviations**: List plan tasks not completed or files not matching
+- **Test case gaps**: List verification_steps without ST cases or ST cases without automated tests
 
 For each violation, be precise:
 - Cite the source (verification_step text, design class diagram element, UCD token name, plan task number)
@@ -140,7 +153,7 @@ For each violation, be precise:
 
 ## Rules
 - **Find issues first** — 5+ issues across all applicable dimensions before any verdict (Step 1)
-- **Multi-dimensional review** — check spec, design, plan, AND UCD (for UI features) compliance; never skip a dimension
+- **Multi-dimensional review** — check spec, design, plan, test case completeness, AND UCD (for UI features) compliance; never skip a dimension
 - Be specific — cite exact verification_steps, design diagram elements, UCD tokens, plan tasks
 - Do NOT review code quality — that is a separate stage
 - Verdict is computed from the rubric — you cannot override a NO
