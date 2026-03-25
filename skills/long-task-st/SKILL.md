@@ -98,8 +98,6 @@ Must exit 0. Any ATS category gap = finding to resolve before proceeding.
 
 ### 3. Regression Testing
 
-> **Report wrapper**: The hook automatically wraps test/coverage/mutation commands — full output goes to `.long-task-reports/`, only a summary is returned. Read the report file when you need full details (e.g., to identify failing tests or uncovered lines).
-
 1. Run full project test suite using commands from `long-task-guide.md`
 
 2. Verify ALL tests pass — zero failures, zero errors
@@ -114,8 +112,8 @@ Must exit 0. Any ATS category gap = finding to resolve before proceeding.
 Run full-codebase mutation testing. Per-feature mutation during Worker cycles may have only scoped feature tests (when active features > `mutation_full_threshold`); this step verifies mutation score holds project-wide with the full test suite.
 
 1. Get the `mutation_full` command from `long-task-guide.md`
-2. Run full mutation testing (all source files, all tests) — hook captures full output to `.long-task-reports/mutation.txt`
-3. Verify: mutation score >= `quality_gates.mutation_score_min` from `feature-list.json` (read from summary tail; if unclear, Read the report file)
+2. Run full mutation testing (all source files, all tests)
+3. Verify: mutation score >= `quality_gates.mutation_score_min` from `feature-list.json`
 4. If surviving mutants found:
    - Analyze: equivalent mutant (document + skip) vs real gap (add test → Major severity defect)
    - If score below threshold → treat as regression defect (Major severity)

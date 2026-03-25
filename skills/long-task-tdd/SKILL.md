@@ -191,7 +191,7 @@ See `references/ui-error-detection.md` for the full detection script and integra
 
 Run the test suite. **All tests must FAIL.** If any test passes → it tests nothing useful, rewrite it.
 
-**Running tests**: Activate environment per `long-task-guide.md` → run test command directly. The PreToolUse hook (Claude Code) or `tool.execute.before` (OpenCode) automatically wraps the command with `run_with_report.py` — full output is saved to `.long-task-reports/`, and only a summary is returned. If FAIL, Read the report file for details. If tool is missing or environment not activated: diagnose root cause, run `init.sh` if needed, escalate to user if still failing. **Never skip.**
+**Running tests**: Activate environment per `long-task-guide.md` → run test command directly. If tool is missing or environment not activated: diagnose root cause, run `init.sh` if needed, escalate to user if still failing. **Never skip.**
 
 **Real Test Verification (before proceeding to Green):**
 Run `python scripts/check_real_tests.py feature-list.json --feature {id}` and confirm:

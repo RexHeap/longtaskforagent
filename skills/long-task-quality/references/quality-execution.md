@@ -95,22 +95,18 @@ Do NOT skip Gate 0 and proceed to coverage.
 
 After TDD Green (all tests pass), run the coverage tool.
 
-> **Report wrapper**: The PreToolUse hook (Claude Code) or `tool.execute.before` (OpenCode) automatically wraps test/coverage/mutation commands with `run_with_report.py`. Full output is saved to `.long-task-reports/`, and only a summary (verdict + last N lines) is returned. If FAIL, use the Read tool on the report file for full details.
-
 1. **Run** the coverage tool (activate env per `long-task-guide.md`)
-
-2. **Read** the summary output — the hook captures full output to `.long-task-reports/coverage.txt`. If the summary tail does not show clear line%/branch% numbers, Read the report file.
+2. **Read** the output — verify line%/branch% numbers are visible
 3. **Verify**: line coverage >= `[thresholds] line_coverage`, branch coverage >= `[thresholds] branch_coverage`
-4. **If FAIL**: Read `.long-task-reports/coverage.txt` to identify uncovered lines/branches → add tests → re-run TDD cycle for those paths
+4. **If FAIL**: identify uncovered lines/branches from the output → add tests → re-run TDD cycle for those paths
 5. **If PASS**: proceed to Mutation Gate
 
 **Evidence required:**
 ```
-- Coverage summary (from wrapper output or report file) showing line % and branch %
+- Coverage summary showing line % and branch %
 - Line coverage >= threshold
 - Branch coverage >= threshold
-- List of uncovered lines (if any, with justification) — Read report file for details
-- Report file path
+- List of uncovered lines (if any, with justification)
 ```
 
 ## Gate 2: Mutation Testing
@@ -131,12 +127,12 @@ Check `quality_gates.mutation_full_threshold` (default 100) against total active
    - `{changed_files}` → changed source file paths
    - `{test_files}` → feature's test file paths (or test pattern/marker)
    - Other tool-specific placeholders as needed per tech stack (see `coverage-recipes.md` Per-Feature Mutation Test Scoping section)
-4. **Read** summary output (hook captures full output to `.long-task-reports/mutation.txt`), **verify** mutation score >= `[thresholds] mutation_score`. If score unclear from summary, Read the report file.
+4. **Read** the output, **verify** mutation score >= `[thresholds] mutation_score`.
 
 ### Running mutation_full (small project)
 
 1. **Run** the `mutation_full` command from `long-task-guide.md` (no placeholders needed)
-2. **Read** summary output (hook captures full output to `.long-task-reports/mutation.txt`), **verify** mutation score >= `[thresholds] mutation_score`. If score unclear from summary, Read the report file.
+2. **Read** the output, **verify** mutation score >= `[thresholds] mutation_score`.
 
 ### Common steps (both modes)
 
@@ -148,11 +144,10 @@ Check `quality_gates.mutation_full_threshold` (default 100) against total active
 
 **Evidence required:**
 ```
-- Mutation summary (from wrapper output or report file) showing killed/survived/total
+- Mutation summary showing killed/survived/total
 - Mutation score >= threshold
 - Scope: feature-scoped | full (state which mode was used and why)
-- List of surviving mutants (if any, with justification or fix) — Read report file for details
-- Report file path
+- List of surviving mutants (if any, with justification or fix)
 ```
 
 **Mutation Scope by Phase:**
@@ -173,12 +168,11 @@ The final gate before marking a feature as "passing".
 
 2. RUN → Execute each command (fresh, in this message — not cached from earlier)
 
-3. READ → Summary output for each (hook captures full output to `.long-task-reports/`):
-   - Check exit codes (PASS/FAIL verdict in summary)
-   - Count test pass/fail/skip from summary tail
-   - Read coverage percentages from summary tail
-   - Read mutation score from summary tail
-   - If any metric is unclear from the tail → Read the report file
+3. READ → Output for each command:
+   - Check exit codes (PASS/FAIL)
+   - Count test pass/fail/skip from output
+   - Read coverage percentages from output
+   - Read mutation score from output
 
 4. VERIFY → Does ALL output confirm the claim?
    - All tests pass (0 failures)?

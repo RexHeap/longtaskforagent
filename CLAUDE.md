@@ -144,14 +144,6 @@ python long-task-agent/scripts/check_retrospective_readiness.py
 python long-task-agent/scripts/post_retrospective_report.py --feature-list feature-list.json
 ```
 
-### Run command with report capture (auto-invoked by hooks)
-```bash
-# Manual usage (hooks wrap test/coverage/mutation commands automatically):
-python scripts/run_with_report.py .long-task-reports/report-name.txt -- <command>
-python scripts/run_with_report.py .long-task-reports/report-name.txt --tail 30 -- <command>
-python scripts/run_with_report.py .long-task-reports/report-name.txt --label "Coverage Gate" -- pytest --cov=src
-```
-
 ### Run tests
 ```bash
 # Run all tests (from this repo's root)
@@ -394,7 +386,6 @@ using-long-task (router)
 | `docs/templates/st-case-template.md` | — | Default ST test case template (ISO/IEC/IEEE 29119-3, user-customizable) |
 | `docs/templates/deferred-backlog-template.md` | — | Default deferred requirements backlog template (user-customizable) |
 | `logs/session-*.md` | auto_loop | Auto-captured session logs per iteration (one feature per file) |
-| `.long-task-reports/` | Worker/ST | Captured test/coverage/mutation output (git-ignored, transient) |
 
 ### Feature List Schema
 
@@ -556,10 +547,9 @@ long-task-agent/
 │       ├── st-case-template.md        # Default ST test case template (ISO/IEC/IEEE 29119-3)
 │       └── deferred-backlog-template.md # Default deferred requirements backlog template
 ├── hooks/
-│   ├── hooks.json                     # Plugin-level hook config (SessionStart + PreToolUse report-guard)
+│   ├── hooks.json                     # Plugin-level hook config (SessionStart)
 │   ├── session-start                  # Inject using-long-task + phase detection (bash)
 │   ├── run-hook.cmd                   # Cross-platform polyglot wrapper for bash hooks
-│   ├── report-guard                   # PreToolUse hook — intercepts test/coverage/mutation commands, enforces report wrapper
 │   └── (port_guard.py, session_cleanup.py removed — service lifecycle managed via env-guide.md)
 ├── scripts/
 │   ├── get_tool_commands.py           # Tech stack → CLI commands lookup
@@ -580,8 +570,7 @@ long-task-agent/
 │   ├── check_retrospective_readiness.py # Retrospective readiness check
 │   ├── post_retrospective_report.py   # POST retrospective records to REST API
 │   ├── auto_loop.py                  # Auto-loop for Claude Code (fresh context per feature, logs, AskUserQuestion detection)
-│   ├── auto_loop_opencode.py         # Auto-loop for OpenCode (fresh context per feature, logs, signal file detection)
-│   └── run_with_report.py            # Command output capture wrapper (saves full output to file, returns summary)
+│   └── auto_loop_opencode.py         # Auto-loop for OpenCode (fresh context per feature, logs, signal file detection)
 ├── tests/
 │   ├── test_validate_features.py
 │   ├── test_init_project.py

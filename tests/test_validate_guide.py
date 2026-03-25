@@ -95,10 +95,6 @@ NEVER mark "passing" without fresh evidence — run tests, read output
 Real test marker: @pytest.mark.real_test
 Run real tests only: pytest -m real_test
 
-### Report Wrapper
-Hooks automatically wrap test/coverage/mutation commands with `run_with_report.py`.
-Full output is saved to `.long-task-reports/`. On FAIL, Read the report file for details.
-
 ## Critical Rules
 - NEVER write implementation before tests
 - NEVER mark passing without evidence
@@ -243,9 +239,6 @@ git commit, update task-progress.md.
 
 ### Real test identification
 Real test marker convention for this project.
-
-### Report Wrapper
-Output saved to .long-task-reports/ via run_with_report.py.
 
 ## Critical Rules
 - Must never skip TDD
