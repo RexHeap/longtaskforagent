@@ -218,7 +218,7 @@ irm https://raw.githubusercontent.com/suriyel/longtaskforagent/main/install.ps1 
 - 带波次元数据追加新功能以实现可追溯性
   ![Worker Cycle](images/5.png)
 
-## 13 技能超能力架构
+## 12 技能超能力架构
 
 Long-Task Agent 使用**按需技能加载**模式——只有引导路由器在会话开始时加载；阶段技能按需加载，保持上下文精简。
 
@@ -235,8 +235,6 @@ using-long-task (引导路由器 — 始终加载)
    │                                                         long-task  long-task       long-task
    │                                                           -tdd     -quality       -feature-st
    │                                                              │           │
-   │                                                              └───────────┴──────→ long-task
-   │                                                                           -review
    │
    └─→ long-task-st (当所有功能通过时)
 ```
@@ -253,7 +251,6 @@ using-long-task (引导路由器 — 始终加载)
 | `long-task-tdd` | TDD 红→绿→重构纪律 |
 | `long-task-quality` | 覆盖率门禁 + 变异门禁 |
 | `long-task-feature-st` | 每功能黑盒验收测试（Chrome DevTools MCP + ISO/IEC/IEEE 29119） |
-| `long-task-review` | 规范、设计和 UCD 合规性审查 |
 | `long-task-increment` | 带影响分析的发布后功能添加 |
 | `long-task-st` | 带 Go/No-Go 结论的 IEEE 829 系统测试 |
 
@@ -536,7 +533,7 @@ tool-bindings.json          →  apply_tool_bindings.py  →  .long-task-binding
 
 ```
 long-task-agent/
-├── skills/                          # 13 个技能（按需加载）
+├── skills/                          # 12 个技能（按需加载）
 │   ├── using-long-task/             # 引导路由器
 │   ├── long-task-requirements/      # 阶段 0a：需求和 SRS
 │   ├── long-task-ucd/               # 阶段 0b：UCD 风格指南
@@ -547,7 +544,6 @@ long-task-agent/
 │   ├── long-task-tdd/               # TDD 纪律
 │   ├── long-task-quality/           # 覆盖率 + 变异门禁
 │   ├── long-task-feature-st/        # 每功能黑盒验收测试
-│   ├── long-task-review/            # 合规性审查
 │   ├── long-task-increment/         # 增量开发
 │   └── long-task-st/                # 系统测试
 ├── scripts/                         # 验证和实用脚本

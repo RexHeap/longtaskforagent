@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a **Claude Code skill plugin** called `long-task-agent` that enables multi-session execution of complex software projects exceeding a single context window. It implements a seven-phase architecture (Requirements → UCD → Design → ATS → Initializer → Worker → System Testing, with an Increment re-entry point) with persistent state bridging via on-disk artifacts.
 
-The skill system follows the **superpowers architectural pattern**: 13 independent skills loaded on-demand via the `Skill` tool, with a bootstrap router (`using-long-task`) injected at session start via hook.
+The skill system follows the **superpowers architectural pattern**: 12 independent skills loaded on-demand via the `Skill` tool, with a bootstrap router (`using-long-task`) injected at session start via hook.
 
 ## Key Commands
 
@@ -193,7 +193,7 @@ python scripts/auto_loop_opencode.py feature-list.json --model anthropic/claude-
 
 ## Architecture
 
-### 13-Skill System
+### 12-Skill System
 
 The skill system uses on-demand loading via the `Skill` tool. Only the bootstrap router is loaded at session start; other skills are loaded as needed.
 
@@ -220,7 +220,7 @@ The skill system uses on-demand loading via the `Skill` tool. Only the bootstrap
 | `long-task-tdd` | TDD Red-Green-Refactor |
 | `long-task-quality` | Coverage Gate + Feature-Scoped Mutation Gate |
 | `long-task-feature-st` | Black-Box Feature Acceptance Testing — self-managed environment lifecycle, Chrome DevTools MCP + ISO/IEC/IEEE 29119 (per-feature, after Quality Gates) |
-| `long-task-review` | Spec & Design Compliance Review |
+
 
 #### Meta Skills (invoked conditionally by phase skills)
 
@@ -246,8 +246,7 @@ using-long-task (router)
    │      ├─→ long-task-feature-design (Step 4, feature detailed design)
    │      ├─→ long-task-tdd (Steps 6-8)
    │      ├─→ long-task-quality (Step 9)
-   │      ├─→ long-task-feature-st (Step 10, black-box acceptance testing)
-   │      └─→ long-task-review (Step 11, includes UCD compliance for ui:true features)
+   │      └─→ long-task-feature-st (Step 10, black-box acceptance testing)
    │
    └─→ long-task-st (if ALL active features passing)
           └─→ long-task-work (if defects found → fix → return to ST)
@@ -300,7 +299,7 @@ using-long-task (router)
    - Reproduces the bug; confirms root cause via 4-phase systematic debugging
    - Enqueues bug as `category: "bugfix"` feature in `feature-list.json` (status: "failing")
    - Deletes signal file; router auto-detects failing bugfix feature → Worker
-   - Worker runs full TDD → Quality → ST → Review pipeline for the fix
+   - Worker runs full TDD → Quality → ST → Inline Compliance pipeline for the fix
    - Worker uses `"fix:"` commit prefix and `### Fixed` RELEASE_NOTES entry for bugfix features
 
 1.5. **Increment** (`long-task-increment`):
@@ -324,7 +323,7 @@ using-long-task (router)
    - **TDD** (`long-task-tdd`): Red → Green → Refactor (driven by verification_steps + SRS)
    - **Quality** (`long-task-quality`): Coverage Gate → Feature-Scoped Mutation Gate
    - **ST Acceptance** (`long-task-feature-st`): Black-box acceptance testing — self-managed start/cleanup, Chrome DevTools MCP UI execution + ISO/IEC/IEEE 29119 per feature
-   - **Review** (`long-task-review`): Spec & Design Compliance + Test Case Completeness (T1-T3)
+   - **Inline Check**: Mechanical compliance verification (interface contracts, test inventory, dependency versions, UCD tokens)
    - Add Examples → Persist → Continue (chains to ST when all features pass)
 
 3. **System Testing** (`long-task-st`):
@@ -347,8 +346,7 @@ using-long-task (router)
 - **Coverage gate after TDD Green**: Run coverage tool, verify line >= 90%, branch >= 80%
 - **Mutation gate after TDD Refactor**: For projects with > `mutation_full_threshold` active features, run feature-scoped mutation (changed files + feature's tests only); for smaller projects run full mutation. Verify score >= 80%. Full mutation runs during ST phase (Step 3b) for all projects.
 - **Verification enforcement**: Never mark "passing" without fresh evidence
-- **Compliance review after every feature**: Spec + design + UCD compliance (no subjective code quality review — objective gates handle quality)
-- **UCD compliance for frontend features**: UI features must pass UCD style token checks (U1-U4) during review
+- **Inline compliance check after every feature**: mechanical interface contract, test inventory, dependency version, and UCD token verification (no SubAgent)
 - **Systematic debugging**: Never guess-and-fix; always trace root cause first
 - **One feature per session**: End session after completing one feature; multi-feature automation is handled by the external auto-loop script (`scripts/auto_loop.py`)
 - **UI features require Chrome DevTools MCP testing**: Mark with `"ui": true`
@@ -542,16 +540,11 @@ long-task-agent/
 │   ├── long-task-quality/             # Quality gates
 │   │   ├── SKILL.md
 │   │   └── coverage-recipes.md        # Multi-language tool setup
-│   ├── long-task-review/              # Spec & design compliance review
-│   │   ├── SKILL.md
-│   │   └── prompts/
-│   │       └── spec-reviewer-prompt.md
 │   └── long-task-retrospective/       # Skill self-evolution — collect & upload improvement records
 │       ├── SKILL.md
 │       └── prompts/
 │           └── reflection-prompt.md
 ├── agents/
-│   ├── code-reviewer.md              # Code reviewer agent definition
 │   ├── ats-reviewer.md               # ATS reviewer agent definition (7 dimensions: R1-R7)
 │   └── reflection-analyst.md         # Reflection analyst agent definition (session retrospective)
 ├── docs/
@@ -625,7 +618,7 @@ long-task-agent/
 <!-- long-task-agent -->
 ## Long-Task Agent
 
-This project uses a multi-session agent workflow with 13 skills loaded on-demand.
+This project uses a multi-session agent workflow with 12 skills loaded on-demand.
 The `using-long-task` skill is injected at session start and routes to the correct phase.
 Flow: Requirements (SRS) → UCD (UI projects) → Design → ATS (Acceptance Test Strategy) → Init → Worker cycles → System Testing.
 Incremental development: place `increment-request.json` → Increment skill updates SRS/Design/ATS/UCD in place → new features appended → Worker cycles → ST.

@@ -297,4 +297,4 @@ Once the UCD document is saved and committed:
 **Referenced by:**
 - long-task-design (UI/UX section references UCD style tokens and component catalog)
 - long-task-work (frontend features reference UCD for style consistency)
-- long-task-review (frontend compliance checks against UCD)
+- Inline Check (UCD token grep in Worker Step 10)

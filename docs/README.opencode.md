@@ -310,7 +310,7 @@ Skills written for Claude Code are automatically adapted via the bootstrap injec
 
 **Location:** `~/.config/opencode/skills/long-task/` (symlink to `~/.config/opencode/long-task-agent/skills/`)
 
-12 skills are discovered by OpenCode's native skill system. Each skill has a `SKILL.md` file with YAML frontmatter:
+11 skills are discovered by OpenCode's native skill system. Each skill has a `SKILL.md` file with YAML frontmatter:
 
 | Skill | Phase | Purpose |
 |-------|-------|---------|
@@ -325,7 +325,7 @@ Skills written for Claude Code are automatically adapted via the bootstrap injec
 | `long-task-tdd` | Discipline | TDD Red-Green-Refactor |
 | `long-task-quality` | Discipline | Coverage & mutation gates |
 | `long-task-feature-st` | Discipline | Per-feature acceptance testing |
-| `long-task-review` | Discipline | Compliance review |
+
 
 ## Updating
 

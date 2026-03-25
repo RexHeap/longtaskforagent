@@ -85,7 +85,7 @@ Read the SubAgent's returned text and locate the `### Verdict:` line:
   1. Extract Next Step Inputs: `st_case_path`, `st_case_count`, `environment_cleaned`
   2. Record in `task-progress.md`: "Feature-ST: PASS ({N} cases, all passed)"
   3. If `environment_cleaned` is false, run cleanup per `env-guide.md` yourself
-  4. Proceed to next step (Review)
+  4. Proceed to next step (Inline Check + Add Examples)
 
 - **`### Verdict: FAIL`**
   1. Read the Issues table — identify which test cases failed (case IDs, actual vs expected)
@@ -93,7 +93,7 @@ Read the SubAgent's returned text and locate the `### Verdict:` line:
      - Include failed case IDs, step details, actual vs expected from the Issues table
      - Options: "Fix code and re-execute" / "Modify test case via long-task-increment skill" / "Terminate cycle"
   3. If user chooses fix: apply fix, then re-dispatch SubAgent for re-execution
-  4. **No bypass allowed** — a FAIL here blocks the feature from proceeding to Review
+  4. **No bypass allowed** — a FAIL here blocks the feature from proceeding to Add Examples
 
 - **`### Verdict: BLOCKED`**
   1. Read the Issues table — identify the blocker (service won't start, MCP unavailable, etc.)
@@ -105,4 +105,4 @@ Read the SubAgent's returned text and locate the `### Verdict:` line:
 **Called by:** `long-task-work` (Step 9)
 **Requires:** Quality Gates passed (long-task-quality complete)
 **Produces:** `docs/test-cases/feature-{id}-{slug}.md` with executed results + structured summary
-**Chains to:** `long-task-review` (Worker Step 10)
+**Chains to:** Inline Check + Add Examples (Worker Step 10-11)

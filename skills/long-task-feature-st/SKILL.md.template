@@ -19,7 +19,7 @@ Users may override the template and style via `feature-list.json` root fields:
 
 ## When to Run
 
-- After **every** feature's Quality Gates step (Worker Step 9), before Review (Worker Step 11)
+- After **every** feature's Quality Gates step (Worker Step 9), before Inline Check (Worker Step 10)
 - No exceptions — even "simple" features need acceptance test case documentation
 - Invoked by `long-task-work` as a sub-skill (not directly by router)
 
@@ -271,10 +271,10 @@ Since implementation code already exists (TDD and Quality Gates are complete), e
 **If any test case FAILS:**
 - Report to user via `AskUserQuestion` with: failed case ID, step details, actual vs expected
 - Options: fix code and re-execute / modify test case via the `long-task-increment` skill / terminate cycle
-- A failure here blocks the feature from proceeding to Review
+- A failure here blocks the feature from proceeding to Add Examples
 
 **If all test cases PASS:**
-- Proceed to Review (Worker Step 11)
+- Proceed to Inline Check + Add Examples (Worker Step 10-11)
 
 Each automated test SHOULD reference its corresponding ST case ID via a comment:
 ```python
@@ -319,7 +319,7 @@ Always start from a known-clean state. Do not assume services are already runnin
 - **Requirements-driven**: Test cases derive from SRS/Design, validating implementation against requirements — not duplicating unit test assertions
 - **Black-box only**: Expected results must be derivable from SRS and the observable interface alone — no reading implementation code
 - **Complete after Quality Gates**: All test cases must be written, validated, and executed after TDD and quality gates pass
-- **Immutable after generation**: Test case documents are written and executed in this step and not modified during Review. Changes require the `long-task-increment` skill
+- **Immutable after generation**: Test case documents are written and executed in this step and not modified during Inline Check. Changes require the `long-task-increment` skill
 - **Traceability mandatory**: Every test case traces to a requirement; every verification_step traces to a test case
 - **UI consolidation**: For UI features, this skill consolidates functional, UCD compliance, and accessibility testing into unified test cases
 - **Template flexibility**: Users can override the default ISO/IEC/IEEE 29119 template with custom templates and style examples
@@ -331,4 +331,4 @@ Always start from a known-clean state. Do not assume services are already runnin
 **Called by:** `long-task-work` (Step 10)
 **Requires:** Quality Gates passed (long-task-quality Step 9 complete)
 **Produces:** `docs/test-cases/feature-{id}-{slug}.md` with executed results
-**Chains to:** `long-task-review` (Worker Step 11)
+**Chains to:** Inline Check + Add Examples (Worker Step 10-11)

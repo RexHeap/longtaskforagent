@@ -240,6 +240,22 @@ Output file: `docs/test-cases/feature-{id}-{slug}.md`
 
 The traceability matrix `结果` column starts as `PENDING`. Execute each test case in Step 7 below and update to `PASS`/`FAIL` during this step.
 
+### 5b. Verification Step Enumeration Gate (mandatory before validation)
+
+**a) Verification step completeness:**
+1. List ALL verification_steps from the feature object (by 0-based index)
+2. For each verification_step: confirm at least one ST case maps to it
+   in the traceability matrix "verification_step" column
+3. If ANY verification_step has zero ST case mapping:
+   - Derive additional test case(s) for the uncovered step
+   - Add to the document and traceability matrix
+   - Re-number case IDs if necessary
+
+**b) `# ST-xxx` code annotation is NOT required:**
+Traceability is maintained solely via the ST document's traceability matrix
+("自动化测试" column maps ST case → test function). Redundant code-level
+`# ST-xxx` comments are not required and should not be added.
+
 ### 6. Validate
 
 Run the validation scripts:
@@ -279,18 +295,14 @@ Since implementation code already exists (TDD and Quality Gates are complete), e
 
 **If any test case FAILS:**
 - Include failure details in the Issues table of the Structured Return Contract
-- A failure here blocks the feature from proceeding to Review
+- A failure here blocks the feature from proceeding to Persist
 - Set Verdict to FAIL with specific case IDs and failure details
 
 **If all test cases PASS:**
 - Set Verdict to PASS
 
-Each automated test SHOULD reference its corresponding ST case ID via a comment:
-```python
-# ST-FUNC-005-001
-def test_valid_order_creation():
-    ...
-```
+Traceability between ST cases and automated tests is maintained in the ST case
+document's traceability matrix (not via code comments). See Step 5b.
 
 ## Execution Rules (Hard Gates)
 
@@ -324,7 +336,7 @@ Always start from a known-clean state. Do not assume services are already runnin
 - **Requirements-driven**: Test cases derive from SRS/Design, validating implementation against requirements — not duplicating unit test assertions
 - **Black-box only**: Expected results must be derivable from SRS and the observable interface alone — no reading implementation code
 - **Complete after Quality Gates**: All test cases must be written, validated, and executed after TDD and quality gates pass
-- **Immutable after generation**: Test case documents are written and executed in this step and not modified during Review. Changes require the `long-task-increment` skill
+- **Immutable after generation**: Test case documents are written and executed in this step and not modified after generation. Changes require the `long-task-increment` skill
 - **Traceability mandatory**: Every test case traces to a requirement; every verification_step traces to a test case
 - **UI consolidation**: For UI features, this skill consolidates functional, UCD compliance, and accessibility testing into unified test cases
 - **Template flexibility**: Users can override the default ISO/IEC/IEEE 29119 template with custom templates and style examples

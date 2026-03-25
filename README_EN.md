@@ -218,7 +218,7 @@ Orient → Bootstrap → Config Gate → DevTools Gate → Plan
 - Appends new features with wave metadata for traceability
   ![Worker Cycle](images/5.png)
 
-## 13-Skill Superpowers Architecture
+## 12-Skill Superpowers Architecture
 
 Long-Task Agent uses an **on-demand skill loading** pattern — only the bootstrap router is loaded at session start; phase skills are loaded as needed, keeping context lean.
 
@@ -235,8 +235,6 @@ using-long-task (bootstrap router — always loaded)
    │                                                         long-task  long-task       long-task
    │                                                           -tdd     -quality       -feature-st
    │                                                              │           │
-   │                                                              └───────────┴──────→ long-task
-   │                                                                           -review
    │
    └─→ long-task-st (when all features pass)
 ```
@@ -253,7 +251,6 @@ using-long-task (bootstrap router — always loaded)
 | `long-task-tdd` | TDD Red→Green→Refactor discipline |
 | `long-task-quality` | Coverage gate + mutation gate |
 | `long-task-feature-st` | Per-feature black-box acceptance testing (Chrome DevTools MCP + ISO/IEC/IEEE 29119) |
-| `long-task-review` | Spec, design, and UCD compliance review |
 | `long-task-increment` | Post-launch feature additions with impact analysis |
 | `long-task-st` | IEEE 829 system testing with Go/No-Go verdict |
 
@@ -542,7 +539,7 @@ tool-bindings.json          →  apply_tool_bindings.py  →  .long-task-binding
 
 ```
 long-task-agent/
-├── skills/                          # 13 skills (on-demand loaded)
+├── skills/                          # 12 skills (on-demand loaded)
 │   ├── using-long-task/             # Bootstrap router
 │   ├── long-task-requirements/      # Phase 0a: Requirements & SRS
 │   ├── long-task-ucd/               # Phase 0b: UCD style guide
@@ -553,7 +550,6 @@ long-task-agent/
 │   ├── long-task-tdd/               # TDD discipline
 │   ├── long-task-quality/           # Coverage + mutation gates
 │   ├── long-task-feature-st/        # Per-feature black-box acceptance testing
-│   ├── long-task-review/            # Compliance review
 │   ├── long-task-increment/         # Incremental development
 │   └── long-task-st/                # System testing
 ├── scripts/                         # Validation & utility scripts

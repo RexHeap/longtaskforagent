@@ -321,12 +321,9 @@ Each worker cycle follows this exact sequence.
 15d. Record mutation report output as evidence
 15e. Full mutation testing (all source files, all tests) runs during ST phase (Step 3b) — no per-feature milestone runs needed
 
-### Phase 5.5: Spec & Design Compliance Review
-16. Run compliance review on the completed feature:
-    - **Spec Compliance** — Does implementation match all verification_steps, feature spec, and SRS?
-    - **Design Compliance** — Does implementation follow approved class diagrams, sequence flows, and dependency versions?
-    - **UCD Compliance** (ui:true only) — Do style tokens, typography, and spacing match UCD guide?
-17. Fix Critical and Important issues immediately; Minor issues can be deferred
+### Phase 5.5: Inline Compliance Check
+16. Run mechanical compliance checks (interface contract verification, test inventory cross-check, dependency version spot-check, UCD token grep for UI features)
+17. Fix any findings inline — no SubAgent dispatch
 
 ### Phase 6: Add Examples (demonstrate completed feature)
 15. Create/update a runnable example in `examples/` for the completed feature
@@ -387,7 +384,6 @@ Requirements → SRS approved → Design → design approved → Initializer →
 | Skipping requirements phase | Incomplete/ambiguous requirements cause rework | Run requirements elicitation, produce approved SRS first |
 | Skipping design phase | Ad-hoc design causes inconsistency and rework | Run design phase after SRS, get approval first |
 | Guess-and-fix debugging | Random fixes waste time and may introduce new bugs | Follow systematic debugging — trace root cause. See [systematic-debugging.md](../../long-task-work/references/systematic-debugging.md) |
-| Skipping compliance review | Spec violations compound across features | Compliance review after every feature |
 | Claiming "it works" without evidence | Unverified claims lead to false confidence | Show actual test output before marking passing. See [verification-enforcement.md](verification-enforcement.md) |
 | Accepting low-value assertions | Tests with None/isinstance/import checks provide zero bug-finding ability | Enforce <= 20% low-value assertion ratio. See [testing-anti-patterns.md](../../long-task-tdd/testing-anti-patterns.md) #14 |
 | Missing REJECT clause in UI tests | LLM only confirms positive expectations, misses obvious UI errors | Require EXPECT/REJECT format for all [devtools] steps. See [ui-error-detection.md](../../long-task-tdd/references/ui-error-detection.md) |

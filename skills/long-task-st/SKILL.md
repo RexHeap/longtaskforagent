@@ -64,7 +64,7 @@ Create `docs/plans/YYYY-MM-DD-st-plan.md` with:
 
 #### 2b. Requirements Traceability Matrix (RTM)
 
-Map EVERY SRS requirement to ST test approach. Reference per-feature test case documents from Worker Step 10:
+Map EVERY SRS requirement to ST test approach. Reference per-feature test case documents from Worker Step 9:
 
 ```markdown
 | Req ID | Requirement | Feature ST Status | System ST Category | ATS Categories | Test Approach | Priority |

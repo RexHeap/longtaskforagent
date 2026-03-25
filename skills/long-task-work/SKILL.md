@@ -5,7 +5,7 @@ description: "Use when feature-list.json exists - orchestrate features through t
 
 # Worker — One Feature Per Cycle
 
-Execute multi-session software projects by implementing one feature per cycle. Each cycle follows a strict pipeline: Orient → Gate → Plan → TDD → Quality → ST Acceptance → Review → Persist.
+Execute multi-session software projects by implementing one feature per cycle. Each cycle follows a strict pipeline: Orient → Gate → Plan → TDD → Quality → ST Acceptance → Inline Check → Persist.
 
 **Announce at start:** "I'm using the long-task-work skill. Let me orient myself."
 
@@ -45,12 +45,12 @@ When you need the design section or SRS requirement for a feature, do NOT grep f
    - Read the design document's **Section 4 heading area** (use Read tool with offset/limit to scan section 4 headers — look for lines matching `### 4.N Feature:`)
    - Identify which `### 4.N` subsection corresponds to the target feature by matching the feature title or FR-ID
    - Read the **entire subsection** from `### 4.N` through the line before `### 4.(N+1)` (or end of section 4) — this includes Overview, Class Diagram, Sequence Diagram, Flow Diagram, and Design Decisions
-   - Store this full text as `{design_section}` for use in Plan (Step 5), ST Acceptance (Step 10), and Review (Step 11)
+   - Store this full text as `{design_section}` for use in Plan (Step 5) and ST Acceptance (Step 9)
 
 2. **SRS document** (`docs/plans/*-srs.md`):
    - Read the SRS **Section 4 (Functional Requirements)** heading area to find the `### FR-xxx` subsection matching the target feature
    - Read the **entire FR-xxx subsection** including EARS statement, priority, acceptance criteria, and Given/When/Then scenarios
-   - Store this as `{srs_section}` for use in Plan and Review
+   - Store this as `{srs_section}` for use in Plan
 
 3. **UCD document** (`docs/plans/*-ucd.md`, only for `"ui": true` features):
    - Read the UCD's table of contents or section headers
@@ -169,18 +169,45 @@ Output: `docs/test-cases/feature-{id}-{slug}.md` (written by SubAgent)
 - Any execution failure (environment or test case) must be reported to user via `AskUserQuestion`
 - **No bypass allowed** — cannot skip ST for any reason
 
-### 10. Spec & Design Compliance Review
-**REQUIRED SUB-SKILL:** Invoke `long-task:long-task-review` and follow it exactly.
+### 10. Inline Compliance Check (no SubAgent)
 
-The Review skill dispatches a SubAgent that reads all documents and gathers evidence itself. The main Agent does NOT read design/SRS/UCD/plan/ST document contents or run git diff — it only passes file paths and line ranges.
+Run these mechanical checks directly — no SubAgent dispatch needed.
+Read the feature design document (`docs/features/YYYY-MM-DD-<feature-name>.md`)
+produced in Step 4.
 
-Context to carry forward (paths only — SubAgent reads contents itself):
-- Feature object (compact JSON)
-- File paths + section line ranges: design doc (§4.N start/end), SRS doc (FR-xxx start/end), UCD doc (if ui:true)
-- Plan document path (`docs/features/YYYY-MM-DD-<feature-name>.md`) from Step 4
-- ST test case document path (`docs/test-cases/feature-{id}-{slug}.md`) from Step 9
-- Base SHA (for git diff)
-- Test command (from long-task-guide.md)
+**a) Interface contract verification (P2 equivalent):**
+Read §3 Interface Contract table from the feature design doc. For each PUBLIC
+method listed, grep the implementation files to confirm the method exists with
+matching signature (name, parameters, return type). Flag missing or mismatched
+methods.
+
+**b) Test Inventory ↔ test file cross-check (T2 equivalent):**
+Read §7 Test Inventory from the feature design doc. For each test row, confirm
+the corresponding test function exists in the test file:
+```bash
+grep -q "{test_function_name}" {test_file}
+```
+If any test function is not found, search for similar names and fix the ST
+document traceability matrix reference.
+
+**c) Design dependency versions (D3 equivalent):**
+If §3 or §5 specifies third-party library versions, spot-check that
+`requirements.txt` / `package.json` / `pom.xml` matches. Flag mismatches.
+
+**d) UCD spot check (U1 equivalent, ui:true only):**
+Grep CSS/style files for hardcoded color hex values not in UCD palette tokens.
+
+**e) ST document integrity:**
+Confirm `validate_st_cases.py` already passed in Feature-ST (Step 9).
+No re-validation needed — Feature-ST Step 5b + Step 6 already cover T1.
+
+If all checks pass → proceed to Add Examples.
+If any check fails → fix inline, re-verify. No SubAgent dispatch.
+
+Record in `task-progress.md`:
+```
+- Inline Check: PASS (P2: N/N methods verified, T2: N/N tests found, D3: OK)
+```
 
 ### 11. Add Examples
 Create runnable examples in `examples/` demonstrating the completed feature.
@@ -204,15 +231,14 @@ Create runnable examples in `examples/` demonstrating the completed feature.
     - TDD: green ✓
     - Quality Gates: N% line, N% branch, N% mutation
     - Feature-ST: N cases, all PASS
-    - Review: PASS
+    - Inline Check: PASS
     - Git: <sha> feat: title
     #### Risks                        ← include only if any risks were reported
     - ⚠ [Mutant] file:line — reason
     - ⚠ [Coverage] metric N% — thin margin / uncovered boundary
-    - ⚠ [Review] Minor: dimension — waived issue description
     - ⚠ [Dependency] lib==ver — known patch / breaking change pending
     ```
-  - **Collecting risks**: after Step 9 (Quality) and Step 10 (Review) complete, extract every row from their `### Risks` tables; merge into a single list; append as `#### Risks` bullets only if the list is non-empty
+  - **Collecting risks**: after Step 8 (Quality) and Step 9 (Feature-ST) complete, extract every row from their `### Risks` tables; merge into a single list; append as `#### Risks` bullets only if the list is non-empty
 - Mark feature `"status": "passing"` in `feature-list.json`
 - Set `"st_case_path"` and `"st_case_count"` on the feature object in `feature-list.json`
 - Validate:
@@ -247,7 +273,7 @@ The auto-loop script (`scripts/auto_loop.py`) handles multi-feature automation e
 
 - **One feature per session** — end session after completing one feature; multi-feature automation is handled by the external auto-loop script (`scripts/auto_loop.py`)
 - **Strict step order** — no skipping, no reordering
-- **Sub-skills are non-negotiable** — ST Test Cases, TDD, Quality, Compliance Review MUST be invoked via Skill tool
+- **Sub-skills are non-negotiable** — ST Test Cases, TDD, Quality MUST be invoked via Skill tool
 - **Config gate before planning** — never plan or code when required configs are missing
 - **Never mark "passing" without fresh evidence** — run tests, read output, then mark
 - **Never remove or edit `verification_steps` in Worker** — use the `long-task-increment` skill for requirement changes
@@ -265,7 +291,6 @@ The auto-loop script (`scripts/auto_loop.py`) handles multi-feature automation e
 | "This feature is trivial, skip TDD" | Invoke long-task-tdd. Every feature. |
 | "Tests pass, mark it done" | Invoke long-task-quality first. |
 | "Coverage looks close enough" | Thresholds are hard gates. Run the tool. |
-| "I'll review it myself quickly" | Invoke long-task-review. Always. |
 | "Let me just try this quick fix" | Systematic debugging first. |
 | "I'll skip the example for this one" | Only skip for pure infrastructure. |
 | "I'll update release notes at the end" | Update after every commit. |
@@ -293,9 +318,8 @@ Follow the systematic debugging process — **never guess-and-fix**:
 
 **Called by:** using-long-task (when feature-list.json exists) or long-task-init (Step 16)
 **Invokes (in strict order):**
-1. `long-task:long-task-tdd` (Steps 6-8) — TDD Red-Green-Refactor
-2. `long-task:long-task-quality` (Step 9) — Coverage + Mutation
-3. `long-task:long-task-feature-st` (Step 10) — Black-Box Feature Acceptance Testing (ISO/IEC/IEEE 29119, self-managed lifecycle)
-4. `long-task:long-task-review` (Step 11) — Spec & Design Compliance Review
+1. `long-task:long-task-tdd` (Steps 5-7) — TDD Red-Green-Refactor
+2. `long-task:long-task-quality` (Step 8) — Coverage + Mutation
+3. `long-task:long-task-feature-st` (Step 9) — Black-Box Feature Acceptance Testing (ISO/IEC/IEEE 29119, self-managed lifecycle)
 **Reads/Writes:** feature-list.json, task-progress.md (including `## Current State`), RELEASE_NOTES.md
 **Read on-demand (via Read tool, NOT Skill tool):** `references/systematic-debugging.md`

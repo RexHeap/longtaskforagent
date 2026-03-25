@@ -81,7 +81,7 @@ You MUST create a TodoWrite task for each step and complete them in order:
    - Include UI testing section ONLY if the project has UI features (`"ui": true`):
      - If `tool-bindings.json` exists and `capability_bindings.ui_tools.tool_mapping` is present: use the enterprise tool names from `tool-bindings.json` throughout the guide (not Chrome DevTools MCP names)
      - Otherwise: use Chrome DevTools MCP tool names (`navigate_page`, `click`, etc.)
-   - **Must include all required sections**: Orient, Bootstrap, Config Gate, TDD Red, TDD Green, Coverage Gate, TDD Refactor, Mutation Gate, Verification Enforcement, Code Review, Examples, Persist, Critical Rules
+   - **Must include all required sections**: Orient, Bootstrap, Config Gate, TDD Red, TDD Green, Coverage Gate, TDD Refactor, Mutation Gate, Verification Enforcement, Inline Compliance Check, Examples, Persist, Critical Rules
    - **Must include `Environment Commands` section** with:
      - Environment activation command (e.g., `source .venv/bin/activate`, `conda activate myenv`, `nvm use 20`)
      - Direct test execution command (e.g., `pytest --cov=src tests/`)

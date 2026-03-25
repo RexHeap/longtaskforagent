@@ -80,7 +80,7 @@ NEVER mark "passing" without fresh evidence — run tests, read output
 1. Generate ISO/IEC/IEEE 29119 test cases via long-task-st-case
 2. Validate with validate_st_cases.py
 
-### Step 5.5r: Compliance Review
+### Step 5.5r: Inline Compliance Check
 1. Spec compliance
 2. Design compliance
 
@@ -174,16 +174,16 @@ def test_missing_verification_enforcement_fails():
 
 
 def test_missing_compliance_review_fails():
-    """A guide missing Compliance Review should fail."""
-    content = COMPLETE_GUIDE.replace("Compliance Review", "Final Step")
-    content = content.replace("compliance review", "final step")
-    content = content.replace("code review", "final step")
+    """A guide missing Inline Compliance Check should fail."""
+    content = COMPLETE_GUIDE.replace("Inline Compliance Check", "Final Step")
+    content = content.replace("inline compliance", "final step")
+    content = content.replace("compliance check", "final step")
     content = content.replace("Spec compliance", "Final check A")
     content = content.replace("Design compliance", "Final check B")
     content = content.replace("spec compliance", "final check a")
     content = content.replace("design compliance", "final check b")
     code, stdout, _ = run_validator(content)
-    assert code != 0, f"Expected non-zero when Compliance Review missing: {stdout}"
+    assert code != 0, f"Expected non-zero when Inline Compliance Check missing: {stdout}"
 
 
 def test_missing_critical_rules_fails():
@@ -232,7 +232,7 @@ NEVER mark "passing" without fresh evidence.
 ### ST test case generation
 Generate 29119 test cases before TDD implementation.
 
-### Compliance review
+### Inline compliance check
 Spec compliance and design compliance checks.
 
 ### Examples

@@ -138,6 +138,22 @@ Rules:
 
 **Relationship with TDD**: This table is the PRIMARY INPUT for TDD Red (long-task-tdd Step 1). TDD Red uses this table as its starting point and may add tests per its own Rule 1-5 (category coverage, assertion quality, real test requirements). The Test Inventory provides the design-driven scenarios; TDD adds implementation-driven scenarios discovered during coding.
 
+**Design Interface Coverage Gate (mandatory — execute before proceeding to §8):**
+
+1. Re-read §4.N of the system design document
+2. Extract ALL named functions, methods, endpoints, middleware, validators,
+   and authorization checks (e.g., `check_repo_access`, `validate_input`)
+3. For EACH named item: confirm at least one Test Inventory row exercises it
+   (match in "Traces To" or "Input / Setup" columns)
+4. If ANY design-specified function has zero Test Inventory coverage:
+   - Add row(s) — typically error/security category
+   - Set "Traces To" = the specific design section (e.g., "§4.5.3 ACL check")
+5. Re-verify negative test ratio ≥ 40% after additions
+
+This is the PRIMARY defense against spec drift. If the design says "check_repo_access
+enforces ACL" and no test row covers it, the TDD phase will silently skip it —
+causing a late-stage finding that triggers cascading mock-setup costs.
+
 ### 8. TDD Task Decomposition
 
 After the design is complete, decompose into TDD tasks.
@@ -192,6 +208,7 @@ After the design is complete, decompose into TDD tasks.
 - [ ] Error handling table covers all Raises entries
 - [ ] Test Inventory negative ratio >= 40%
 - [ ] Every skipped section has explicit "N/A — [reason]"
+- [ ] All functions/methods named in §4.N have at least one Test Inventory row
 
 ## Diagram Quality Rules
 
@@ -229,7 +246,8 @@ When the design document is complete, return your result in EXACTLY this format:
 | Sections Complete | N/8 | 8/8 (or N/A justified) | PASS/FAIL |
 | Test Inventory Rows | N | ≥ verification_steps count | PASS/FAIL |
 | Negative Test Ratio | N% | ≥ 40% | PASS/FAIL |
-| Verification Checklist | N/7 | 7/7 | PASS/FAIL |
+| Verification Checklist | N/8 | 8/8 | PASS/FAIL |
+| Design Interface Coverage | N/M | M/M | PASS/FAIL |
 ### Issues (only if FAIL)
 | # | Severity | Description |
 |---|----------|-------------|

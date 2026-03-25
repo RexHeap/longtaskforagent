@@ -58,7 +58,7 @@ git worktree add "${WORKTREE_DIR}" -b "${FEATURE_BRANCH}" "${BASE_BRANCH}"
 
 ### Step 4: Work in Worktree
 
-All TDD Red → Green → Refactor → Review work happens inside the worktree directory.
+All TDD Red → Green → Refactor work happens inside the worktree directory.
 
 ## Branch Naming Convention
 
@@ -131,7 +131,7 @@ Orient → Select Feature
   │
   ├─ Run baseline tests (must pass)
   │
-  ├─ TDD Red → Green → Refactor → Review
+  ├─ TDD Red → Green → Refactor
   │
   ├─ Feature marked "passing"
   │

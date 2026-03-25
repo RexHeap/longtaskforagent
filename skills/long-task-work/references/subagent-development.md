@@ -20,12 +20,6 @@ Controller (main agent)
   ├─ Dispatch Subagent: Task 1 (implementer)
   │   └─ Returns: code changes + test results
   │
-  ├─ Dispatch Subagent: Compliance Review (reviewer)
-  │   └─ Returns: PASS or list of gaps
-  │
-  ├─ [If FAIL] Dispatch Subagent: Fix (implementer)
-  │   └─ Returns: fixed code + test results
-  │
   └─ Repeat for Task 2, Task 3, ...
 ```
 
@@ -80,51 +74,6 @@ You are implementing a task for the [project-name] project.
 - Commit your changes with a descriptive message
 ```
 
-## Dispatching Reviewer Subagents
-
-After each task, dispatch a reviewer subagent:
-
-### Compliance Reviewer Prompt Template
-
-```markdown
-You are reviewing a completed implementation task for spec & design compliance.
-
-## Feature Spec
-[Feature JSON from feature-list.json]
-
-## Design Document Section
-[Key Feature Design section from docs/plans/*-design.md]
-
-## Task Plan
-[The task that was supposed to be implemented]
-
-## UCD Style Guide (UI features only)
-[UCD content from docs/plans/*-ucd.md, omit if not applicable]
-
-## Changes Made
-[git diff output]
-
-## Test Results
-[test output]
-
-## Your Job
-1. Check: does the implementation satisfy ALL verification_steps? (S1-S5)
-2. Check: does the implementation follow the approved design? (D1-D5)
-3. Check: does the implementation follow the plan? (P1-P3)
-4. Check (UI only): does the implementation match UCD style tokens? (U1-U4)
-5. Verdict: PASS or FAIL with specific gaps
-```
-
-## Review Loop
-
-```
-Implementer completes task
-  → Compliance Review
-    → PASS → Task complete
-    → FAIL → Implementer fixes → Re-review
-  → Max 3 rounds → Escalate to user
-```
-
 ## Parallel Dispatch (Advanced)
 
 When multiple tasks are independent (no shared files, no dependencies):
@@ -146,7 +95,6 @@ When multiple tasks are independent (no shared files, no dependencies):
 | Anti-Pattern | Why It Fails | Correct Approach |
 |---|---|---|
 | Reference files instead of providing full text | Subagent may not have access or context | Copy full task text into prompt |
-| Skip compliance review | May ship code that doesn't meet spec or design | Always run compliance review after implementation |
 | Dispatch without clear exit criteria | Subagent doesn't know when it's done | Define exact verification commands |
 | Parallelize dependent tasks | Race conditions, conflicting changes | Only parallelize truly independent tasks |
 | Ignore reviewer feedback | Compounds quality issues | Fix Critical/Important before proceeding |

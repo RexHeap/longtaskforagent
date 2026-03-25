@@ -95,7 +95,6 @@ digraph phase_detection {
 | `long-task:long-task-feature-st` | Black-Box Feature Acceptance Testing — self-managed start/cleanup lifecycle, Chrome DevTools MCP execution, ISO/IEC/IEEE 29119 test case documentation (per-feature, after Quality Gates) |
 | `long-task:long-task-tdd` | TDD Red-Green-Refactor |
 | `long-task:long-task-quality` | Coverage Gate + Mutation Gate |
-| `long-task:long-task-review` | Spec & Design Compliance Review |
 
 ### Meta Skills (invoked conditionally by phase skills — do NOT invoke directly)
 | Skill | Purpose |
@@ -131,7 +130,6 @@ These thoughts mean STOP — you're rationalizing:
 | "I know which feature to work on" | Worker skill has Orient step. Follow it. |
 | "This feature is simple, skip TDD" | long-task-tdd is non-negotiable. |
 | "Tests pass, I can mark it done" | long-task-quality gates MUST pass first. |
-| "Code review is overkill for this" | long-task-review runs after EVERY feature. |
 | "I remember the workflow" | Skills evolve. Load current version via Skill tool. |
 | "I need more context first" | Skill check comes BEFORE exploration. |
 | "I'll just do this one thing first" | Check BEFORE doing anything. |
