@@ -6,13 +6,35 @@
 # Output: JSON with decision (allow/block) and reason
 #
 # Only active when feature-list.json exists (Worker/ST phases).
+#
+# IMPORTANT: Hooks must NEVER crash. Any non-zero exit or invalid JSON
+# output causes "PreToolUse:Bash hook error" in Claude Code. We use a
+# top-level trap and avoid set -e to guarantee valid JSON output.
 
-set -euo pipefail
+# Do NOT use set -e — a crashed hook is worse than an unguarded command.
+set -uo pipefail
+
+# Safety net: if anything goes wrong, allow the command rather than crash.
+trap 'echo "[report-guard] WARNING: hook error, allowing unguarded" >&2; echo "{\"decision\":\"allow\"}"; exit 0' ERR
 
 INPUT=$(cat)
 
-# Extract the command — delegate to Python for safe JSON parsing
-COMMAND=$(python3 -c "
+# Extract the command — delegate to Python for safe JSON parsing.
+# Try python3 first, fall back to python (some venvs only expose "python").
+PYTHON_CMD=""
+if command -v python3 &>/dev/null; then
+    PYTHON_CMD="python3"
+elif command -v python &>/dev/null; then
+    PYTHON_CMD="python"
+fi
+
+if [ -z "$PYTHON_CMD" ]; then
+    echo "[report-guard] WARNING: no python3/python found, allowing unguarded" >&2
+    echo '{"decision":"allow"}'
+    exit 0
+fi
+
+COMMAND=$($PYTHON_CMD -c "
 import sys, json
 try:
     data = json.load(sys.stdin)
@@ -41,36 +63,43 @@ fi
 
 # Detect test/coverage/mutation tool keywords
 # Order matters: more specific patterns before general ones
+#
+# IMPORTANT: Only match commands that INVOKE the tool, not commands that
+# merely mention the tool name (e.g., "grep pytest" or "ps aux | grep pytest").
+# We strip pipe-downstream segments before matching to avoid false positives.
+# Strategy: extract the "main command" (before the first pipe) for detection.
+MAIN_CMD=$(echo "$COMMAND" | sed 's/|.*//')
+
 DETECTED=""
 TAIL=20
 
-if echo "$COMMAND" | grep -qE '\bpytest\b.*--cov'; then
+if echo "$MAIN_CMD" | grep -qE '\bpytest\b.*--cov'; then
     DETECTED="coverage"
-elif echo "$COMMAND" | grep -qE '\bnpx\s+vitest\s+run\b.*--coverage'; then
+elif echo "$MAIN_CMD" | grep -qE '\bnpx\s+vitest\s+run\b.*--coverage'; then
     DETECTED="coverage"
-elif echo "$COMMAND" | grep -qE '\bnpx\s+c8\b'; then
+elif echo "$MAIN_CMD" | grep -qE '\bnpx\s+c8\b'; then
     DETECTED="coverage"
-elif echo "$COMMAND" | grep -qE '\bmvn\s+test\b.*jacoco'; then
+elif echo "$MAIN_CMD" | grep -qE '\bmvn\s+test\b.*jacoco'; then
     DETECTED="coverage"
-elif echo "$COMMAND" | grep -qE '\blcov\b.*(--summary|--capture)'; then
+elif echo "$MAIN_CMD" | grep -qE '\blcov\b.*(--summary|--capture)'; then
     DETECTED="coverage"
-elif echo "$COMMAND" | grep -qE '\bgcov\b'; then
+elif echo "$MAIN_CMD" | grep -qE '\bgcov\b'; then
     DETECTED="coverage"
-elif echo "$COMMAND" | grep -qE '\bmutmut\s+run\b'; then
+elif echo "$MAIN_CMD" | grep -qE '\bmutmut\s+run\b'; then
     DETECTED="mutation"; TAIL=30
-elif echo "$COMMAND" | grep -qE '\bnpx\s+stryker\s+run\b'; then
+elif echo "$MAIN_CMD" | grep -qE '\bnpx\s+stryker\s+run\b'; then
     DETECTED="mutation"; TAIL=30
-elif echo "$COMMAND" | grep -qE '\bmvn\s+pitest:mutationCoverage\b'; then
+elif echo "$MAIN_CMD" | grep -qE '\bmvn\s+pitest:mutationCoverage\b'; then
     DETECTED="mutation"; TAIL=30
-elif echo "$COMMAND" | grep -qE '\bmull-runner\b'; then
+elif echo "$MAIN_CMD" | grep -qE '\bmull-runner\b'; then
     DETECTED="mutation"; TAIL=30
-elif echo "$COMMAND" | grep -qE '\bpytest\b'; then
+elif echo "$MAIN_CMD" | grep -qE '\bpytest\b'; then
     DETECTED="test"
-elif echo "$COMMAND" | grep -qE '\bnpx\s+(vitest|jest)\s+run\b'; then
+elif echo "$MAIN_CMD" | grep -qE '\bnpx\s+(vitest|jest)\s+run\b'; then
     DETECTED="test"
-elif echo "$COMMAND" | grep -qE '\bmvn\s+test\b'; then
+elif echo "$MAIN_CMD" | grep -qE '\bmvn\s+test\b'; then
     DETECTED="test"
-elif echo "$COMMAND" | grep -qE '\bctest\b'; then
+elif echo "$MAIN_CMD" | grep -qE '\bctest\b'; then
     DETECTED="test"
 fi
 
@@ -82,7 +111,7 @@ fi
 
 # Build wrapped command and emit block decision
 # Use Python for safe JSON serialization (avoids shell injection in COMMAND)
-python3 -c "
+$PYTHON_CMD -c "
 import json, sys
 
 detected = sys.argv[1]
