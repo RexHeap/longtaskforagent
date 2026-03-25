@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Dispatch a fresh subagent for each implementation task. This prevents context pollution (one task's details don't confuse the next) and enables compliance review per task.
+Dispatch a fresh subagent for each implementation task. This prevents context pollution (one task's details don't confuse the next) and enables independent verification per task.
 
 ## When to Use
 
@@ -29,7 +29,7 @@ The main agent acts as controller. It:
 
 1. **Loads the implementation plan** from `docs/plans/`
 2. **Dispatches one subagent per task** with the full task text
-3. **Reviews results** after each task (or dispatches a reviewer subagent)
+3. **Reviews results** after each task
 4. **Tracks progress** — marks tasks complete, updates feature status
 5. **Handles failures** — if a task fails, provides context for retry
 

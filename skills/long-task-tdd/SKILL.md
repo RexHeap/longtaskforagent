@@ -45,7 +45,7 @@ Tests are driven by three primary sources:
 - **SRS requirement section** (`{srs_section}`) — full FR-xxx with Given/When/Then acceptance criteria, boundary conditions, and error paths
 - **Feature detailed design** (`docs/features/YYYY-MM-DD-<feature-name>.md`) — Test Inventory table (§7), Interface Contract (§3), Algorithm pseudocode and boundary matrix (§5)
 
-The Test Inventory table from feature detailed design is the **starting set** for TDD Red. Each row maps to one or more test cases. TDD rules (Rule 1–6) extend and refine this set — they do not duplicate it. ST test case documents are generated *after* TDD as acceptance verification (Worker Step 10).
+The Test Inventory table from feature detailed design is the **starting set** for TDD Red. Each row maps to one or more test cases. TDD rules (Rule 1–6) extend and refine this set — they do not duplicate it. ST test case documents are generated *after* TDD as acceptance verification (Worker Step 9).
 
 ### Test Scenario Rules (hard requirements)
 

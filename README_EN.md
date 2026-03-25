@@ -100,7 +100,7 @@ Most AI coding assistants lose context after one conversation. Long-Task Agent s
 | AI skips testing or writes shallow tests | Strict TDD (Red→Green→Refactor) with coverage gates (≥90% line, ≥80% branch) and mutation testing (≥80% score) |
 | AI produces inconsistent UI | UCD style guide with token-based design system ensures visual consistency across all features |
 | AI generates thin acceptance tests | ATS (Acceptance Test Strategy) pre-plans test categories and minimum case counts per requirement after design, with independent subagent review ensuring no coverage blind spots |
-| AI drifts from the approved design | Automated spec & design compliance review after every feature |
+| AI drifts from the approved design | Design interface coverage gate + inline compliance check after every feature |
 | No way to add features to an existing project safely | Increment skill performs impact analysis, updates SRS/Design/UCD in place, tracks changes with waves |
 | "Works on my machine" syndrome | System Testing phase (IEEE 829) with regression, integration, E2E, and NFR verification |
 
@@ -138,7 +138,7 @@ Every feature passes through a gauntlet of automated quality gates — no except
 - **TDD Red→Green→Refactor** — tests are written before code, always
 - **Coverage Gate** — line ≥90%, branch ≥80%
 - **Mutation Gate** — mutation score ≥80% (catches tests that pass without actually testing anything)
-- **Spec & Design Compliance Review** — every feature is checked against the SRS and design doc
+- **Inline Compliance Check** — mechanical verification of interface contracts, test inventory, dependency versions, and UCD tokens after every feature
 - **UCD Compliance** — UI features are verified against style tokens
 
 ### 4. One Feature Per Cycle
@@ -199,7 +199,7 @@ Each cycle follows a strict discipline:
 Orient → Bootstrap → Config Gate → DevTools Gate → Plan
   → TDD Red → TDD Green → Coverage Gate
     → TDD Refactor → Mutation Gate
-      → Feature ST (Black-Box) → Compliance Review
+      → Feature ST (Black-Box) → Inline Compliance Check
         → Add Examples → Persist → Next Feature
 ```
 
@@ -516,7 +516,7 @@ tool-bindings.json          →  apply_tool_bindings.py  →  .long-task-binding
 <!-- ILLUSTRATION: Comparison Matrix
 ![Comparison](images/6.png)
 
-> **Text-to-image prompt**: A feature comparison matrix rendered as a clean infographic table. Rows represent capabilities: "Multi-session persistence", "Requirements elicitation", "TDD enforcement", "Coverage gates", "Mutation testing", "UI style consistency", "Design compliance review", "System testing", "Incremental development". Columns compare "Typical AI Coding" (mostly red X marks) vs "Long-Task Agent" (all green checkmarks). The Long-Task Agent column glows with a subtle highlight. Clean table design with alternating row colors, professional fonts. Landscape, 1200×800px.
+> **Text-to-image prompt**: A feature comparison matrix rendered as a clean infographic table. Rows represent capabilities: "Multi-session persistence", "Requirements elicitation", "TDD enforcement", "Coverage gates", "Mutation testing", "UI style consistency", "Inline compliance check", "System testing", "Incremental development". Columns compare "Typical AI Coding" (mostly red X marks) vs "Long-Task Agent" (all green checkmarks). The Long-Task Agent column glows with a subtle highlight. Clean table design with alternating row colors, professional fonts. Landscape, 1200×800px.
 -->
 
 | Capability | Typical AI Coding | Long-Task Agent |
@@ -528,7 +528,7 @@ tool-bindings.json          →  apply_tool_bindings.py  →  .long-task-binding
 | Test quality verification | Line coverage only (if any) | Coverage + mutation testing with configurable thresholds |
 | Acceptance test planning | Ad-hoc, category-biased toward functional | ATS pre-plans test categories and minimum case counts per requirement, with independent subagent review |
 | UI consistency | Per-developer taste | UCD style guide with token-based design system |
-| Post-implementation review | None | Automated spec & design compliance review |
+| Post-implementation verification | None | Design interface coverage gate + inline compliance check |
 | System testing | Manual QA | IEEE 829-aligned with RTM, Go/No-Go verdict |
 | Adding features post-launch | Edit code directly | Impact analysis, tracked waves, document updates |
 | Project state visibility | Read the code | `task-progress.md` + `feature-list.json` |
@@ -568,7 +568,7 @@ long-task-agent/
 
 1. **No code without approved requirements** — the SRS captures hidden assumptions before they become bugs
 2. **No implementation without approved design** — 2-3 approaches are evaluated before committing to one
-3. **No shortcuts on quality** — TDD, coverage, mutation testing, and compliance review are non-negotiable gates
+3. **No shortcuts on quality** — TDD, coverage, mutation testing, and inline compliance check are non-negotiable gates
 4. **One feature, one cycle** — focused work prevents context exhaustion and ensures clean, atomic commits
 5. **Persistent artifacts over ephemeral memory** — JSON state files and git history survive any context loss
 6. **Systematic debugging over guess-and-fix** — root cause analysis before any fix attempt

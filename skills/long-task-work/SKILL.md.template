@@ -51,7 +51,7 @@ When you need the design section or SRS requirement for a feature, do NOT grep f
    - Find sections referencing the target feature's UI components or pages
    - Read the **full relevant sections** including style tokens, component prompts, and page prompts
 
-**Why this matters:** Grep returns isolated matching lines without surrounding context. Design sections contain class diagrams, sequence diagrams, flow diagrams, and design rationale that span dozens of lines — all of which are needed for correct implementation and compliance review.
+**Why this matters:** Grep returns isolated matching lines without surrounding context. Design sections contain class diagrams, sequence diagrams, flow diagrams, and design rationale that span dozens of lines — all of which are needed for correct implementation and inline compliance checking.
 
 ### 2. Bootstrap
 - **Development environment readiness**: Check if environment is set up
