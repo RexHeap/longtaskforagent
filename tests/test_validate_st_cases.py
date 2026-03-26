@@ -343,7 +343,7 @@ Verify user can login with valid credentials
 
 def test_valid_categories():
     """Test that all valid category abbreviations are accepted."""
-    categories = ["FUNC", "BNDRY", "UI", "SEC", "A11Y", "PERF"]
+    categories = ["FUNC", "BNDRY", "UI", "SEC", "PERF"]
     for i, cat in enumerate(categories):
         doc = VALID_DOC.replace("ST-FUNC-001-001", f"ST-{cat}-001-{i+1:03d}")
         doc = doc.replace("functional", cat.lower())

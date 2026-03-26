@@ -21,7 +21,7 @@ import sys
 
 
 # Valid test categories
-VALID_CATEGORIES = {"FUNC", "BNDRY", "UI", "SEC", "A11Y", "PERF"}
+VALID_CATEGORIES = {"FUNC", "BNDRY", "UI", "SEC", "PERF"}
 
 # Table row pattern: | REQ-ID | ... |
 TABLE_ROW_PATTERN = re.compile(
@@ -30,7 +30,7 @@ TABLE_ROW_PATTERN = re.compile(
 
 # Case ID pattern in ST documents
 CASE_ID_PATTERN = re.compile(
-    r"ST-(FUNC|BNDRY|UI|SEC|A11Y|PERF)-(\d{3})-(\d{3})"
+    r"ST-(FUNC|BNDRY|UI|SEC|PERF)-(\d{3})-(\d{3})"
 )
 
 
@@ -157,7 +157,7 @@ def check_coverage(
         # we aggregate ATS requirements that mention this feature's related reqs.
 
         # For now, check feature-level category coverage:
-        # If the feature has ui:true, it must have UI+A11Y categories in its ST cases
+        # If the feature has ui:true, it must have UI categories in its ST cases
         # If any ATS row requires SEC and the feature handles input, it should have SEC
 
         if st_case_path and os.path.exists(st_case_path):
@@ -169,7 +169,6 @@ def check_coverage(
             expected_cats = {"FUNC", "BNDRY"}
             if ui:
                 expected_cats.add("UI")
-                expected_cats.add("A11Y")
 
             for cat in expected_cats:
                 if cat not in actual_counts or actual_counts[cat] == 0:

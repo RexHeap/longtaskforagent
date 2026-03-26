@@ -131,7 +131,7 @@ Read all input artifacts for the target feature:
 
 ### 2b. Load UI Execution Protocol (for `"ui": true` features)
 
-If the target feature has `"ui": true`, read `prompts/e2e-scenario-prompt.md`. This provides mandatory rules for generating {{ cap_ui_platform }}-executable E2E test scenarios. Apply these rules during Step 3 for all UI and A11Y category test cases.
+If the target feature has `"ui": true`, read `prompts/e2e-scenario-prompt.md`. This provides mandatory rules for generating {{ cap_ui_platform }}-executable E2E test scenarios. Apply these rules during Step 3 for all UI category test cases.
 
 **Why**: Without this prompt, UI test cases tend to be simple page-load checks. The prompt ensures each test step maps to a concrete MCP tool call (`{{ cap_ui_navigate }}`, `{{ cap_ui_click }}`, `{{ cap_ui_fill }}`, `{{ cap_ui_snapshot }}`, `{{ cap_ui_eval }}`, `{{ cap_ui_console }}`) and follows the three-layer detection model. {{ cap_ui_platform }} is the **primary** testing vehicle for UI features in this skill.
 
@@ -147,7 +147,6 @@ For each `verification_step` in the feature, generate **one or more** test cases
 | `boundary` | BNDRY | Always — edge cases, limits, empty/max/zero values |
 | `ui` | UI | Only when `"ui": true` — {{ cap_ui_platform }} interaction + visual verification |
 | `security` | SEC | When feature handles user input, auth, or external data |
-| `accessibility` | A11Y | Only when `"ui": true` — WCAG 2.1 AA checks |
 | `performance` | PERF | Only when traceable to NFR-xxx with performance metrics |
 
 **UI test case enrichment (mandatory for `"ui": true` features):**
@@ -161,7 +160,7 @@ For each `verification_step` in the feature, generate **one or more** test cases
 **Minimum coverage:**
 - Every feature MUST have at least one FUNC and one BNDRY test case
 - Every `verification_step` MUST map to at least one test case
-- UI features MUST have at least one UI and one A11Y test case
+- UI features MUST have at least one UI test case
 
 **Case ID format:**
 ```
@@ -199,22 +198,16 @@ For UI features, test cases consolidate previously separate concerns:
 - Reference which spacing tokens apply
 - This replaces the separate U1-U4 review check for individual elements
 
-**c) Accessibility** — WCAG 2.1 AA:
-- Keyboard navigability for interactive elements
-- Color contrast verification against WCAG minimum ratios
-- ARIA attributes and semantic HTML verification
-- Screen reader compatibility notes
-
-**d) Console error gate:**
+**c) Console error gate:**
 - Every UI test case MUST include a post-step check: `{{ cap_ui_console }}(types=["error"])` must return 0
 - Exception: if test explicitly expects console errors, note with `[expect-console-error: <pattern>]`
 
-**e) Three-layer detection:**
+**d) Three-layer detection:**
 - Layer 1: Automated error detection script via `{{ cap_ui_eval }}()` — reference `skills/long-task-tdd/references/ui-error-detection.md`
 - Layer 2: EXPECT/REJECT format in test steps
 - Layer 3: Console error gate
 
-**f) MCP tool call mapping:**
+**e) MCP tool call mapping:**
 - Each test step's "操作" column must be specific enough to map to a single {{ cap_ui_platform }} tool call
 - BAD: "检查登录页面" — which tool? what to check?
 - GOOD: "`{{ cap_ui_navigate }}(url='/login')` → `{{ cap_ui_wait }}(['Sign In'])` → `{{ cap_ui_snapshot }}()` → 验证 EXPECT: 邮箱输入框, 密码输入框, 登录按钮"
@@ -321,7 +314,7 @@ Always start from a known-clean state. Do not assume services are already runnin
 - **Complete after Quality Gates**: All test cases must be written, validated, and executed after TDD and quality gates pass
 - **Immutable after generation**: Test case documents are written and executed in this step and not modified during Inline Check. Changes require the `long-task-increment` skill
 - **Traceability mandatory**: Every test case traces to a requirement; every verification_step traces to a test case
-- **UI consolidation**: For UI features, this skill consolidates functional, UCD compliance, and accessibility testing into unified test cases
+- **UI consolidation**: For UI features, this skill consolidates functional and UCD compliance testing into unified test cases
 - **Template flexibility**: Users can override the default ISO/IEC/IEEE 29119 template with custom templates and style examples
 - **UI tests are mandatory**: For features with `"ui": true`, UI category test cases are NON-SKIPPABLE — they MUST use {{ cap_ui_platform }} for browser-based verification. There is no alternative or workaround.
 - **ALL bugs must be fixed**: Any bug discovered during ST testing — whether frontend, backend, or integration — MUST be fixed before the feature can be marked as passing. There is no "not my code" exemption.

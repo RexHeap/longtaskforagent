@@ -127,7 +127,7 @@ Read all input artifacts for the target feature:
 
 ### 2b. Load UI Execution Protocol (for `"ui": true` features)
 
-If the target feature has `"ui": true`, read `skills/long-task-feature-st/prompts/e2e-scenario-prompt.md`. This provides mandatory rules for generating Chrome DevTools MCP-executable E2E test scenarios. Apply these rules during Step 3 for all UI and A11Y category test cases.
+If the target feature has `"ui": true`, read `skills/long-task-feature-st/prompts/e2e-scenario-prompt.md`. This provides mandatory rules for generating Chrome DevTools MCP-executable E2E test scenarios. Apply these rules during Step 3 for all UI category test cases.
 
 **Why**: Without this prompt, UI test cases tend to be simple page-load checks. The prompt ensures each test step maps to a concrete MCP tool call (`navigate_page`, `click`, `fill`, `take_snapshot`, `evaluate_script`, `list_console_messages`) and follows the three-layer detection model. Chrome DevTools MCP is the **primary** testing vehicle for UI features in this skill.
 
@@ -143,7 +143,6 @@ For each `verification_step` in the feature, generate **one or more** test cases
 | `boundary` | BNDRY | Always — edge cases, limits, empty/max/zero values |
 | `ui` | UI | Only when `"ui": true` — Chrome DevTools MCP interaction + visual verification |
 | `security` | SEC | When feature handles user input, auth, or external data |
-| `accessibility` | A11Y | Only when `"ui": true` — WCAG 2.1 AA checks |
 | `performance` | PERF | Only when traceable to NFR-xxx with performance metrics |
 
 **UI test case enrichment (mandatory for `"ui": true` features):**
@@ -164,7 +163,7 @@ For each `verification_step` in the feature, generate **one or more** test cases
 **Minimum coverage:**
 - Every feature MUST have at least one FUNC and one BNDRY test case
 - Every `verification_step` MUST map to at least one test case
-- UI features MUST have at least one UI and one A11Y test case
+- UI features MUST have at least one UI test case
 - If ATS exists: all ATS-required categories and minimum counts are met
 
 **Case ID format:**
@@ -365,7 +364,6 @@ When all test cases are executed (or if blocked), return your result in EXACTLY 
 | BNDRY Cases | N | ≥1 | PASS/FAIL |
 | UI Cases | N | ≥1 (if ui:true) | PASS/FAIL |
 | SEC Cases | N | ≥1 (if applicable) | PASS/FAIL |
-| A11Y Cases | N | ≥1 (if ui:true) | PASS/FAIL |
 | PERF Cases | N | ≥0 | PASS/FAIL |
 | Execution Pass Rate | N/M | M/M | PASS/FAIL |
 ### Issues (only if FAIL or BLOCKED)

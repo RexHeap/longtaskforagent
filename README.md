@@ -175,7 +175,7 @@ irm https://raw.githubusercontent.com/suriyel/longtaskforagent/main/install.ps1 
 
 ### 阶段 0d：验收测试策略（ATS）
 
-- 将每个 FR/NFR/IFR 映射到验收场景，标注必须的测试类别（FUNC、BNDRY、SEC、PERF、A11Y、UI）和最低用例数
+- 将每个 FR/NFR/IFR 映射到验收场景，标注必须的测试类别（FUNC、BNDRY、SEC、PERF、UI）和最低用例数
 - NFR 测试方法矩阵（工具 + 阈值 + 负载参数）
 - 跨功能集成场景预规划
 - 风险驱动测试优先级排序

@@ -134,7 +134,7 @@ These thoughts mean STOP — you're rationalizing:
 | "I need more context first" | Skill check comes BEFORE exploration. |
 | "I'll just do this one thing first" | Check BEFORE doing anything. |
 | "Requirements are obvious, skip to design" | long-task-requirements captures what you'd miss. |
-| "Test categories can be decided during feature-st" | Ad-hoc assignment leads to SEC/PERF/A11Y gaps. Run ATS first. |
+| "Test categories can be decided during feature-st" | Ad-hoc assignment leads to SEC/PERF gaps. Run ATS first. |
 | "ATS is overkill for this project" | Check Scaling Guide — tiny projects auto-skip ATS. |
 | "The SRS already implies the design" | SRS = WHAT, design = HOW. Both are needed. |
 | "UI styles can be decided during coding" | Ad-hoc styling causes inconsistency. Run UCD first. |

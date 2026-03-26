@@ -249,39 +249,7 @@ auto elapsed = std::chrono::duration<double>(std::chrono::high_resolution_clock:
 
 ---
 
-## 5. Accessibility Testing
-
-### Automated Tools
-
-| Tool | Language | Command |
-|------|----------|---------|
-| axe-core | JS/TS | `npx @axe-core/cli http://localhost:3000 --tags wcag2aa` |
-| pa11y | JS/TS | `npx pa11y http://localhost:3000 --standard WCAG2AA --reporter json` |
-| Lighthouse | General | `npx lighthouse http://localhost:3000 --only-categories=accessibility --output=json` |
-
-### Manual Checks (WCAG 2.1 AA)
-
-| Criterion | Check |
-|-----------|-------|
-| 1.1.1 Non-text Content | All images have alt text |
-| 1.3.1 Info and Relationships | Semantic HTML (headings, lists, tables) |
-| 1.4.3 Contrast | 4.5:1 for normal text, 3:1 for large text |
-| 2.1.1 Keyboard | All interactive elements reachable via Tab/Enter/Space |
-| 2.4.1 Skip Navigation | Skip-to-content link exists |
-| 4.1.2 Name, Role, Value | ARIA labels on custom components |
-
-### Chrome DevTools MCP Accessibility Check
-```
-1. navigate_page → target URL
-2. take_snapshot verbose:true → inspect a11y tree
-3. Verify: all interactive elements have accessible names
-4. Verify: heading hierarchy is logical (h1 → h2 → h3)
-5. Verify: form inputs have associated labels
-```
-
----
-
-## 6. Compatibility Testing
+## 5. Compatibility Testing
 
 ### Cross-Browser (UI Projects)
 
@@ -312,7 +280,7 @@ python -c "import platform; print(platform.system())"
 
 ---
 
-## 7. Test Report Metrics Collection
+## 6. Test Report Metrics Collection
 
 ### Collecting Coverage Metrics
 
@@ -334,7 +302,7 @@ python -c "import platform; print(platform.system())"
 
 ---
 
-## 8. Full Mutation Regression
+## 7. Full Mutation Regression
 
 Full-codebase mutation testing during ST phase. Complements per-feature mutation from Worker cycles — verifies mutation score holds project-wide with the full test suite.
 

@@ -54,7 +54,7 @@ Read the review template provided (default or custom). Execute each dimension:
 |-------|--------|----------|
 | All FRs have at least FUNC + BNDRY? | | |
 | FRs handling user input/auth have SEC? | | |
-| FRs with ui:true features have UI + A11Y? | | |
+| FRs with ui:true features have UI? | | |
 | NFRs with performance metrics have PERF? | | |
 | No requirement has only a single category? | | |
 

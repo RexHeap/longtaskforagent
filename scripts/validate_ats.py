@@ -20,7 +20,7 @@ import sys
 
 
 # Valid test categories
-VALID_CATEGORIES = {"FUNC", "BNDRY", "UI", "SEC", "A11Y", "PERF"}
+VALID_CATEGORIES = {"FUNC", "BNDRY", "UI", "SEC", "PERF"}
 
 # Required top-level sections (Chinese or English)
 REQUIRED_SECTIONS = [

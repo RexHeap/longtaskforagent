@@ -94,10 +94,10 @@ END
 
 | ID | Category | Traces To | Input / Setup | Expected | Kills Which Bug? |
 |----|----------|-----------|---------------|----------|-----------------|
-| A  | happy path | VS-1, FR-xxx | [specific values] | [exact result] | [wrong impl this catches] |
-| B  | error | §Interface Contract Raises | [trigger condition] | [exception type + msg] | [missing branch] |
-| C  | boundary | §Algorithm boundary table | [edge value] | [exact behavior] | [off-by-one or missing guard] |
-| D  | state | §State Diagram transition | [pre-state + event] | [post-state] | [missing guard condition] |
+| A  | FUNC/happy | VS-1, FR-xxx | [specific values] | [exact result] | [wrong impl this catches] |
+| B  | FUNC/error | §Interface Contract Raises | [trigger condition] | [exception type + msg] | [missing branch] |
+| C  | BNDRY/edge | §Algorithm boundary table | [edge value] | [exact behavior] | [off-by-one or missing guard] |
+| D  | FUNC/state | §State Diagram transition | [pre-state + event] | [post-state] | [missing guard condition] |
 
 ## Tasks
 

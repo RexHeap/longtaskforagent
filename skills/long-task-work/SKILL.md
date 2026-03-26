@@ -122,6 +122,7 @@ Context to carry forward (paths only — SubAgent reads contents itself):
 - Feature object (compact JSON)
 - `quality_gates` and `tech_stack` (compact JSON)
 - File paths + section line ranges: design doc (§4.N), SRS doc (FR-xxx), UCD doc (if ui:true)
+- ATS doc path: `docs/plans/*-ats.md` (if exists) — SubAgent uses ATS mapping to align Test Inventory categories
 - Constraints and assumptions from feature-list.json root
 - Output path: `docs/features/YYYY-MM-DD-<feature-name>.md`
 

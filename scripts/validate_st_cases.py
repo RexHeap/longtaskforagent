@@ -24,10 +24,10 @@ import sys
 # Case ID pattern: ST-{CATEGORY}-{FEATURE_ID}-{SEQ}
 # FEATURE_ID is zero-padded 3 digits, SEQ is zero-padded 3 digits
 CASE_ID_PATTERN = re.compile(
-    r"^ST-(FUNC|BNDRY|UI|SEC|A11Y|PERF)-(\d{3})-(\d{3})$"
+    r"^ST-(FUNC|BNDRY|UI|SEC|PERF)-(\d{3})-(\d{3})$"
 )
 
-VALID_CATEGORIES = {"FUNC", "BNDRY", "UI", "SEC", "A11Y", "PERF"}
+VALID_CATEGORIES = {"FUNC", "BNDRY", "UI", "SEC", "PERF"}
 
 # Required sections within each test case block
 REQUIRED_CASE_SECTIONS = [
@@ -137,7 +137,7 @@ def _extract_ats_requirements(ats_path: str, feature_id: int = None) -> dict:
     Returns dict: {req_id: {"categories": set, "min_cases": int}} or empty dict on failure.
     """
     ats_row_pattern = re.compile(r"^\|\s*((?:FR|NFR|IFR)-\d{3})\s*\|")
-    valid_cats = {"FUNC", "BNDRY", "UI", "SEC", "A11Y", "PERF"}
+    valid_cats = {"FUNC", "BNDRY", "UI", "SEC", "PERF"}
     result = {}
     try:
         with open(ats_path, "r", encoding="utf-8") as f:

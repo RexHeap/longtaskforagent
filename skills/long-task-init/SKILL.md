@@ -1,6 +1,6 @@
 ---
 name: long-task-init
-description: "Use when design doc exists but feature-list.json not yet created - scaffold project artifacts and decompose requirements into features"
+description: "Use when ATS doc exists (or auto-skipped) but feature-list.json not yet created - scaffold project artifacts and decompose requirements into features"
 ---
 
 # Initialize Long-Task Project

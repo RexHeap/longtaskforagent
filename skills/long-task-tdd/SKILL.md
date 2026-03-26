@@ -49,18 +49,18 @@ The Test Inventory table from feature detailed design is the **starting set** fo
 
 ### Test Scenario Rules (hard requirements)
 
-**Rule 1: Category Coverage** — tests must cover all applicable categories:
+**Rule 1: Category Coverage** — tests must cover all applicable categories (using the same `MAIN/subtag` format as the Test Inventory):
 
 | Category | What to test | Example |
 |----------|-------------|---------|
-| **Happy path** | Normal operation, valid inputs | Valid login returns token |
-| **Error handling** | Known failures, invalid inputs | Invalid password returns 401 |
-| **Boundary / edge** | Limits, empty, max, zero | Empty string; max-length password |
-| **Security** | Injection, authorization | SQL injection in username |
+| **FUNC/happy** | Normal operation, valid inputs | Valid login returns token |
+| **FUNC/error** | Known failures, invalid inputs | Invalid password returns 401 |
+| **BNDRY/\*** | Limits, empty, max, zero | Empty string; max-length password |
+| **SEC/\*** | Injection, authorization (if applicable) | SQL injection in username |
 
 When a category doesn't apply, state it explicitly in a comment:
 ```python
-# Security: N/A — internal utility with no user-facing input
+# SEC: N/A — internal utility with no user-facing input
 ```
 
 **Rule 2: Negative Test Ratio >= 40%**

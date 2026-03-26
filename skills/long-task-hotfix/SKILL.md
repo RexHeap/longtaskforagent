@@ -121,6 +121,7 @@ Add a new feature entry to `feature-list.json`. Determine the next available `id
 - `dependencies`: set to `[fixed_feature_id]` if non-null (ensures Worker processes the original feature before this fix); set to `[]` if null
 - `ui`: if `feature_id` is non-null, use the linked feature's `ui` field; otherwise `false`
 - `wave`: use the current maximum wave id from `feature-list.json`'s `waves` array
+- **ATS hint**: if `fixed_feature_id` is non-null and ATS doc exists (`docs/plans/*-ats.md`), look up the linked feature's requirement in the ATS mapping table. If ATS specifies categories beyond FUNC (e.g., SEC, BNDRY), consider adding verification_steps that cover those categories so downstream feature-st can derive the required test cases
 
 After adding, validate:
 ```bash

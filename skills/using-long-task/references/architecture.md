@@ -2,7 +2,18 @@
 
 ## Core Concept
 
-Long-running tasks exceed a single context window. The solution: split work into a **Requirements Phase** (SRS), a **Design Phase**, an **Initializer Session** (runs once), and multiple **Worker Sessions** (run iteratively), connected by persistent artifacts on disk.
+Long-running tasks exceed a single context window. The solution: split work into a **Requirements Phase** (SRS), a **UCD Phase** (UI projects), a **Design Phase**, an **ATS Phase** (Acceptance Test Strategy), an **Initializer Session** (runs once), and multiple **Worker Sessions** (run iteratively), connected by persistent artifacts on disk.
+
+### ATS Downstream Impact
+
+The ATS document (`docs/plans/*-ats.md`) maps every SRS requirement to acceptance scenarios with required test categories (`FUNC, BNDRY, SEC, UI, PERF`) and minimum case counts. It flows downstream:
+
+- **SRS → ATS**: Acceptance criteria written in the SRS (Given/When/Then) drive ATS scenario derivation. Well-structured acceptance criteria with explicit boundary conditions and error cases produce stronger ATS coverage.
+- **UCD → ATS**: UI components and pages defined in the UCD have corresponding UI test categories assigned in the ATS phase. Components with interactive states and accessibility constraints become ATS test scenarios.
+- **ATS → Init**: Init constrains `verification_steps` to satisfy ATS-required categories and minimum case counts.
+- **ATS → Feature-Design**: Test Inventory (§7) must cover all ATS-required main categories for the feature's requirement(s).
+- **ATS → Feature-ST**: Hard gate — ST test cases must meet ATS category requirements and minimum case counts.
+- **ATS → System-ST**: Hard gate — `check_ats_coverage.py --strict` must exit 0.
 
 ## Persistent Artifacts
 

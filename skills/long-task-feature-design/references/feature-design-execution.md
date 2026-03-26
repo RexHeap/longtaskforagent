@@ -125,16 +125,20 @@ Build this table as the FINAL design step — it synthesizes all sections above 
 
 | ID | Category | Traces To | Input / Setup | Expected | Kills Which Bug? |
 |----|----------|-----------|---------------|----------|-----------------|
-| A  | happy path | VS-1, FR-xxx | [specific values] | [exact result] | [wrong impl] |
-| B  | error | §3 Raises row | [trigger] | [exception type + msg] | [missing branch] |
-| C  | boundary | §5c boundary table | [edge value] | [behavior] | [off-by-one] |
-| D  | state | §6 transition | [pre-state + event] | [post-state] | [missing guard] |
+| A  | FUNC/happy | VS-1, FR-xxx | [specific values] | [exact result] | [wrong impl] |
+| B  | FUNC/error | §3 Raises row | [trigger] | [exception type + msg] | [missing branch] |
+| C  | BNDRY/edge | §5c boundary table | [edge value] | [behavior] | [off-by-one] |
+| D  | FUNC/state | §6 transition | [pre-state + event] | [post-state] | [missing guard] |
+
+Category format: `MAIN/subtag` where MAIN is one of `FUNC, BNDRY, SEC, UI, PERF` and subtag is a free-form label.
 
 Rules:
 - Minimum 1 row per verification_step
-- Negative tests (error + boundary) >= 40% of total rows
+- Negative tests (FUNC/error + BNDRY/*) >= 40% of total rows
 - "Traces To" references the design section the test derives from
 - "Kills Which Bug?" names a specific wrong implementation this test catches
+
+**ATS category alignment** (if ATS doc was provided): Every main category listed in the ATS mapping table for this feature's requirement(s) MUST appear as at least one row's Category prefix in this Test Inventory. For example, if ATS requires SEC for FR-005, at least one Test Inventory row must have Category = `SEC/*`. Missing ATS categories → add rows before proceeding to §8.
 
 **Relationship with TDD**: This table is the PRIMARY INPUT for TDD Red (long-task-tdd Step 1). TDD Red uses this table as its starting point and may add tests per its own Rule 1-5 (category coverage, assertion quality, real test requirements). The Test Inventory provides the design-driven scenarios; TDD adds implementation-driven scenarios discovered during coding.
 

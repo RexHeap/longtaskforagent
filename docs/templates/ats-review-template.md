@@ -33,13 +33,13 @@
 |-----------|-------------------|
 | All FR-xxx | FUNC + BNDRY (minimum) |
 | FR handles user input, authentication, or authorization | + SEC |
-| FR maps to a feature with `ui: true` | + UI + A11Y |
+| FR maps to a feature with `ui: true` | + UI |
 | NFR-xxx with performance metrics | PERF |
 
 **Checks:**
 - All FRs have at least FUNC + BNDRY
 - FRs handling user input/auth have SEC
-- FRs with ui:true features have UI + A11Y
+- FRs with ui:true features have UI
 - NFRs with performance metrics have PERF
 - No FR has only a single category assigned
 

@@ -275,7 +275,7 @@ using-long-task (router)
 0d. **Acceptance Test Strategy** (`long-task-ats`):
    - Takes approved SRS + Design + UCD as input (WHAT + HOW + LOOK → TEST STRATEGY)
    - Maps every FR/NFR/IFR to acceptance scenarios with required test categories and minimum case counts
-   - Category assignment: FUNC+BNDRY (all FRs), +SEC (input/auth), +UI+A11Y (ui:true), +PERF (NFR with metrics)
+   - Category assignment: FUNC+BNDRY (all FRs), +SEC (input/auth), +UI (ui:true), +PERF (NFR with metrics)
    - NFR test method matrix with tools, thresholds, and load parameters
    - Cross-feature integration scenarios pre-planned for ST phase
    - Risk-driven test priority ordering

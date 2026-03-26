@@ -16,7 +16,7 @@ Do NOT invoke any implementation skill, write any code, scaffold any project, ru
 ## Why ATS Exists
 
 Without a global acceptance test strategy, per-feature ST test cases suffer from:
-- Category imbalance (heavy FUNC/BNDRY, near-zero SEC/PERF/A11Y/UI)
+- Category imbalance (heavy FUNC/BNDRY, near-zero SEC/PERF/UI)
 - No systematic basis for minimum case counts per feature
 - NFR test methods decided ad-hoc during feature-st
 - Cross-feature integration scenarios discovered too late in ST phase
@@ -73,7 +73,7 @@ For each FR/NFR/IFR, generate one or more acceptance scenarios with:
 |--------|---------|---------|---------|----------|--------|------|
 | FR-001 | 用户登录 | 正常登录/错误密码/账户锁定/会话过期 | FUNC,BNDRY,SEC | 8 | Critical | 处理用户输入→SEC必选 |
 | NFR-001 | 响应时间<200ms | P95延迟/并发负载/降级/冷启动 | PERF | 5 | High | 阈值: P95<200ms @100并发 |
-| FR-010 | 搜索结果页 | 搜索/空结果/分页/排序/筛选 | FUNC,BNDRY,UI,A11Y | 12 | High | ui:true→UI+A11Y必选 |
+| FR-010 | 搜索结果页 | 搜索/空结果/分页/排序/筛选 | FUNC,BNDRY,UI | 12 | High | ui:true→UI必选 |
 ```
 
 **Category assignment rules:**
@@ -82,7 +82,7 @@ For each FR/NFR/IFR, generate one or more acceptance scenarios with:
 |------|---------|
 | 所有 FR | FUNC + BNDRY（至少） |
 | 处理用户输入/认证/授权/外部数据 | + SEC |
-| 对应 `ui: true` 的 feature | + UI + A11Y |
+| 对应 `ui: true` 的 feature | + UI |
 | 关联 NFR-xxx 且有性能指标 | + PERF |
 
 **Minimum case count heuristics:**
@@ -102,7 +102,6 @@ For each test category, specify the strategy:
 - **BNDRY**: Boundary value analysis + equivalence class partitioning requirements per FR
 - **SEC**: Input validation (SQL injection, XSS, path traversal), authentication bypass, authorization escalation, data leakage
 - **PERF**: NFR metric thresholds + load scenarios + tool specification + pass criteria
-- **A11Y**: WCAG 2.1 AA checklist items (keyboard nav, contrast, ARIA, focus management)
 - **UI**: Chrome DevTools MCP interaction chains — navigate → interact → verify → three-layer detection
 
 ### 5. NFR Test Method Matrix
@@ -204,7 +203,7 @@ Parse the subagent's review report:
    docs: add acceptance test strategy (ATS)
 
    Maps N requirements to acceptance scenarios
-   Categories: FUNC, BNDRY, SEC, PERF, A11Y, UI
+   Categories: FUNC, BNDRY, SEC, PERF, UI
    Reviewed: [PASS / CONDITIONAL PASS with N gaps]
    ```
 
@@ -252,7 +251,7 @@ See `docs/plans/YYYY-MM-DD-<topic>-ats.md` for detailed requirement-to-test-cate
 | Rationalization | Correct Response |
 |---|---|
 | "The SRS already has acceptance criteria, ATS is redundant" | SRS has business criteria; ATS maps them to test categories and counts |
-| "We'll figure out test categories during feature-st" | Ad-hoc category assignment leads to SEC/PERF/A11Y gaps |
+| "We'll figure out test categories during feature-st" | Ad-hoc category assignment leads to SEC/PERF gaps |
 | "This project is too small for ATS" | Check Scaling Guide — Tiny projects auto-skip; Small projects get lightweight ATS |
 | "NFR testing can be decided during ST phase" | NFR test methods must be specified upfront with tools and thresholds |
 | "The review is overkill" | Independent review catches coverage gaps the author misses |

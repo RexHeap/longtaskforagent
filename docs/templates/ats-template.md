@@ -33,7 +33,7 @@
 
 - 每个 FR 至少覆盖 FUNC + BNDRY 类别
 - 处理用户输入/认证的 FR 必须覆盖 SEC 类别
-- ui:true 的 feature 必须覆盖 UI + A11Y 类别
+- ui:true 的 feature 必须覆盖 UI 类别
 - NFR 必须有明确的测试工具和通过标准
 - 跨 feature 集成路径必须在 ST 阶段验证
 
@@ -81,7 +81,6 @@
 | SEC | N | N |
 | PERF | N | N |
 | UI | N | N |
-| A11Y | N | N |
 | **合计** | **N** | **N** |
 ```
 
@@ -107,11 +106,7 @@
 - 测试工具: {k6/locust/ab/JMeter等}
 - 负载模型: {并发数, 持续时间, 渐进策略}
 
-### 3.5 可访问性测试 (A11Y)
-- 标准: WCAG 2.1 AA
-- 检查项: 键盘导航、颜色对比、ARIA 属性、焦点管理
-
-### 3.6 UI 测试 (UI)
+### 3.5 UI 测试 (UI)
 - 工具: Chrome DevTools MCP
 - 交互链: navigate → interact → verify → three-layer detection
 - 三层检测模型: Layer 1 (evaluate_script), Layer 2 (EXPECT/REJECT), Layer 3 (list_console_messages)
@@ -179,7 +174,6 @@
 | `security` | SEC | Injection, authorization, data validation | FR handles user input, auth, or external data |
 | `performance` | PERF | Response time, throughput, resource usage | NFR-xxx with performance metrics |
 | `ui` | UI | Chrome DevTools MCP interaction + visual verification | Feature has `"ui": true` |
-| `accessibility` | A11Y | WCAG 2.1 AA checks | Feature has `"ui": true` |
 
 ## Minimum Case Count Heuristics (Reference)
 

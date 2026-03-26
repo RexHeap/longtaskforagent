@@ -5,7 +5,7 @@ description: "Use when all features in feature-list.json are passing - run compr
 
 # System Testing — Cross-Feature & System-Wide Verification Before Release
 
-Run cross-feature and system-wide testing after all features are implemented and passing. Per-feature ST test cases (functional, boundary, UI, security, accessibility) have already been executed during each Worker cycle via `long-task-feature-st`. This phase focuses on what per-feature testing **cannot** cover: cross-feature interactions, multi-feature E2E workflows, system-wide NFR verification, compatibility, and exploratory testing.
+Run cross-feature and system-wide testing after all features are implemented and passing. Per-feature ST test cases (functional, boundary, UI, security) have already been executed during each Worker cycle via `long-task-feature-st`. This phase focuses on what per-feature testing **cannot** cover: cross-feature interactions, multi-feature E2E workflows, system-wide NFR verification, compatibility, and exploratory testing.
 
 **Announce at start:** "I'm using the long-task-st skill. All features are passing — time for cross-feature system testing."
 
@@ -58,7 +58,6 @@ Create `docs/plans/YYYY-MM-DD-st-plan.md` with:
 | E2E Scenarios | SRS has multi-step user workflows | Pure library/utility projects |
 | Performance | SRS has NFR-xxx with response time / throughput targets | No performance NFRs |
 | Security | Security NFRs OR project handles user input / auth / external data | Isolated offline tools |
-| Accessibility | UI features exist (`"ui": true`) | No UI features |
 | Compatibility | SRS specifies platform / browser / runtime targets | Single-platform CLI tools |
 | Exploratory | Always | Never |
 
@@ -156,7 +155,6 @@ Per-feature NFR checks were handled in feature-level ST. This step focuses on **
 
 - **Performance**: measure p50/p95/p99 under expected load; throughput; memory/CPU/disk I/O. See `references/st-recipes.md` for benchmarking tools. Record: measured value vs SRS threshold.
 - **Security**: input validation audit (SQL, XSS, command injection, path traversal); auth/session/privilege escalation; dependency vulnerability scan (npm audit, pip-audit, etc.); OWASP Top 10 checklist; secrets in code/logs. Record: per-check PASS/FAIL with evidence.
-- **Accessibility** (UI only): WCAG 2.1 AA automated scan (axe-core, pa11y, Lighthouse); keyboard navigation; ARIA/semantic HTML; color contrast. Record: per-criterion PASS/FAIL.
 - **Scalability** (if load targets in SRS): run load tests at 1x, 2x, 5x expected load; measure degradation curve; identify bottlenecks.
 - **Reliability**: error handling produces meaningful messages; graceful degradation when dependencies unavailable; no data corruption under error conditions.
 

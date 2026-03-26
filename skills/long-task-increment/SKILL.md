@@ -108,7 +108,7 @@ Update the existing ATS document **in place** for affected requirements:
 1. Read `docs/plans/*-ats.md`
 2. For **new** requirements:
    - Add mapping table rows with requirement ID, scenarios, required categories, minimum case counts
-   - Apply category assignment rules (FUNC+BNDRY for all FRs; +SEC for input/auth; +UI+A11Y for ui:true; +PERF for NFRs with metrics)
+   - Apply category assignment rules (FUNC+BNDRY for all FRs; +SEC for input/auth; +UI for ui:true; +PERF for NFRs with metrics)
    - Use minimum case count heuristics based on acceptance criteria complexity
    - Update the coverage statistics table (Section 2.4)
    - If new NFRs: add rows to the NFR Test Method Matrix (Section 4)
@@ -131,6 +131,7 @@ Update the existing ATS document **in place** for affected requirements:
    Modified: <req_ids changed>
    Deprecated: <req_ids deprecated>
    ```
+8. **ATS re-review check**: if ATS changes affect >3 mapping table rows OR introduce a new test category not previously present, ask the user whether a re-review is needed before proceeding. If yes, describe the changes and rationale for the user to approve.
 
 ### 5. UCD Revision (UI projects only)
 

@@ -30,6 +30,7 @@ Collect these from the current session state. Do NOT read document contents your
 - `srs_start` / `srs_end` — line range of the FR-xxx subsection (from Orient Document Lookup)
 - `ucd_doc_path` — path to UCD doc (only if `"ui": true`; omit otherwise)
 - `ucd_start` / `ucd_end` — line range of relevant UCD sections (if applicable)
+- `ats_doc_path` — path to ATS doc (`docs/plans/*-ats.md`), if it exists; omit otherwise
 - `constraints` — constraints[] from feature-list.json root
 - `assumptions` — assumptions[] from feature-list.json root
 - `output_path` — target file: `docs/features/YYYY-MM-DD-<feature-name>.md`
@@ -46,6 +47,7 @@ You are a Feature Design execution SubAgent.
 3. Read design section: Read {design_doc_path} lines {design_start} to {design_end}
 4. Read SRS section: Read {srs_doc_path} lines {srs_start} to {srs_end}
 5. Read UCD sections: Read {ucd_doc_path} lines {ucd_start} to {ucd_end} (only if ui:true)
+5b. Read ATS mapping table: Read {ats_doc_path} (only if ATS doc exists) — locate the mapping rows for the feature's requirement ID(s); extract required categories and minimum case counts
 6. Follow the execution rules to produce the detailed design document
 7. Write the document to: {output_path}
 8. Return your result using the Structured Return Contract in the execution rules
@@ -56,12 +58,14 @@ You are a Feature Design execution SubAgent.
 - tech_stack: {tech_stack_json}
 - Constraints: {constraints}
 - Assumptions: {assumptions}
+- ATS doc path: {ats_doc_path} (or "none" if no ATS doc exists)
 - Working directory: {working_dir}
 
 ## Key Constraints
 - Write the complete design document to {output_path}
 - Every section (§2-§6) must be COMPLETE or have "N/A — [reason]"
 - Test Inventory negative ratio must be >= 40%
+- Test Inventory main categories (FUNC/BNDRY/SEC/UI/PERF) must cover all ATS-required categories for this feature's requirement(s)
 - Do NOT start TDD — only produce the design document
 ```
 

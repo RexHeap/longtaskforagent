@@ -30,7 +30,6 @@
 | boundary | N |
 | ui | N |
 | security | N |
-| accessibility | N |
 | performance | N |
 | **合计** | **N** |
 ```
@@ -82,7 +81,7 @@ ST-{CATEGORY}-{FEATURE_ID}-{SEQ}
 ### 元数据
 
 - **优先级**: High / Medium / Low
-- **类别**: functional / boundary / ui / security / accessibility / performance
+- **类别**: functional / boundary / ui / security / performance
 - **已自动化**: Yes / No
 - **测试引用**: {test_file::test_name 或 N/A}
 - **Test Type**: Real / Mock
@@ -128,7 +127,6 @@ ST-{CATEGORY}-{FEATURE_ID}-{SEQ}
 | `boundary` | BNDRY | Edge cases, limits, empty/max/zero values | Always — test boundaries of inputs and states |
 | `ui` | UI | Chrome DevTools interaction + visual verification | Only when feature has `"ui": true` |
 | `security` | SEC | Injection, authorization, data validation | When feature handles user input, auth, or external data |
-| `accessibility` | A11Y | WCAG 2.1 AA checks (keyboard nav, contrast, ARIA) | Only when feature has `"ui": true` |
 | `performance` | PERF | Response time, throughput, resource usage | Only when traceable to NFR-xxx performance requirements |
 
 ## Case ID Format
@@ -137,7 +135,7 @@ ST-{CATEGORY}-{FEATURE_ID}-{SEQ}
 ST-{CATEGORY}-{FEATURE_ID}-{SEQ}
 ```
 
-- `{CATEGORY}`: One of FUNC, BNDRY, UI, SEC, A11Y, PERF
+- `{CATEGORY}`: One of FUNC, BNDRY, UI, SEC, PERF
 - `{FEATURE_ID}`: Feature ID from feature-list.json (zero-padded to 3 digits: 001, 002, ...)
 - `{SEQ}`: Sequential number within category for this feature (001, 002, ...)
 
@@ -174,9 +172,8 @@ For `"ui": true` features, UI category test cases **MUST** be generated and **CA
    - **Layer 2**: EXPECT/REJECT clauses in `take_snapshot()` — explicit element/state verification
    - **Layer 3**: `list_console_messages(["error"])` — console error gate at end of test case
 3. **Console error gate**: Post-step check — `list_console_messages(types=["error"])` must return 0
-4. **Accessibility checkpoint**: At least one WCAG check per UI test case (keyboard, contrast, ARIA)
-5. **UCD token reference**: Which style tokens (colors, typography, spacing) apply to verified elements
-6. **Minimum 5 steps**: Every UI test case MUST have at least 5 test steps
+4. **UCD token reference**: Which style tokens (colors, typography, spacing) apply to verified elements
+5. **Minimum 5 steps**: Every UI test case MUST have at least 5 test steps
 
 ### Example UI Test Step (with MCP mapping):
 
@@ -219,7 +216,7 @@ When generating test cases from a feature's `verification_steps`:
 2. Steps prefixed with `[devtools]` produce `ui` category test cases
 3. Every feature gets at least one `functional` and one `boundary` test case
 4. If the feature handles user input → add `security` test cases
-5. If the feature has `"ui": true` → add **both** `ui` and `accessibility` test cases
+5. If the feature has `"ui": true` → add `ui` test cases
 6. **If the feature has `"ui": true`, UI category test cases are MANDATORY and CANNOT be skipped** — these test cases must use Chrome DevTools MCP for browser-based verification
 7. If the feature traces to an NFR-xxx with performance metrics → add `performance` test cases
 8. Test case steps must be concrete and executable (no vague "verify it works")

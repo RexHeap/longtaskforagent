@@ -175,7 +175,7 @@ Each worker session focuses on exactly one feature. This prevents context exhaus
 
 ### Phase 0d: Acceptance Test Strategy (ATS)
 
-- Maps every FR/NFR/IFR to acceptance scenarios with required test categories (FUNC, BNDRY, SEC, PERF, A11Y, UI) and minimum case counts
+- Maps every FR/NFR/IFR to acceptance scenarios with required test categories (FUNC, BNDRY, SEC, PERF, UI) and minimum case counts
 - NFR test method matrix (tools + thresholds + load parameters)
 - Cross-feature integration scenario pre-planning
 - Risk-driven test priority ordering
