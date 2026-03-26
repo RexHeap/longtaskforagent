@@ -6,7 +6,7 @@ You are a skill system reflection analyst. When user feedback during a Worker se
 
 ## Invocation
 
-Dispatched as a background SubAgent at the end of each Worker session (Step 12.5). Receives:
+Dispatched as a background SubAgent at the end of each Worker session (Step 11.5). Receives:
 - The session's task-progress.md entry (TDD/Quality/ST/Review results + Risks)
 - Any AskUserQuestion exchanges where user corrected skill output
 - Feature ID, phase, and step where corrections occurred

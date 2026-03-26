@@ -218,8 +218,6 @@ Generate `docs/plans/YYYY-MM-DD-st-report.md` with these sections:
 ### 11. Persist
 
 - Git commit ST artifacts (`docs/plans/*-st-plan.md`, `docs/plans/*-st-report.md`, test files)
-- Update `RELEASE_NOTES.md` — add ST completion entry
-- Update `task-progress.md` with ST session entry
 - Validate: `python scripts/validate_features.py feature-list.json`
 - **Cleanup (MANDATORY)**: Stop services started in Step 1
   - Read `env-guide.md` "Stop All Services" section — kill by PID (from `task-progress.md`, preferred) or by port (fallback)
@@ -233,6 +231,14 @@ Present the ST report summary and Go/No-Go recommendation to the user via `AskUs
 - **Go**: All exit criteria met, no open Critical/Major defects, RTM 100% covered
 - **Conditional-Go**: Minor/Cosmetic defects deferred, all critical paths verified
 - **No-Go**: Open Critical/Major defects, NFR thresholds not met, or RTM gaps
+
+### 13. Finalize (on Go/Conditional-Go)
+
+If verdict is Go or Conditional-Go:
+- Invoke `long-task:long-task-finalize`
+- Wait for completion before ending session
+
+If No-Go → skip (loop back to Worker for fixes; Finalize runs after eventual Go).
 
 ## Scaling ST to Project Size
 
@@ -259,8 +265,8 @@ Present the ST report summary and Go/No-Go recommendation to the user via `AskUs
 
 ## Integration
 
-**Called by:** `using-long-task` (when feature-list.json exists AND all features passing), or `long-task-work` (Step 14 when no failing features remain)
+**Called by:** `using-long-task` (when feature-list.json exists AND all features passing), or `long-task-work` (Step 12 when no failing features remain)
 **Reads:** `feature-list.json`, `docs/plans/*-srs.md`, `docs/plans/*-design.md`, `docs/plans/*-ucd.md` (if UI), `docs/test-cases/feature-*.md` (per-feature ST from `long-task-feature-st`), `task-progress.md`, project config file (if applicable)
-**May invoke:** `long-task:long-task-work` (if Critical/Major defects found → fix loop)
+**May invoke:** `long-task:long-task-work` (if Critical/Major defects found → fix loop), `long-task:long-task-finalize` (after Go/Conditional-Go verdict)
 **Produces:** `docs/plans/YYYY-MM-DD-st-plan.md`, `docs/plans/YYYY-MM-DD-st-report.md`
 **Read on-demand (via Read tool, NOT Skill tool):** `references/st-recipes.md`

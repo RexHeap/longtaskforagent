@@ -200,7 +200,7 @@ irm https://raw.githubusercontent.com/suriyel/longtaskforagent/main/install.ps1 
   → TDD 红 → TDD 绿 → 覆盖率门禁
     → TDD 重构 → 变异门禁
       → 功能 ST（黑盒） → 内联合规检查
-        → 添加示例 → 持久化 → 下一个功能
+        → 持久化 → 下一个功能
 ```
 
 ### 阶段 3：系统测试
@@ -218,7 +218,7 @@ irm https://raw.githubusercontent.com/suriyel/longtaskforagent/main/install.ps1 
 - 带波次元数据追加新功能以实现可追溯性
   ![Worker Cycle](images/5.png)
 
-## 12 技能超能力架构
+## 13 技能超能力架构
 
 Long-Task Agent 使用**按需技能加载**模式——只有引导路由器在会话开始时加载；阶段技能按需加载，保持上下文精简。
 
@@ -533,7 +533,7 @@ tool-bindings.json          →  apply_tool_bindings.py  →  .long-task-binding
 
 ```
 long-task-agent/
-├── skills/                          # 12 个技能（按需加载）
+├── skills/                          # 13 个技能（按需加载）
 │   ├── using-long-task/             # 引导路由器
 │   ├── long-task-requirements/      # 阶段 0a：需求和 SRS
 │   ├── long-task-ucd/               # 阶段 0b：UCD 风格指南
@@ -545,7 +545,8 @@ long-task-agent/
 │   ├── long-task-quality/           # 覆盖率 + 变异门禁
 │   ├── long-task-feature-st/        # 每功能黑盒验收测试
 │   ├── long-task-increment/         # 增量开发
-│   └── long-task-st/                # 系统测试
+│   ├── long-task-st/                # 系统测试
+│   └── long-task-finalize/          # ST 后文档和示例生成
 ├── scripts/                         # 验证和实用脚本
 ├── tests/                           # 所有脚本的测试套件
 ├── hooks/                           # SessionStart 钩子配置

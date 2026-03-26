@@ -200,7 +200,7 @@ Orient → Bootstrap → Config Gate → DevTools Gate → Plan
   → TDD Red → TDD Green → Coverage Gate
     → TDD Refactor → Mutation Gate
       → Feature ST (Black-Box) → Inline Compliance Check
-        → Add Examples → Persist → Next Feature
+        → Persist → Next Feature
 ```
 
 ### Phase 3: System Testing
@@ -218,7 +218,7 @@ Orient → Bootstrap → Config Gate → DevTools Gate → Plan
 - Appends new features with wave metadata for traceability
   ![Worker Cycle](images/5.png)
 
-## 12-Skill Superpowers Architecture
+## 13-Skill Superpowers Architecture
 
 Long-Task Agent uses an **on-demand skill loading** pattern — only the bootstrap router is loaded at session start; phase skills are loaded as needed, keeping context lean.
 
@@ -539,7 +539,7 @@ tool-bindings.json          →  apply_tool_bindings.py  →  .long-task-binding
 
 ```
 long-task-agent/
-├── skills/                          # 12 skills (on-demand loaded)
+├── skills/                          # 13 skills (on-demand loaded)
 │   ├── using-long-task/             # Bootstrap router
 │   ├── long-task-requirements/      # Phase 0a: Requirements & SRS
 │   ├── long-task-ucd/               # Phase 0b: UCD style guide
@@ -551,7 +551,8 @@ long-task-agent/
 │   ├── long-task-quality/           # Coverage + mutation gates
 │   ├── long-task-feature-st/        # Per-feature black-box acceptance testing
 │   ├── long-task-increment/         # Incremental development
-│   └── long-task-st/                # System testing
+│   ├── long-task-st/                # System testing
+│   └── long-task-finalize/          # Post-ST documentation & examples
 ├── scripts/                         # Validation & utility scripts
 ├── tests/                           # Test suite for all scripts
 ├── hooks/                           # SessionStart hook config

@@ -202,7 +202,7 @@ Grep CSS/style files for hardcoded color hex values not in UCD palette tokens.
 Confirm `validate_st_cases.py` already passed in Feature-ST (Step 9).
 No re-validation needed — Feature-ST Step 5b + Step 6 already cover T1.
 
-If all checks pass → proceed to Add Examples.
+If all checks pass → proceed to Persist.
 If any check fails → fix inline, re-verify. No SubAgent dispatch.
 
 Record in `task-progress.md`:
@@ -210,14 +210,8 @@ Record in `task-progress.md`:
 - Inline Check: PASS (P2: N/N methods verified, T2: N/N tests found, D3: OK)
 ```
 
-### 11. Add Examples
-Create runnable examples in `examples/` demonstrating the completed feature.
-- Match example granularity to feature scope
-- Skip only for pure infrastructure features
-- Include in git commit
-
-### 12. Persist
-- Git commit (include implementation, tests, examples, **test case document**)
+### 11. Persist
+- Git commit (include implementation, tests, **test case document**)
   > **For `category: "bugfix"` features**: use commit prefix `"fix:"` instead of `"feat:"`.
   > Format: `fix: <feature title without the "Fix: " prefix> (#<fixed_feature_id>)`
 - Update `RELEASE_NOTES.md` (Keep a Changelog format)
@@ -248,7 +242,7 @@ Create runnable examples in `examples/` demonstrating the completed feature.
   ```
 - Git commit again (progress files)
 
-### 12.5 Session Reflection (Conditional)
+### 11.5 Session Reflection (Conditional)
 
 If `retro_authorized` is `true` in `feature-list.json`:
 1. Read `skills/long-task-retrospective/prompts/reflection-prompt.md`
@@ -258,7 +252,7 @@ If `retro_authorized` is `true` in `feature-list.json`:
 
 If `retro_authorized` is absent or `false` → skip entirely (no output, no dispatch).
 
-### 13. End Session
+### 12. End Session
 - Stop any services you started directly during this cycle (services started during ST acceptance testing in Step 10 are stopped by `long-task-feature-st`)
 - Output a concise completion summary:
   > **Feature #\<id\> (\<title\>) — DONE**
@@ -293,7 +287,7 @@ The auto-loop script (`scripts/auto_loop.py`) handles multi-feature automation e
 | "Tests pass, mark it done" | Invoke long-task-quality first. |
 | "Coverage looks close enough" | Thresholds are hard gates. Run the tool. |
 | "Let me just try this quick fix" | Systematic debugging first. |
-| "I'll skip the example for this one" | Only skip for pure infrastructure. |
+| "I'll generate examples during Worker" | Examples are post-ST via long-task-finalize. |
 | "I'll update release notes at the end" | Update after every commit. |
 | "Mutation score is probably OK" | Run mutation tests and read the report. |
 | "The UI looks correct to me" | Run automated detection + EXPECT/REJECT. |

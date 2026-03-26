@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **Claude Code skill plugin** called `long-task-agent` that enables multi-session execution of complex software projects exceeding a single context window. It implements a seven-phase architecture (Requirements → UCD → Design → ATS → Initializer → Worker → System Testing, with an Increment re-entry point) with persistent state bridging via on-disk artifacts.
+This is a **Claude Code skill plugin** called `long-task-agent` that enables multi-session execution of complex software projects exceeding a single context window. It implements a multi-phase architecture (Requirements → UCD → Design → ATS → Initializer → Worker → System Testing → Finalize, with an Increment re-entry point) with persistent state bridging via on-disk artifacts.
 
-The skill system follows the **superpowers architectural pattern**: 12 independent skills loaded on-demand via the `Skill` tool, with a bootstrap router (`using-long-task`) injected at session start via hook.
+The skill system follows the **superpowers architectural pattern**: 13 independent skills loaded on-demand via the `Skill` tool, with a bootstrap router (`using-long-task`) injected at session start via hook.
 
 ## Key Commands
 
@@ -185,7 +185,7 @@ python scripts/auto_loop_opencode.py feature-list.json --model anthropic/claude-
 
 ## Architecture
 
-### 12-Skill System
+### 13-Skill System
 
 The skill system uses on-demand loading via the `Skill` tool. Only the bootstrap router is loaded at session start; other skills are loaded as needed.
 
@@ -218,6 +218,7 @@ The skill system uses on-demand loading via the `Skill` tool. Only the bootstrap
 
 | Skill | Purpose |
 |-------|---------|
+| `long-task-finalize` | Post-ST Documentation — scenario-based usage examples generation + RELEASE_NOTES/task-progress finalization (after ST Go verdict) |
 | `long-task-retrospective` | Skill Self-Evolution — consolidate retrospective records and upload to REST API (after ST Go verdict, if authorized) |
 
 #### Skill Call Graph
@@ -241,7 +242,8 @@ using-long-task (router)
    │      └─→ long-task-feature-st (Step 10, black-box acceptance testing)
    │
    └─→ long-task-st (if ALL active features passing)
-          └─→ long-task-work (if defects found → fix → return to ST)
+          ├─→ long-task-work (if defects found → fix → return to ST)
+          └─→ long-task-finalize (after Go verdict → examples + doc finalization)
 ```
 
 ### Eight-Phase Workflow
@@ -316,14 +318,20 @@ using-long-task (router)
    - **Quality** (`long-task-quality`): Coverage Gate → Feature-Scoped Mutation Gate
    - **ST Acceptance** (`long-task-feature-st`): Black-box acceptance testing — self-managed start/cleanup, Chrome DevTools MCP UI execution + ISO/IEC/IEEE 29119 per feature
    - **Inline Check**: Mechanical compliance verification (interface contracts, test inventory, dependency versions, UCD tokens)
-   - Add Examples → Persist → Continue (chains to ST when all features pass)
+   - Persist → Continue (chains to ST when all features pass)
 
 3. **System Testing** (`long-task-st`):
    - Cross-feature & system-wide verification (per-feature ST already done in Worker cycles)
    - ST Readiness Gate → ST Plan (RTM) → Regression → Integration → Cross-Feature E2E → System-Wide NFR
-   - Compatibility → Exploratory → Defect Triage → ST Report → Verdict (Go/No-Go)
+   - Compatibility → Exploratory → Defect Triage → ST Report → Verdict (Go/No-Go) → Finalize
    - If Critical/Major defects found → loops back to Worker for fixes
    - Aligned with IEEE 829 and ISTQB best practices
+
+   **Finalize** (`long-task-finalize`):
+   - Invoked by ST after Go/Conditional-Go verdict
+   - Generates scenario-based usage examples for external developers and AI Code Agents
+   - Updates RELEASE_NOTES.md and task-progress.md with ST completion
+   - Git commits all documentation artifacts
 
 ### Critical Rules
 
@@ -370,7 +378,7 @@ using-long-task (router)
 | `CLAUDE.md` | Init | Cross-session navigation index (appended by `init_project.py`) |
 | `task-progress.md` | Init | `## Current State` header (updated by Worker each session) + session log |
 | `RELEASE_NOTES.md` | Init | Living release notes (Keep a Changelog format) |
-| `examples/` | Worker | Runnable examples demonstrating completed features |
+| `examples/` | Finalize | Scenario-based usage examples for external developers and AI Code Agents |
 | `init.sh` / `init.ps1` | Init | Environment bootstrap (LLM-generated) |
 | `env-guide.md` | Init | Service lifecycle commands — start/stop/restart/verify with output capture; user-editable |
 | `long-task-guide.md` | Init | Worker session guide: includes env activation commands + direct test/coverage/mutation commands (LLM-generated, validated) |
@@ -483,7 +491,7 @@ Increment-specific fields:
 
 ```
 long-task-agent/
-├── skills/                            # 12 skills (on-demand loaded via Skill tool)
+├── skills/                            # 13 skills (on-demand loaded via Skill tool)
 │   ├── using-long-task/               # Bootstrap router (injected via hook)
 │   │   ├── SKILL.md
 │   │   └── references/
@@ -531,12 +539,15 @@ long-task-agent/
 │   ├── long-task-quality/             # Quality gates
 │   │   ├── SKILL.md
 │   │   └── coverage-recipes.md        # Multi-language tool setup
+│   ├── long-task-finalize/             # Post-ST documentation & examples (Meta Skill)
+│   │   └── SKILL.md
 │   └── long-task-retrospective/       # Skill self-evolution — collect & upload improvement records
 │       ├── SKILL.md
 │       └── prompts/
 │           └── reflection-prompt.md
 ├── agents/
 │   ├── ats-reviewer.md               # ATS reviewer agent definition (7 dimensions: R1-R7)
+│   ├── example-generator.md          # Example generator agent definition (scenario-based usage examples)
 │   └── reflection-analyst.md         # Reflection analyst agent definition (session retrospective)
 ├── docs/
 │   └── templates/                     # Document templates (user-customizable)
@@ -596,6 +607,8 @@ long-task-agent/
 - [skills/using-long-task/references/roadmap.md](skills/using-long-task/references/roadmap.md) - Future enhancements
 - [skills/long-task-ats/SKILL.md](skills/long-task-ats/SKILL.md) - Acceptance Test Strategy skill
 - [agents/ats-reviewer.md](agents/ats-reviewer.md) - ATS reviewer subagent (7 review dimensions)
+- [agents/example-generator.md](agents/example-generator.md) - Example generator subagent (scenario-based usage examples)
+- [skills/long-task-finalize/SKILL.md](skills/long-task-finalize/SKILL.md) - Post-ST documentation & examples skill
 - [skills/long-task-feature-design/SKILL.md](skills/long-task-feature-design/SKILL.md) - Feature detailed design skill
 - [skills/long-task-work/references/systematic-debugging.md](skills/long-task-work/references/systematic-debugging.md) - Systematic debugging
 - [skills/long-task-work/references/subagent-development.md](skills/long-task-work/references/subagent-development.md) - Subagent-driven development
@@ -607,9 +620,9 @@ long-task-agent/
 <!-- long-task-agent -->
 ## Long-Task Agent
 
-This project uses a multi-session agent workflow with 12 skills loaded on-demand.
+This project uses a multi-session agent workflow with 13 skills loaded on-demand.
 The `using-long-task` skill is injected at session start and routes to the correct phase.
-Flow: Requirements (SRS) → UCD (UI projects) → Design → ATS (Acceptance Test Strategy) → Init → Worker cycles → System Testing.
+Flow: Requirements (SRS) → UCD (UI projects) → Design → ATS (Acceptance Test Strategy) → Init → Worker cycles → System Testing → Finalize.
 Incremental development: place `increment-request.json` → Increment skill updates SRS/Design/ATS/UCD in place → new features appended → Worker cycles → ST.
 
 Key files: `docs/plans/*-srs.md` (SRS), `docs/plans/*-deferred.md` (deferred backlog), `docs/plans/*-ucd.md` (UCD style guide), `docs/plans/*-design.md` (design), `docs/plans/*-ats.md` (ATS — acceptance test strategy with requirement→scenario mapping, reviewed by ats-reviewer subagent), `feature-list.json` (task inventory), `task-progress.md` (session log), `RELEASE_NOTES.md` (changelog), `docs/features/*.md` (per-feature detailed design), `docs/test-cases/feature-*.md` (per-feature ST test cases), `docs/plans/*-st-report.md` (ST report), `increment-request.json` (increment signal).

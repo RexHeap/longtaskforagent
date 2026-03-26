@@ -264,10 +264,10 @@ Since implementation code already exists (TDD and Quality Gates are complete), e
 **If any test case FAILS:**
 - Report to user via `AskUserQuestion` with: failed case ID, step details, actual vs expected
 - Options: fix code and re-execute / modify test case via the `long-task-increment` skill / terminate cycle
-- A failure here blocks the feature from proceeding to Add Examples
+- A failure here blocks the feature from proceeding to Persist
 
 **If all test cases PASS:**
-- Proceed to Inline Check + Add Examples (Worker Step 10-11)
+- Proceed to Inline Check + Persist (Worker Step 10 + 11)
 
 Each automated test SHOULD reference its corresponding ST case ID via a comment:
 ```python
@@ -324,4 +324,4 @@ Always start from a known-clean state. Do not assume services are already runnin
 **Called by:** `long-task-work` (Step 10)
 **Requires:** Quality Gates passed (long-task-quality Step 9 complete)
 **Produces:** `docs/test-cases/feature-{id}-{slug}.md` with executed results
-**Chains to:** Inline Check + Add Examples (Worker Step 10-11)
+**Chains to:** Inline Check + Persist (Worker Step 10 + 11)

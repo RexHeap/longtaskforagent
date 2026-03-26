@@ -84,10 +84,7 @@ NEVER mark "passing" without fresh evidence — run tests, read output
 1. Spec compliance
 2. Design compliance
 
-### Step 6: Add Examples
-1. Create runnable example in examples/
-
-### Step 7: Persist — save state
+### Step 6: Persist — save state
 1. git commit
 2. Update task-progress.md
 
@@ -230,9 +227,6 @@ Generate 29119 test cases before TDD implementation.
 
 ### Inline compliance check
 Spec compliance and design compliance checks.
-
-### Examples
-Add runnable example in examples/ directory.
 
 ### Save state
 git commit, update task-progress.md.

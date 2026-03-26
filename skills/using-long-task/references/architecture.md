@@ -179,7 +179,7 @@ Living document that tracks all user-visible changes. Updated after **every git 
 
 ### 5. `examples/` Directory
 
-Living collection of runnable examples that demonstrate completed features. Updated after each feature is marked `"passing"`.
+Scenario-based usage examples for external developers and AI Code Agents. Generated in a single batch after System Testing Go verdict via the `long-task-finalize` Meta Skill and `example-generator` SubAgent.
 
 ```
 examples/
@@ -192,16 +192,12 @@ examples/
 ```
 
 **Rules**:
-- One example per user-facing feature (infrastructure-only features may be skipped)
+- Scenario-oriented, not feature-oriented — one example may span multiple features
 - Examples MUST be runnable or follow-along — not just code snippets
-- Name pattern: `<feature-id-zero-padded>-<short-name>.<ext>` (e.g., `01-user-login.py`)
-- Update `examples/README.md` index when adding new examples
-- Example granularity matches feature scope:
-  - **API feature** → script that calls the endpoint with sample data
-  - **UI feature** → step-by-step walkthrough (markdown) or automated demo script
-  - **Library/utility feature** → code that imports and uses the API
-  - **CLI feature** → shell commands with expected output
-- Examples serve as both documentation and regression smoke tests
+- Name pattern: `<NN>-<scenario-name>.<ext>` (e.g., `01-quick-start.py`)
+- `examples/README.md` index lists all examples with prerequisites and run commands
+- Skip non-externalizable features (infrastructure, internal logic, config scaffolding)
+- See `agents/example-generator.md` for full generation rules
 
 ### 6. Git History
 
@@ -336,24 +332,18 @@ Each worker cycle follows this exact sequence.
 16. Run mechanical compliance checks (interface contract verification, test inventory cross-check, dependency version spot-check, UCD token grep for UI features)
 17. Fix any findings inline — no SubAgent dispatch
 
-### Phase 6: Add Examples (demonstrate completed feature)
-15. Create/update a runnable example in `examples/` for the completed feature
-16. Name: `<feature-id-zero-padded>-<short-name>.<ext>` (e.g., `01-user-login.py`)
-17. Update `examples/README.md` index with the new example entry
-18. Skip this phase ONLY for pure infrastructure features with no user-facing behavior
+### Phase 6: Persist (save state for next session)
+15. `git add` + `git commit` with descriptive message
+16. Update `RELEASE_NOTES.md` — add entry under `[Unreleased]` with feature title, ID, and change type
+17. Append session entry to `task-progress.md`
+18. Validate: `python scripts/validate_features.py feature-list.json`
+19. Commit updated `task-progress.md`, `feature-list.json`, and `RELEASE_NOTES.md`
 
-### Phase 7: Persist (save state for next session)
-19. `git add` + `git commit` with descriptive message (include examples)
-20. Update `RELEASE_NOTES.md` — add entry under `[Unreleased]` with feature title, ID, and change type
-21. Append session entry to `task-progress.md`
-22. Validate: `python scripts/validate_features.py feature-list.json`
-23. Commit updated `task-progress.md`, `feature-list.json`, and `RELEASE_NOTES.md`
-
-### Phase 8: Continue
-24. If ALL features are `"passing"` → announce project completion and stop
-25. Otherwise, tell user which feature is done and which is next
-26. If context budget remains, proceed to Phase 1 for the next feature
-27. If context is exhausted, end the session
+### Phase 7: Continue
+20. If ALL features are `"passing"` → announce project completion and stop
+21. Otherwise, tell user which feature is done and which is next
+22. If context budget remains, proceed to Phase 1 for the next feature
+23. If context is exhausted, end the session
 
 **Critical rule**: One feature per cycle. If context remains after one feature, pick the next. Never leave code in a broken state.
 
@@ -570,48 +560,66 @@ Coverage and mutation tool commands per language. For full setup recipes, see [c
 ## Example Creation
 
 ### Purpose
-Examples serve as living documentation: they show users how to use each feature, and double as smoke tests for quick verification.
+Examples serve as usage documentation for **external developers and AI Code Agents** — showing how to integrate with and use the project. Generated post-ST by the `long-task-finalize` Meta Skill via the `example-generator` SubAgent (see `agents/example-generator.md`).
 
-### When to create examples
-- **Always**: for user-facing features (API, UI, CLI, library)
-- **Optional/Skip**: for pure infrastructure features (CI config, internal refactoring, build tooling)
+### Design principles
+- **Scenario-oriented, not feature-oriented** — one example may span multiple features; group by usage scenario
+- **Concise set** — quality over quantity; 3-8 examples for most projects
+- **Skip non-externalizable features** — infrastructure, internal logic, config scaffolding have no external example
+- **Runnable or followable** — code examples must execute; UI examples must be step-by-step walkthroughs
 
-### Example types by feature category
+### Target example count by project size
 
-| Feature Category | Example Format | Content |
+| Project Size | Features | Target Examples |
 |---|---|---|
-| **API endpoint** | `.py` / `.sh` / `.js` script | Calls the endpoint with sample data, prints response |
-| **UI feature** | `.md` walkthrough or demo script | Step-by-step instructions with screenshots, or automated Playwright/DevTools script |
-| **Library/utility** | `.py` / `.js` code | Imports the module, demonstrates key functions with sample data |
-| **CLI command** | `.sh` / `.ps1` script | Runs commands with expected output in comments |
-| **Data pipeline** | `.py` script + sample data | Runs pipeline with sample input, shows output |
+| Tiny (1-5) | 1-5 | 1-2 |
+| Small (5-15) | 5-15 | 2-4 |
+| Medium (15-50) | 15-50 | 4-6 |
+| Large (50+) | 50+ | 6-8 |
+
+### Example types by scenario
+
+| Scenario Type | Format | Content |
+|---|---|---|
+| **API usage** | `.py` / `.sh` / `.js` script | Initialize client, call endpoints with sample data, print responses |
+| **Library usage** | `.py` / `.js` / `.ts` code | Import modules, demonstrate key functions with sample data |
+| **CLI usage** | `.sh` / `.ps1` script | Run commands with expected output in comments |
+| **UI workflow** | `.md` walkthrough | Step-by-step instructions with action descriptions |
+| **Integration** | `.py` / `.js` script | End-to-end workflow spanning multiple subsystems |
 
 ### Example file structure
 ```
 examples/
-├── README.md                           # Index: links + one-line descriptions
-├── 01-user-login.py                    # python examples/01-user-login.py
-├── 02-user-registration.py
-├── 03-dashboard-walkthrough.md         # UI walkthrough with screenshots
-├── 05-password-reset-api.sh            # curl-based API demo
+├── README.md                           # Index: scenario descriptions + how to run
+├── 01-quick-start.py                   # Basic usage workflow
+├── 02-data-import.sh                   # Data import pipeline
+├── 03-advanced-config.py               # Advanced configuration scenarios
 └── data/                               # Shared sample data for examples
-    └── sample-users.json
+    └── sample-input.json
 ```
 
 ### `examples/README.md` format
 ```markdown
 # Examples
 
-| # | Feature | File | How to run |
-|---|---------|------|------------|
-| 1 | User login | [01-user-login.py](01-user-login.py) | `python examples/01-user-login.py` |
-| 2 | User registration | [02-user-registration.py](02-user-registration.py) | `python examples/02-user-registration.py` |
-| 3 | Dashboard | [03-dashboard-walkthrough.md](03-dashboard-walkthrough.md) | Follow the steps in the document |
+Usage examples for external developers and AI Code Agents.
+
+## Prerequisites
+
+[List prerequisites: language runtime, dependencies, config setup]
+
+## Examples
+
+| # | Scenario | File | How to run |
+|---|----------|------|------------|
+| 1 | Quick start | [01-quick-start.py](01-quick-start.py) | `python examples/01-quick-start.py` |
+| 2 | Data import | [02-data-import.sh](02-data-import.sh) | `bash examples/02-data-import.sh` |
 ```
 
 ### Quality checklist for examples
 - [ ] Example is runnable (or follow-along for UI walkthroughs)
 - [ ] Includes brief comments explaining what it demonstrates
-- [ ] Uses realistic (but safe) sample data
+- [ ] Uses realistic (but safe) sample data — no placeholder "foo/bar"
 - [ ] `examples/README.md` index is updated
-- [ ] Example name follows pattern: `<NN>-<short-name>.<ext>`
+- [ ] Example name follows pattern: `<NN>-<scenario-name>.<ext>`
+- [ ] No secrets — uses clearly-marked placeholders (`YOUR_API_KEY`)

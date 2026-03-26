@@ -199,11 +199,6 @@ After the design is complete, decompose into TDD tasks.
 2. Check threshold. If below: improve assertions.
 3. Record mutation output as evidence.
 
-#### Task 6: Create example
-1. Create `examples/<NN>-<name>.<ext>`
-2. Update `examples/README.md`
-3. Run example to verify.
-
 ### Verification Checklist
 - [ ] All verification_steps traced to Interface Contract postconditions
 - [ ] All verification_steps traced to Test Inventory rows

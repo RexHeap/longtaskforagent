@@ -99,6 +99,7 @@ digraph phase_detection {
 ### Meta Skills (invoked conditionally by phase skills — do NOT invoke directly)
 | Skill | Purpose |
 |-------|---------|
+| `long-task:long-task-finalize` | Post-ST Documentation — scenario-based usage examples generation + RELEASE_NOTES/task-progress finalization (after ST Go verdict) |
 | `long-task:long-task-retrospective` | Skill Self-Evolution — consolidate retrospective records and upload to REST API (after ST Go verdict, if authorized) |
 
 ## Key Files (shared contract)
@@ -144,6 +145,7 @@ These thoughts mean STOP — you're rationalizing:
 | "I'll just add features to the JSON directly" | Invoke the `long-task-increment` skill for tracked, audited changes. |
 | "The requirement change is small, no need for impact analysis" | Increment skill catches hidden dependencies. |
 | "I'll just fix this quick bug directly" | Invoke `long-task-hotfix` — bug gets tracked in feature-list.json as category=bugfix and fixed via the full Worker pipeline. |
+| "I'll generate examples during Worker" | Examples are post-ST via long-task-finalize. |
 
 ## Skill Priority
 
