@@ -11,14 +11,13 @@ Dispatched as a subagent during the ATS generation phase (long-task-ats Step 9).
 - The SRS document (`docs/plans/*-srs.md`)
 - The Design document (`docs/plans/*-design.md`)
 - The UCD style guide (`docs/plans/*-ucd.md`) — only for UI projects
-- The review template (default or custom)
 
 ## Review Process
 
 ### Step 0: Find Issues First (MANDATORY — minimum 3)
 
 Before starting the formal review, list **at least 3 potential coverage issues** across all applicable dimensions. For each:
-- **Dimension**: R1-R7 (see rubric below)
+- **Dimension**: R1-R8 (see rubric below)
 - What was expected vs what was found
 - Severity: Critical / Major / Minor
 - Evidence: requirement ID, ATS row, or section reference
@@ -35,7 +34,7 @@ For each issue from Step 0:
 
 ### Step 2: Fill Review Rubric
 
-Read the review template provided (default or custom). Execute each dimension:
+Execute each dimension:
 
 #### R1: Requirement Coverage Completeness
 
@@ -45,8 +44,9 @@ Read the review template provided (default or custom). Execute each dimension:
 | Every NFR-xxx from SRS appears in ATS mapping table? | | |
 | Every IFR-xxx from SRS appears in ATS mapping table? | | |
 | No orphan rows (ATS rows without valid SRS requirement)? | | |
+| §2.4 coverage statistics match actual row counts from §2.1-§2.3? | | |
 
-**Verdict rule**: Any FR/NFR/IFR missing from ATS → Major defect.
+**Verdict rule**: Any FR/NFR/IFR missing from ATS → Major defect. Orphan ATS row (no matching SRS requirement) → Minor defect. Statistics mismatch → Minor defect.
 
 #### R2: Category Diversity
 
@@ -56,20 +56,70 @@ Read the review template provided (default or custom). Execute each dimension:
 | FRs handling user input/auth have SEC? | | |
 | FRs with ui:true features have UI? | | |
 | NFRs with performance metrics have PERF? | | |
+| IFRs handling external data input have SEC? | | |
+| IFRs have at least FUNC + BNDRY? | | |
 | No requirement has only a single category? | | |
 
-**Verdict rule**: Missing mandatory category → Major defect. Single-category FR → Minor defect.
+**Verdict rule**: Missing mandatory category → Major defect. Single-category FR/IFR → Minor defect.
 
-#### R3: Scenario Adequacy
+#### R3: Scenario Adequacy & Gap Detection
+
+Systematically probe for uncovered scenarios. Apply each sub-check to every FR/IFR; skip inapplicable checks with justification.
+
+**R3.1 — Path Coverage**
 
 | Check | YES/NO | Evidence |
 |-------|--------|----------|
-| Each FR has both normal + abnormal path scenarios? | | |
-| Minimum case counts match requirement complexity? | | |
+| Each FR has both normal-path (happy) and abnormal-path (error) scenarios? | | |
+| Each SRS Given/When/Then acceptance criterion is reflected in at least one scenario? | | |
 | Scenarios are concrete (not vague "verify it works")? | | |
-| Each SRS Given/When/Then is reflected in at least one scenario? | | |
+| Minimum case counts match requirement complexity (see heuristics table)? | | |
 
-**Verdict rule**: Missing abnormal path → Major. Vague scenario → Minor.
+**R3.2 — Boundary & Edge Cases**
+
+> Note: R2 checks that the BNDRY category is *assigned* (metadata); R3.2 checks that boundary scenarios actually *exist* (content). Both may apply independently — do not deduplicate.
+
+| Check | YES/NO | Evidence |
+|-------|--------|----------|
+| Boundary values explicitly listed as scenarios (min, max, off-by-one)? | | |
+| Empty/null/zero-length inputs covered where applicable? | | |
+| Maximum-size inputs covered (longest string, largest file, most items)? | | |
+| Type-mismatch inputs covered (string where number expected, etc.)? | | |
+
+**R3.3 — State & Transition Coverage**
+
+| Check | YES/NO | Evidence |
+|-------|--------|----------|
+| For stateful requirements: all valid state transitions have scenarios? | | |
+| Invalid state transitions have rejection scenarios (e.g., cancel an already-completed order)? | | |
+| Concurrent/simultaneous access scenarios identified where applicable? | | |
+
+**R3.4 — Error Handling Completeness**
+
+| Check | YES/NO | Evidence |
+|-------|--------|----------|
+| All error conditions from SRS acceptance criteria have corresponding scenarios? | | |
+| Timeout/unavailability scenarios covered for external dependencies (IFR)? | | |
+| Partial failure / rollback scenarios covered where applicable? | | |
+| Resource exhaustion scenarios covered where applicable (disk full, memory limit)? | | |
+
+**R3.5 — Implicit Requirement Scenarios**
+
+| Check | YES/NO | Evidence |
+|-------|--------|----------|
+| CON-xxx constraints have scenarios verifying enforcement? | | |
+| ASM-xxx assumptions have scenarios for when assumption is violated? | | |
+| Authorization boundaries tested (access denied for wrong role)? | | |
+
+**Verdict rules:**
+- Missing abnormal/error path for any FR → **Major**
+- Missing boundary scenario for a requirement with numeric/size limits → **Major**
+- Missing state transition scenario for a stateful requirement → **Major**
+- No timeout/unavailability scenario for an IFR with external dependency → **Major**
+- Minimum case count too low for requirement complexity → **Major**
+- Vague scenario description → **Minor**
+- Missing constraint enforcement scenario → **Minor**
+- Missing assumption-violation scenario → **Minor**
 
 #### R4: Verifiability
 
@@ -80,7 +130,7 @@ Read the review template provided (default or custom). Execute each dimension:
 | No weasel words ("reasonable", "appropriate", "correctly")? | | |
 | UI scenarios map to concrete Chrome DevTools MCP tool calls? | | |
 
-**Verdict rule**: Non-measurable pass criterion → Major. Weasel word → Minor.
+**Verdict rule**: Non-measurable pass criterion for NFR → Critical. Non-measurable pass criterion for FR → Major. Weasel word → Minor.
 
 #### R5: NFR Testability
 
@@ -115,18 +165,53 @@ Read the review template provided (default or custom). Execute each dimension:
 
 **Verdict rule**: High-priority requirement with Low risk → Major. Inconsistent depth → Minor.
 
+#### R8: Acceptance Content Cross-Validation
+
+Cross-reference ATS acceptance scenarios and pass criteria against the SRS and Design source documents. The reviewer does **NOT** decide which value is correct — only reports discrepancies as `[CROSS-REF CONFLICT]` for user escalation.
+
+**R8.1 — Scenario Coverage (ATS ↔ SRS)**
+
+| Check | YES/NO | Evidence |
+|-------|--------|----------|
+| Every FR Given/When/Then acceptance criterion in SRS §4 is covered by at least one ATS acceptance scenario? | | |
+| ATS scenarios do not introduce acceptance conditions absent from the SRS? | | |
+| Abnormal-path scenarios are consistent with SRS error-handling acceptance criteria? | | |
+
+**Verdict rule**: SRS acceptance criterion with no corresponding ATS scenario → Major. ATS scenario semantically contradicts SRS acceptance criterion → Major + `[CROSS-REF CONFLICT]`.
+
+**R8.2 — Pass Criteria Consistency (ATS ↔ SRS)**
+
+| Check | YES/NO | Evidence |
+|-------|--------|----------|
+| ATS §4 NFR pass-criteria values match SRS §5 Measurable Criterion column? | | |
+| ATS boundary values in acceptance scenarios match SRS acceptance-criteria limits? | | |
+| ATS IFR scenario protocols/formats match SRS §6 definitions? | | |
+
+**Verdict rule**: Numeric threshold mismatch (e.g., SRS says p95<200ms, ATS says p95<500ms) → Major + `[CROSS-REF CONFLICT]`. Protocol/format contradiction → Major + `[CROSS-REF CONFLICT]`.
+
+**R8.3 — Test Method Feasibility (ATS ↔ Design)**
+
+| Check | YES/NO | Evidence |
+|-------|--------|----------|
+| ATS §4 NFR test tools are compatible with Design §3.4 tech stack? | | |
+| ATS §3 test category strategies do not conflict with Design §9 testing strategy? | | |
+| Cross-feature integration scenarios reference features that exist in Design §4? | | |
+| ATS §6 risk levels are consistent with Design §11.4 risk assessments? | | |
+
+**Verdict rule**: Test tool incompatible with tech stack (e.g., JUnit for a Python project) → Major. Strategy conflict → Minor + `[CROSS-REF CONFLICT]`. Risk level contradiction between ATS and Design → Minor + `[CROSS-REF CONFLICT]`.
+
 ## Severity Levels
 
 | Level | Definition | Action Required |
 |-------|-----------|-----------------|
-| **Critical** | Requirement completely missing from ATS | Fix immediately — blocks approval |
-| **Major** | Category gap, missing scenarios, non-verifiable criteria | Fix before approval |
-| **Minor** | Style issue, single-category FR, weak wording | Fix recommended, not blocking |
+| **Critical** | Requirement completely missing from ATS; NFR with unmeasurable criterion | Fix immediately — blocks approval |
+| **Major** | Category gap, missing scenarios (path/boundary/state/error), non-verifiable criteria, cross-ref conflict with source document | Fix before approval |
+| **Minor** | Style issue, single-category FR/IFR, weak wording, statistics mismatch | Fix recommended, not blocking |
 
 ## Verdict Rules
 
 - **0 Critical + 0 Major** → PASS
-- **0 Critical + ≤2 Minor** → PASS (with notes)
+- **0 Critical + 0 Major + ≤3 Minor** → PASS (with notes)
 - **Any Critical OR any Major** → FAIL (must fix)
 
 ## Output Format
@@ -157,6 +242,12 @@ Read the review template provided (default or custom). Execute each dimension:
 | R5 | NFR Testability | PASS/FAIL | N |
 | R6 | Cross-Feature Integration | PASS/FAIL | N |
 | R7 | Risk Consistency | PASS/FAIL | N |
+| R8 | Acceptance Content Cross-Validation | PASS/FAIL | N |
+
+### Cross-Reference Conflicts
+| # | Source Doc | Source Value (section) | ATS Value (section) | Nature |
+|---|-----------|----------------------|--------------------|---------|
+| 1 | | | | omission / contradiction / distortion |
 
 ### Defect List
 | # | Dimension | Severity | Description | Affected Reqs | Suggested Fix |
@@ -177,11 +268,26 @@ Read the review template provided (default or custom). Execute each dimension:
 - **One concern per issue** — don't bundle multiple problems into one item
 - **Read-only** — do NOT modify any files; return the review report only
 - **Requirements scope only** — do NOT review implementation code or test code
-- **Custom template overrides defaults** — if a custom review template is provided, follow its dimensions and severity definitions instead of the defaults above
+
+## Discrepancy Escalation Protocol
+
+When R8 cross-validation finds semantic inconsistencies between the ATS and source documents (SRS/Design):
+
+1. The reviewer tags each discrepancy as `[CROSS-REF CONFLICT]` in the defect list and populates the **Cross-Reference Conflicts** table, noting:
+   - Source document + section reference
+   - ATS section reference
+   - Nature of discrepancy: **omission** (SRS criterion not in ATS), **contradiction** (values differ), or **distortion** (meaning changed)
+2. The reviewer does **NOT** decide which value is correct — only reports the discrepancy with evidence from both documents
+3. The main skill (long-task-ats Step 10.5) collects all `[CROSS-REF CONFLICT]` items and presents them to the user via `AskUserQuestion`:
+   - Option A: Use source document value (modify ATS)
+   - Option B: Use ATS value (update SRS/Design to match)
+   - Option C: Neither is correct (user provides the correct value)
+4. User decisions are applied to the relevant documents and recorded in the ATS appendix (Review Report section)
 
 ## Review Loop
 
 1. Reviewer produces review (Step 0 → Step 1 → Step 2)
 2. If issues found → ATS author fixes → reviewer re-reviews (only changed items)
-3. Loop until PASS
-4. Maximum 2 review rounds — if still failing after round 2, escalate to user
+3. `[CROSS-REF CONFLICT]` items are NOT auto-fixed — they are held for user escalation (see protocol above)
+4. Loop until PASS
+5. Maximum 2 review rounds — if still failing after round 2, escalate to user

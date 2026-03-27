@@ -347,7 +347,6 @@ Long-Task Agent 提供五个可自定义的文档模板，用于生成符合行�
 | SRS 模板 | `docs/templates/srs-template.md` | 软件需求规格说明书 | ISO/IEC/IEEE 29148 |
 | 设计模板 | `docs/templates/design-template.md` | 技术设计文档 | - |
 | ATS 模板 | `docs/templates/ats-template.md` | 验收测试策略文档 | - |
-| ATS 审核模板 | `docs/templates/ats-review-template.md` | ATS 审核规范（7 维度） | - |
 | ST 测试用例模板 | `docs/templates/st-case-template.md` | 系统测试用例文档 | ISO/IEC/IEEE 29119-3 |
 
 ### 自定义方式
@@ -379,7 +378,6 @@ Long-Task Agent 提供五个可自定义的文档模板，用于生成符合行�
 ```json
 {
   "ats_template_path": "docs/templates/custom-ats-template.md",
-  "ats_review_template_path": "docs/templates/custom-ats-review-template.md",
   "ats_example_path": "docs/templates/ats-example.md"
 }
 ```
@@ -387,10 +385,7 @@ Long-Task Agent 提供五个可自定义的文档模板，用于生成符合行�
 | 字段 | 说明 |
 |------|------|
 | `ats_template_path` | 自定义 ATS 文档模板路径（定义文档结构） |
-| `ats_review_template_path` | 自定义审核规范模板路径（定义维度、严重级别、通过条件） |
 | `ats_example_path` | 示例文件路径（定义风格、语言、详细程度） |
-
-审核模板可自定义：增删维度（如添加 GDPR 数据测试覆盖）、修改严重级别定义、调整通过条件。
 
 #### ST 测试用例模板自定义
 

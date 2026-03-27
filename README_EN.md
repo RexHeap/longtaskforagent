@@ -179,7 +179,7 @@ Each worker session focuses on exactly one feature. This prevents context exhaus
 - NFR test method matrix (tools + thresholds + load parameters)
 - Cross-feature integration scenario pre-planning
 - Risk-driven test priority ordering
-- Independent ATS reviewer subagent (7 dimensions: coverage completeness, category diversity, scenario adequacy, verifiability, NFR testability, integration coverage, risk consistency), with custom review template support
+- Independent ATS reviewer subagent (8 dimensions: R1-R8, including cross-validation against SRS/Design)
 - Auto-skip for tiny projects (≤5 FR), embedded in design doc for tiny projects
 - Produces an approved **ATS** (`docs/plans/*-ats.md`)
 - Constrains downstream Init (verification_steps) and feature-st (test case derivation)
@@ -347,7 +347,6 @@ Long-Task Agent provides five customizable document templates for generating sta
 | SRS Template | `docs/templates/srs-template.md` | Software Requirements Specification | ISO/IEC/IEEE 29148 |
 | Design Template | `docs/templates/design-template.md` | Technical Design Document | - |
 | ATS Template | `docs/templates/ats-template.md` | Acceptance Test Strategy Document | - |
-| ATS Review Template | `docs/templates/ats-review-template.md` | ATS Review Specification (7 dimensions) | - |
 | ST Test Case Template | `docs/templates/st-case-template.md` | System Test Case Document | ISO/IEC/IEEE 29119-3 |
 
 ### Customization Methods
@@ -379,7 +378,6 @@ Configure via `feature-list.json` root-level fields (or specify during the ATS p
 ```json
 {
   "ats_template_path": "docs/templates/custom-ats-template.md",
-  "ats_review_template_path": "docs/templates/custom-ats-review-template.md",
   "ats_example_path": "docs/templates/ats-example.md"
 }
 ```
@@ -387,10 +385,7 @@ Configure via `feature-list.json` root-level fields (or specify during the ATS p
 | Field | Description |
 |-------|-------------|
 | `ats_template_path` | Custom ATS document template path (defines document structure) |
-| `ats_review_template_path` | Custom review spec template path (defines dimensions, severity levels, pass criteria) |
 | `ats_example_path` | Example file path (defines style, language, detail level) |
-
-The review template supports: adding/removing dimensions (e.g., GDPR data testing coverage), modifying severity definitions, and customizing pass criteria.
 
 #### ST Test Case Template Customization
 

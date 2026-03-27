@@ -281,7 +281,7 @@ using-long-task (router)
    - NFR test method matrix with tools, thresholds, and load parameters
    - Cross-feature integration scenarios pre-planned for ST phase
    - Risk-driven test priority ordering
-   - Independent ATS reviewer subagent (7 dimensions: R1-R7) with custom review template support
+   - Independent ATS reviewer subagent (8 dimensions: R1-R8, including cross-validation against SRS/Design)
    - Auto-skip for tiny projects (≤5 FR): embeds simplified mapping in design doc
    - Save ATS to `docs/plans/YYYY-MM-DD-<topic>-ats.md`
    - **Hard gate**: no Init until ATS approved (or auto-skipped)
@@ -390,7 +390,6 @@ using-long-task (router)
 | `docs/templates/srs-template.md` | — | Default SRS template (user-customizable) |
 | `docs/templates/design-template.md` | — | Default design document template (user-customizable) |
 | `docs/templates/ats-template.md` | — | Default ATS document template (user-customizable) |
-| `docs/templates/ats-review-template.md` | — | Default ATS review spec template (7 dimensions, user-customizable) |
 | `docs/templates/st-case-template.md` | — | Default ST test case template (ISO/IEC/IEEE 29119-3, user-customizable) |
 | `docs/templates/deferred-backlog-template.md` | — | Default deferred requirements backlog template (user-customizable) |
 | `logs/session-*.md` | auto_loop | Auto-captured session logs per iteration (one feature per file) |
@@ -436,7 +435,6 @@ using-long-task (router)
     }
   ],
   "ats_template_path": "docs/templates/custom-ats-template.md (optional)",
-  "ats_review_template_path": "docs/templates/custom-ats-review-template.md (optional)",
   "ats_example_path": "docs/templates/ats-example.md (optional)",
   "st_case_template_path": "docs/templates/custom-st-template.md (optional)",
   "st_case_example_path": "docs/templates/st-case-example.md (optional)",
@@ -551,7 +549,7 @@ long-task-agent/
 │       └── prompts/
 │           └── reflection-prompt.md
 ├── agents/
-│   ├── ats-reviewer.md               # ATS reviewer agent definition (7 dimensions: R1-R7)
+│   ├── ats-reviewer.md               # ATS reviewer agent definition (8 dimensions: R1-R8)
 │   ├── example-generator.md          # Example generator agent definition (scenario-based usage examples)
 │   └── reflection-analyst.md         # Reflection analyst agent definition (session retrospective)
 ├── docs/
@@ -559,7 +557,6 @@ long-task-agent/
 │       ├── srs-template.md            # Default SRS template (ISO 29148)
 │       ├── design-template.md         # Default design document template
 │       ├── ats-template.md            # Default ATS document template (user-customizable)
-│       ├── ats-review-template.md     # Default ATS review spec template (user-customizable, 7 dimensions)
 │       ├── st-case-template.md        # Default ST test case template (ISO/IEC/IEEE 29119-3)
 │       └── deferred-backlog-template.md # Default deferred requirements backlog template
 ├── hooks/

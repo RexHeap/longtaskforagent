@@ -48,9 +48,6 @@ You MUST create a TodoWrite task for each step and complete them in order:
    - Else → use default template at `docs/templates/ats-template.md`
 5. Check for a custom ATS example:
    - If user has specified an example path → read the example file — adapt style, language, and detail level
-6. Check for a custom ATS review template:
-   - If user has specified a review template path → read it for use in Step 8
-   - Else → use default review template at `docs/templates/ats-review-template.md`
 
 ### 2. Extract All Requirements
 
@@ -149,8 +146,7 @@ Agent(
   subagent_type="general-purpose",
   prompt="""
   You are an independent ATS reviewer.
-  Read the reviewer prompt at: agents/ats-reviewer.md
-  Read the review template at: {review_template_path}
+  Read the reviewer definition at: agents/ats-reviewer.md
 
   ## Input Documents
   - ATS document (draft): {ats_content}
@@ -159,7 +155,7 @@ Agent(
   - UCD document (if applicable): {ucd_path} — read it
 
   ## Task
-  Execute all review dimensions defined in the review template.
+  Execute all review dimensions (R1-R8) defined in agents/ats-reviewer.md.
   Output a structured review report.
   Do NOT suggest improvements beyond defect identification.
   Do NOT read any implementation code — this is a requirements-level review.
@@ -168,7 +164,7 @@ Agent(
 ```
 
 **Isolation guarantees:**
-- Subagent reads ONLY ATS + SRS + Design + UCD + review template
+- Subagent reads ONLY ATS + SRS + Design + UCD + reviewer definition (agents/ats-reviewer.md)
 - Subagent does NOT read implementation code or test code
 - Subagent does NOT modify any files — returns structured report only
 - Main skill processes the report and decides on fixes
@@ -177,12 +173,36 @@ Agent(
 
 Parse the subagent's review report:
 
-1. **0 Major defects** → PASS → proceed to Step 11
+1. **0 Major defects** → PASS → proceed to Step 10.5
 2. **Has Major defects** → fix the ATS document per defect descriptions → re-run Step 9 (max 2 review rounds)
 3. **Third round still FAIL** → present full report to user via `AskUserQuestion`:
    - Show all remaining Major defects
    - Options: fix manually / accept with known gaps / terminate
    - If user accepts with gaps: document gaps in ATS footer section
+
+### 10.5 Process Cross-Reference Conflicts
+
+If the review report contains `[CROSS-REF CONFLICT]` items (from R8 cross-validation):
+
+1. Collect all `[CROSS-REF CONFLICT]` items from the **Cross-Reference Conflicts** table in the review report
+2. For each conflict, present to the user via `AskUserQuestion`:
+   - Source document value + section reference
+   - ATS value + section reference
+   - Nature: omission / contradiction / distortion
+   - Options:
+     - **A**: Use source document value (modify ATS)
+     - **B**: Use ATS value (update SRS/Design to match)
+     - **C**: Neither is correct (user provides the correct value)
+3. Apply user decisions to the relevant documents
+4. Record each decision in the ATS appendix (Review Report section) with format:
+   ```
+   | Conflict # | Decision | Applied To | User Rationale |
+   ```
+5. If any source documents (SRS/Design) were modified, git commit the changes:
+   ```
+   docs: resolve ATS cross-reference conflicts per user decision
+   ```
+6. Proceed to Step 11
 
 ### 11. Save ATS Document
 
