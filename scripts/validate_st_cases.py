@@ -254,6 +254,46 @@ def validate(path: str, feature_list_path: str = None, feature_id: int = None, a
         if not vp_content.strip():
             errors.append(f"{case_label}: verification points section is empty")
 
+        # Check that manual test cases have the reason field
+        metadata_content = sections.get("元数据") or sections.get("Metadata") or ""
+        if metadata_content:
+            # Match "已自动化": No or "Automated": No (with optional bold markers **)
+            is_manual = bool(
+                re.search(r"已自动化\**[:\s]*No", metadata_content)
+                or re.search(r"Automated\**[:\s]*No", metadata_content, re.IGNORECASE)
+            )
+            if is_manual:
+                has_reason = (
+                    "手动测试原因" in metadata_content
+                    or "Manual Test Reason" in metadata_content
+                )
+                if not has_reason:
+                    warnings.append(
+                        f"{case_label}: manual test case (已自动化: No) missing "
+                        f"'手动测试原因' / 'Manual Test Reason' field in metadata"
+                    )
+
+    # Check for Manual Test Case Summary when manual cases exist
+    has_manual_cases = False
+    for case in cases:
+        sections = case.get("sections", {})
+        metadata = sections.get("元数据") or sections.get("Metadata") or ""
+        if re.search(r"已自动化\**[:\s]*No", metadata) or re.search(
+            r"Automated\**[:\s]*No", metadata, re.IGNORECASE
+        ):
+            has_manual_cases = True
+            break
+
+    if has_manual_cases:
+        has_manual_summary = (
+            "Manual Test Case Summary" in content or "手动测试用例摘要" in content
+        )
+        if not has_manual_summary:
+            warnings.append(
+                "Document has manual test cases (已自动化: No) but missing "
+                "'Manual Test Case Summary' / '手动测试用例摘要' section"
+            )
+
     # Quality warnings for shallow test cases
     ui_case_ids = set()
     has_negative_path = False

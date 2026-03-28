@@ -15,6 +15,26 @@ Run cross-feature and system-wide testing after all features are implemented and
 Do NOT skip any applicable test category. A "Go" verdict requires evidence from EVERY category that applies to this project. "It probably works" is not evidence.
 </HARD-GATE>
 
+<HARD-GATE>
+Manual test escalation: When any test scenario in Steps 3-8 cannot be automated (requires physical device, human visual judgment, or external human action), use `AskUserQuestion` to present the test to the human and collect their verdict.
+
+Format:
+```
+Manual Verification Required: {test description}
+Category: {ST step — e.g., Integration, E2E, NFR, Compatibility}
+What to verify: {specific check with acceptance criteria}
+Expected result: {threshold or criterion from SRS}
+
+Please report: PASS or FAIL on first line, then what you observed.
+To skip: respond SKIP {reason}
+```
+
+- Parse response: first line `PASS`/`FAIL`/`SKIP`. If unparseable, re-prompt once; then record as `BLOCKED`.
+- Record results as `MANUAL-PASS` or `MANUAL-FAIL` in the ST report.
+- `MANUAL-FAIL` has the same severity implications as automated failure — it blocks Go verdict for Critical/Major items.
+- `SKIP {reason}` records as `BLOCKED` with the reason (not silently skipped).
+</HARD-GATE>
+
 ## Checklist
 
 You MUST create a TodoWrite task for each step and complete them in order:
@@ -74,6 +94,14 @@ Map EVERY SRS requirement to ST test approach. Reference per-feature test case d
 ```
 
 Every FR-xxx, NFR-xxx, IFR-xxx must appear in the RTM. Requirements without a test approach = **gap**.
+
+If any requirements require manual verification (from ATS `自动化可行性` column or Feature-ST manual cases), include a `Manual` column in the RTM:
+
+```markdown
+| Req ID | ... | Manual | Test Approach | Priority |
+|--------|-----|--------|---------------|----------|
+| FR-010 | ... | Yes: visual-judgment | Manual visual verification via AskUserQuestion | High |
+```
 
 **ATS compliance gate** (if ATS document exists):
 ```bash
@@ -247,6 +275,8 @@ Charter: Explore [feature area]
 
 For each charter: time-box 15-30 minutes; follow intuition — try unexpected inputs, unusual sequences, rapid interactions; log observations in real-time (Bug / Question / Note with severity).
 
+If an exploratory charter identifies issues requiring physical device access or human visual judgment beyond what Chrome DevTools MCP can verify: use `AskUserQuestion` to collect the tester's findings with the charter context.
+
 After all charters: consolidate findings; cross-reference with RTM for requirement gaps; add new defects to triage queue.
 
 ### 9. Defect Triage
@@ -290,7 +320,7 @@ Before writing, verify: every SRS requirement appears in RTM; every NFR has a me
 Generate `docs/plans/YYYY-MM-DD-st-report.md` with these sections:
 1. **Executive Summary** — 1-3 sentences: overall quality assessment and release recommendation
 2. **Requirements Traceability Matrix** — full RTM table with Feature ST status, System ST category, ATS categories, result, evidence; coverage count (X/Y requirements, Z%); list any gaps; include ATS compliance check result (`check_ats_coverage.py --strict` output)
-3. **Test Execution Summary** — table: category, tests run, passed, failed, skipped, notes (one row per category from Step 2a); include a final row **Real Test Cases** — aggregate `Real` test case counts (total / passed / failed) from all feature ST documents (`docs/test-cases/feature-*.md` Real Test Case Execution Summary tables)
+3. **Test Execution Summary** — table: category, tests run, passed, failed, skipped, notes (one row per category from Step 2a); include a final row **Real Test Cases** — aggregate `Real` test case counts (total / passed / failed) from all feature ST documents (`docs/test-cases/feature-*.md` Real Test Case Execution Summary tables); if any manual test cases exist, include a **Manual Test Cases** row — aggregate manual test case counts (total / MANUAL-PASS / MANUAL-FAIL / BLOCKED) from all Feature-ST documents and System-ST execution steps
 4. **Defect Summary** — table: severity, **escaped from**, category, description, status (fixed/deferred), fix reference; totals; open Critical/Major count (must be 0 for Go); if ≥2 defects share the same "Escaped From" source, flag as systemic gap in Risk Assessment
 5. **Quality Metrics** — line/branch coverage vs thresholds, **full mutation score** vs threshold (from Step 3b), total test count; real test cases: total / passed / failed (aggregated from all `docs/test-cases/feature-*.md` Real Test Case Execution Summary tables)
 6. **Risk Assessment** — residual risks with likelihood, impact, mitigation
@@ -324,6 +354,8 @@ Determine the Go/No-Go verdict based on exit criteria. Record in the ST report:
 - **Go**: All exit criteria met, no open Critical/Major defects, RTM 100% covered
 - **Conditional-Go**: Minor/Cosmetic defects deferred, all critical paths verified
 - **No-Go**: Open Critical/Major defects, NFR thresholds not met, or RTM gaps
+
+`MANUAL-FAIL` results are treated identically to automated `FAIL` for verdict determination. A Critical/Major defect discovered via manual testing blocks Go verdict, same as automated.
 
 ### 13. Finalize (on Go/Conditional-Go)
 

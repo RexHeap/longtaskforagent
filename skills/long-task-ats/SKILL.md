@@ -81,6 +81,19 @@ For each FR/NFR/IFR, generate one or more acceptance scenarios with:
 | Corresponds to a `ui: true` feature | + UI |
 | Linked to NFR-xxx with performance metrics | + PERF |
 
+**Automation feasibility assessment (optional column `自动化可行性`):**
+
+For each acceptance scenario, assess whether it can be fully automated with the project's tech stack:
+- `Auto` (default) — standard test tooling can execute and verify (CLI, API, Chrome DevTools MCP)
+- `Manual: physical-device` — requires hardware access (USB, printer, IoT device)
+- `Manual: visual-judgment` — requires human visual assessment beyond automated screenshot comparison
+- `Manual: external-action` — requires external human action (receive email, make phone call, approve in third-party system)
+- `Manual: other: {description}` — other reason
+
+This column propagates downstream: Feature-ST reads it to set `已自动化: No` + `手动测试原因` on derived test cases. The human will be interrupted via `AskUserQuestion` during Feature-ST execution to perform and report manual test results.
+
+**Conservative flagging**: Only mark as `Manual` when automation is genuinely impossible, not merely difficult. Chrome DevTools MCP covers most UI testing; mock services cover most external dependencies. Reserve `Manual` for true gaps.
+
 ### 4. Define Test Category Strategies
 
 For each test category, specify the strategy:

@@ -168,12 +168,26 @@ Examples: `ST-FUNC-005-001`, `ST-UI-005-002`, `ST-SEC-012-001`
 - Preconditions MUST list real, verifiable states
 - Verification points MUST be observable and automatable where possible
 
-**Acceptance-level focus:** Test cases confirm the implementation matches requirements from a user/system perspective — not duplicating unit test assertions. Focus on behavioral scenarios, integration paths, and end-to-end workflows.
+**Acceptance-level focus:** Test cases confirm the implementation matches requirements from a user/system perspective — not duplicating unit test assertions. Focus on behavioral scenarios and end-to-end workflows from the user/system perspective. Per-feature integration with external dependencies is verified during TDD (via INTG rows in Test Inventory). ST focuses on verifying the feature works correctly through the real running system interface.
 
 **Test type labeling (real/mock)** — for each derived test case, set the `Test Type` metadata field:
 - Mark as `Real` if the test case executes against a real running system (real DB, real HTTP service, real browser via Chrome DevTools MCP, real file system)
 - Mark as `Mock` only if the test case's primary execution path uses a mock or stub service
 - Feature-ST test cases executed against a running service (Step 7 starts services before execution) are **always `Real`** — they connect to real services
+
+**Automation feasibility labeling** — for each derived test case, set the `已自动化` metadata field:
+- `Yes` (default) — test can be executed programmatically (CLI, API, Chrome DevTools MCP)
+- `No` — test genuinely cannot be automated; requires physical device, human visual judgment, or external human action
+
+When `已自动化: No`, also set:
+- **手动测试原因 (Manual Test Reason)**: one of `physical-device`, `visual-judgment`, `external-action`, `other: {description}`
+
+**Decision authority:**
+- If ATS document exists and has `自动化可行性` column: inherit the ATS value as primary source
+- SubAgent may mark a case as `已自动化: No` during derivation if it determines the test requires physical/visual/external action, even if ATS did not flag it — but MUST document the reason
+- A case marked `Auto` in ATS SHOULD NOT be downgraded to `No` without explicit justification in the test case document
+
+**Conservative flagging**: Only mark as `已自动化: No` when automation is genuinely impossible, not merely difficult. Chrome DevTools MCP covers most UI testing; mock services cover most external dependencies. Reserve `No` for true gaps.
 
 **Black-box constraint:** Expected results must be derivable solely from the SRS (acceptance criteria via `srs_trace`, Given/When/Then, NFR thresholds) and the observable interface. If the expected result cannot be determined without reading implementation code, document it as a specification gap in the test case document and proceed with best interpretation from SRS.
 
@@ -267,22 +281,30 @@ Since implementation code already exists (TDD and Quality Gates are complete), e
 - **UI test cases require browser-based verification**
 
 1. **Start services** per Service Management above — follow env-guide.md start protocol with output capture; record PID and port in `task-progress.md`
-2. For **non-UI test cases**: verify by running relevant test commands or manual checks against the running system
-3. For **UI test cases**: execute via Chrome DevTools MCP
-4. Update the traceability matrix `结果` column to `PASS` or `FAIL` for each case
+2. For **automated non-UI test cases** (`已自动化: Yes`): verify by running relevant test commands or programmatic checks against the running system
+2b. For **manual test cases** (`已自动化: No`): do NOT attempt to execute.
+   - Record `PENDING-MANUAL` in the traceability matrix `结果` column
+   - These cases will be presented to the human AFTER the SubAgent returns (via the dispatcher's Step 4b)
+   - Continue to the next test case
+3. For **UI test cases** (`已自动化: Yes`, `ui` category): execute via Chrome DevTools MCP
+4. Update the traceability matrix `结果` column:
+   - Automated cases: `PASS` or `FAIL`
+   - Manual cases: `PENDING-MANUAL` (human review happens post-SubAgent in the dispatcher)
 4b. Update the **Real Test Case Execution Summary** table in the test case document:
-   - Count all `Real` cases from the traceability matrix and their PASS/FAIL status
+   - Count all `Real` cases from the traceability matrix and their PASS/FAIL status (exclude `PENDING-MANUAL`)
    - Fill in the summary table (total / passed / failed / pending)
    - Any `Real` FAIL is a blocking failure — same consequence as any other test case failure
+4c. If manual test cases exist, update the **Manual Test Case Summary** table:
+   - Count all manual cases (all should be `PENDING-MANUAL` at this point)
 5. **Stop services** per Service Management cleanup above
 
-**If any test case FAILS:**
+**If any automated test case FAILS:**
 - Include failure details in the Issues table of the Structured Return Contract
 - A failure here blocks the feature from proceeding to Persist
 - Set Verdict to FAIL with specific case IDs and failure details
 
-**If all test cases PASS:**
-- Set Verdict to PASS
+**If all automated test cases PASS (manual cases may still be PENDING-MANUAL):**
+- Set Verdict to PASS (the dispatcher will re-evaluate after collecting manual results)
 
 Traceability between ST cases and automated tests is maintained in the ST case
 document's traceability matrix (not via code comments). See Step 5b.
@@ -350,13 +372,19 @@ When all test cases are executed (or if blocked), return your result in EXACTLY 
 | SEC Cases | N | ≥1 (if applicable) | PASS/FAIL |
 | PERF Cases | N | ≥0 | PASS/FAIL |
 | Execution Pass Rate | N/M | M/M | PASS/FAIL |
+| Manual Cases | N | N/A | INFO |
 ### Issues (only if FAIL or BLOCKED)
 | # | Severity | Description |
 |---|----------|-------------|
 | 1 | Critical/Major/Minor | [failed case ID, step details, actual vs expected] |
+### Manual Test Cases (only if any 已自动化: No cases exist)
+| Case ID | Test Objective | Manual Reason | Preconditions | Test Steps Summary | Verification Points |
+|---------|---------------|---------------|---------------|-------------------|---------------------|
+| ST-FUNC-005-003 | {objective} | visual-judgment | {preconditions} | {summarized steps} | {verification points} |
 ### Next Step Inputs
 - st_case_path: docs/test-cases/feature-{id}-{slug}.md
 - st_case_count: [total number of test cases]
+- manual_case_count: [number of manual test cases, 0 if none]
 - environment_cleaned: true/false
 ```
 

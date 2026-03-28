@@ -140,8 +140,10 @@ Systematically probe for uncovered scenarios. Apply each sub-check to every FR/I
 | Each NFR has quantified thresholds (not just "fast")? | | |
 | Load parameters are defined (concurrency, duration, data volume)? | | |
 | NFR test methods are feasible with the project's tech stack? | | |
+| Manual-flagged scenarios (`自动化可行性: Manual`) have clear human verification instructions? | | |
+| Manual-flagged count is proportionate (not >20% of total scenarios without justification)? | | |
 
-**Verdict rule**: NFR without tool/threshold → Major. Missing load params → Minor.
+**Verdict rule**: NFR without tool/threshold → Major. Missing load params → Minor. Manual scenarios without clear verification instructions → Minor. Disproportionate manual flagging (>20%) without justification → Minor.
 
 #### R6: Cross-Feature Integration
 

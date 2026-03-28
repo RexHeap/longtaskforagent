@@ -53,24 +53,24 @@
 
 ### 2.1 功能需求 (FR)
 
-| Req ID | 需求摘要 | 验收场景 | 必须类别 | 优先级 | 备注 |
-|--------|---------|---------|---------|--------|------|
-| FR-001 | {摘要} | {场景1/场景2/...} | FUNC,BNDRY,{+其他} | Critical/High/Medium/Low | {选择理由} |
-| ... | ... | ... | ... | ... | ... |
+| Req ID | 需求摘要 | 验收场景 | 必须类别 | 优先级 | 自动化可行性 | 备注 |
+|--------|---------|---------|---------|--------|-------------|------|
+| FR-001 | {摘要} | {场景1/场景2/...} | FUNC,BNDRY,{+其他} | Critical/High/Medium/Low | Auto | {选择理由} |
+| ... | ... | ... | ... | ... | ... | ... |
 
 ### 2.2 非功能需求 (NFR)
 
-| Req ID | 需求摘要 | 验收场景 | 必须类别 | 优先级 | 备注 |
-|--------|---------|---------|---------|--------|------|
-| NFR-001 | {摘要} | {场景} | PERF | {优先级} | {阈值说明} |
-| ... | ... | ... | ... | ... | ... |
+| Req ID | 需求摘要 | 验收场景 | 必须类别 | 优先级 | 自动化可行性 | 备注 |
+|--------|---------|---------|---------|--------|-------------|------|
+| NFR-001 | {摘要} | {场景} | PERF | {优先级} | Auto | {阈值说明} |
+| ... | ... | ... | ... | ... | ... | ... |
 
 ### 2.3 接口需求 (IFR)
 
-| Req ID | 需求摘要 | 验收场景 | 必须类别 | 优先级 | 备注 |
-|--------|---------|---------|---------|--------|------|
-| IFR-001 | {摘要} | {场景} | FUNC,BNDRY | {优先级} | {协议/格式说明} |
-| ... | ... | ... | ... | ... | ... |
+| Req ID | 需求摘要 | 验收场景 | 必须类别 | 优先级 | 自动化可行性 | 备注 |
+|--------|---------|---------|---------|--------|-------------|------|
+| IFR-001 | {摘要} | {场景} | FUNC,BNDRY | {优先级} | Auto | {协议/格式说明} |
+| ... | ... | ... | ... | ... | ... | ... |
 
 ### 2.4 覆盖统计
 
@@ -81,7 +81,17 @@
 | SEC | N |
 | PERF | N |
 | UI | N |
+| Manual | N |
 | **合计** | **N** |
+
+> `自动化可行性` column values (optional — if omitted, all scenarios default to `Auto`):
+> - `Auto` — standard test tooling can execute and verify (CLI, API, Chrome DevTools MCP)
+> - `Manual: physical-device` — requires hardware access (USB, printer, IoT device)
+> - `Manual: visual-judgment` — requires human visual assessment beyond automated screenshot comparison
+> - `Manual: external-action` — requires external human action (receive email, make phone call, approve in third-party system)
+> - `Manual: other: {description}` — other reason
+>
+> Manual-flagged scenarios propagate downstream to Feature-ST as `已自动化: No` + `手动测试原因`.
 ```
 
 ## Section 3: Test Category Strategies

@@ -83,6 +83,7 @@ ST-{CATEGORY}-{FEATURE_ID}-{SEQ}
 - **优先级**: High / Medium / Low
 - **类别**: functional / boundary / ui / security / performance
 - **已自动化**: Yes / No
+- **手动测试原因**: {physical-device / visual-judgment / external-action / other: description} (required when 已自动化: No)
 - **测试引用**: {test_file::test_name 或 N/A}
 - **Test Type**: Real / Mock
   - Real = executed against a real running environment (real DB, real HTTP service, real browser via Chrome DevTools MCP, real file system)
@@ -99,6 +100,10 @@ ST-{CATEGORY}-{FEATURE_ID}-{SEQ}
 | ST-FUNC-{id}-001 | FR-xxx | verification_step[0] | test_xxx | Real | PENDING |
 | ST-FUNC-{id}-002 | FR-xxx | verification_step[1] | test_xxx | Real | PENDING |
 | ... | ... | ... | ... | ... | ... |
+
+> 结果 valid values: `PENDING`, `PASS`, `FAIL`, `MANUAL-PASS`, `MANUAL-FAIL`, `BLOCKED`, `PENDING-MANUAL`
+> - `MANUAL-PASS` / `MANUAL-FAIL`: result collected via human review gate (for `已自动化: No` cases)
+> - `PENDING-MANUAL`: awaiting human review (set by SubAgent, resolved by dispatcher)
 ```
 
 ## Real Test Case Execution Summary
@@ -115,6 +120,25 @@ ST-{CATEGORY}-{FEATURE_ID}-{SEQ}
 
 > Real test cases = test cases with Test Type `Real` (executed against a real running environment, not Mock).
 > Any Real test case FAIL blocks the feature from being marked `"passing"` — must be fixed and re-executed.
+```
+
+## Manual Test Case Summary
+
+> This section is only present when the document contains manual test cases (`已自动化: No`).
+
+```markdown
+## Manual Test Case Summary
+
+| Metric | Count |
+|--------|-------|
+| Total Manual Test Cases | N |
+| Manual Passed (MANUAL-PASS) | N |
+| Manual Failed (MANUAL-FAIL) | N |
+| Blocked | N |
+| Pending (PENDING-MANUAL) | N |
+
+> Manual test cases = test cases with `已自动化: No`. Results collected via human review gate after automated execution.
+> Any MANUAL-FAIL blocks the feature from being marked `"passing"` — same as automated FAIL.
 ```
 
 ---

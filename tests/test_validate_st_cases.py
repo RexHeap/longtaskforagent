@@ -629,3 +629,303 @@ def test_quality_no_warning_for_rich_ui_case():
     # Should not have single-step warning (has 5 steps)
     assert "only" not in stdout.lower() or "step" not in stdout.lower(), \
         f"Unexpected step count warning: {stdout}"
+
+
+# --- Manual Test Escalation Tests ---
+
+MANUAL_DOC_WITH_REASON = """\
+# 测试用例集: Device Check
+
+**Feature ID**: 7
+**关联需求**: FR-007
+**日期**: 2026-03-28
+**测试标准**: ISO/IEC/IEEE 29119-3
+
+## 摘要
+
+| 类别 | 用例数 |
+|------|--------|
+| functional | 1 |
+| **合计** | **1** |
+
+---
+
+### 用例编号
+
+ST-FUNC-007-001
+
+### 关联需求
+
+FR-007（设备检测）
+
+### 测试目标
+
+验证系统能正确识别连接的物理设备
+
+### 前置条件
+
+- 物理设备已连接
+- 驱动已安装
+
+### 测试步骤
+
+| Step | 操作 | 预期结果 |
+| ---- | ---- | -------- |
+| 1 | 连接USB设备 | 系统检测到设备 |
+| 2 | 打开设备管理页面 | 显示设备信息 |
+| 3 | 触发设备操作 | 操作成功执行 |
+
+### 验证点
+
+- 设备列表包含新设备
+- 设备状态为"已连接"
+
+### 后置检查
+
+- 断开设备后状态更新
+
+### 元数据
+
+- **优先级**: High
+- **类别**: functional
+- **已自动化**: No
+- **手动测试原因**: physical-device
+- **测试引用**: N/A
+
+## 可追溯矩阵
+
+| 用例 ID | 关联需求 | verification_step | 自动化测试 | 结果 |
+|---------|----------|-------------------|-----------|------|
+| ST-FUNC-007-001 | FR-007 | verification_step[0] | N/A | PENDING-MANUAL |
+
+## Manual Test Case Summary
+
+| Metric | Count |
+|--------|-------|
+| Total Manual Test Cases | 1 |
+| Manual Passed (MANUAL-PASS) | 0 |
+| Manual Failed (MANUAL-FAIL) | 0 |
+| Blocked | 0 |
+| Pending (PENDING-MANUAL) | 1 |
+"""
+
+MANUAL_DOC_MISSING_REASON = """\
+# 测试用例集: Device Check
+
+**Feature ID**: 7
+**关联需求**: FR-007
+**日期**: 2026-03-28
+**测试标准**: ISO/IEC/IEEE 29119-3
+
+## 摘要
+
+| 类别 | 用例数 |
+|------|--------|
+| functional | 1 |
+| **合计** | **1** |
+
+---
+
+### 用例编号
+
+ST-FUNC-007-001
+
+### 关联需求
+
+FR-007（设备检测）
+
+### 测试目标
+
+验证系统能正确识别连接的物理设备
+
+### 前置条件
+
+- 物理设备已连接
+
+### 测试步骤
+
+| Step | 操作 | 预期结果 |
+| ---- | ---- | -------- |
+| 1 | 连接USB设备 | 系统检测到设备 |
+| 2 | 打开设备管理页面 | 显示设备信息 |
+| 3 | 触发设备操作 | 操作成功执行 |
+
+### 验证点
+
+- 设备列表包含新设备
+
+### 后置检查
+
+- 无
+
+### 元数据
+
+- **优先级**: High
+- **类别**: functional
+- **已自动化**: No
+- **测试引用**: N/A
+
+## 可追溯矩阵
+
+| 用例 ID | 关联需求 | verification_step | 自动化测试 | 结果 |
+|---------|----------|-------------------|-----------|------|
+| ST-FUNC-007-001 | FR-007 | verification_step[0] | N/A | PENDING-MANUAL |
+
+## Manual Test Case Summary
+
+| Metric | Count |
+|--------|-------|
+| Total Manual Test Cases | 1 |
+"""
+
+MANUAL_DOC_MISSING_SUMMARY = """\
+# 测试用例集: Device Check
+
+**Feature ID**: 7
+**关联需求**: FR-007
+**日期**: 2026-03-28
+**测试标准**: ISO/IEC/IEEE 29119-3
+
+## 摘要
+
+| 类别 | 用例数 |
+|------|--------|
+| functional | 1 |
+| **合计** | **1** |
+
+---
+
+### 用例编号
+
+ST-FUNC-007-001
+
+### 关联需求
+
+FR-007（设备检测）
+
+### 测试目标
+
+验证系统能正确识别连接的物理设备
+
+### 前置条件
+
+- 物理设备已连接
+
+### 测试步骤
+
+| Step | 操作 | 预期结果 |
+| ---- | ---- | -------- |
+| 1 | 连接USB设备 | 系统检测到设备 |
+| 2 | 打开设备管理页面 | 显示设备信息 |
+| 3 | 触发设备操作 | 操作成功执行 |
+
+### 验证点
+
+- 设备列表包含新设备
+
+### 后置检查
+
+- 无
+
+### 元数据
+
+- **优先级**: High
+- **类别**: functional
+- **已自动化**: No
+- **手动测试原因**: physical-device
+- **测试引用**: N/A
+
+## 可追溯矩阵
+
+| 用例 ID | 关联需求 | verification_step | 自动化测试 | 结果 |
+|---------|----------|-------------------|-----------|------|
+| ST-FUNC-007-001 | FR-007 | verification_step[0] | N/A | PENDING-MANUAL |
+"""
+
+
+def test_manual_case_with_reason_no_warning():
+    """Manual test case with 手动测试原因 should NOT produce a missing-reason warning."""
+    code, stdout, _ = run_validator(MANUAL_DOC_WITH_REASON)
+    assert code == 0, f"Expected exit 0: {stdout}"
+    assert "手动测试原因" not in stdout and "Manual Test Reason" not in stdout, \
+        f"Unexpected manual reason warning: {stdout}"
+
+
+def test_manual_case_missing_reason_warns():
+    """Manual test case (已自动化: No) without 手动测试原因 should produce warning."""
+    code, stdout, _ = run_validator(MANUAL_DOC_MISSING_REASON)
+    assert code == 0, f"Expected exit 0 (warnings don't fail): {stdout}"
+    assert "手动测试原因" in stdout or "Manual Test Reason" in stdout, \
+        f"Expected manual reason warning: {stdout}"
+
+
+def test_manual_case_missing_summary_warns():
+    """Document with manual cases but no Manual Test Case Summary should produce warning."""
+    code, stdout, _ = run_validator(MANUAL_DOC_MISSING_SUMMARY)
+    assert code == 0, f"Expected exit 0 (warnings don't fail): {stdout}"
+    assert "Manual Test Case Summary" in stdout or "手动测试用例摘要" in stdout, \
+        f"Expected missing summary warning: {stdout}"
+
+
+def test_automated_case_no_manual_summary_no_warning():
+    """Document with all automated cases should NOT warn about missing manual summary."""
+    code, stdout, _ = run_validator(VALID_DOC)
+    assert code == 0, f"Expected exit 0: {stdout}"
+    assert "Manual Test Case Summary" not in stdout and "手动测试用例摘要" not in stdout, \
+        f"Unexpected manual summary warning: {stdout}"
+
+
+def test_mixed_manual_automated_doc():
+    """Document with both manual and automated cases: no reason warning for automated, reason warning only for manual missing it."""
+    # Build a doc with one automated case + one manual case missing reason
+    mixed_doc = VALID_DOC.rstrip() + """
+
+---
+
+### 用例编号
+
+ST-FUNC-001-002
+
+### 关联需求
+
+FR-001（登录失败）
+
+### 测试目标
+
+验证手动测试: 检查物理设备反馈
+
+### 前置条件
+
+- 设备已连接
+
+### 测试步骤
+
+| Step | 操作 | 预期结果 |
+| ---- | ---- | -------- |
+| 1 | 触发设备 | 设备响应 |
+| 2 | 检查LED | LED亮起 |
+| 3 | 验证状态 | 状态正确 |
+
+### 验证点
+
+- LED指示灯亮起
+
+### 后置检查
+
+- 无
+
+### 元数据
+
+- **优先级**: Medium
+- **类别**: functional
+- **已自动化**: No
+- **测试引用**: N/A
+"""
+    code, stdout, _ = run_validator(mixed_doc)
+    assert code == 0, f"Expected exit 0: {stdout}"
+    # Should warn about missing reason for the manual case
+    assert "手动测试原因" in stdout or "Manual Test Reason" in stdout, \
+        f"Expected manual reason warning for second case: {stdout}"
+    # Should warn about missing Manual Test Case Summary
+    assert "Manual Test Case Summary" in stdout or "手动测试用例摘要" in stdout, \
+        f"Expected missing summary warning: {stdout}"

@@ -57,6 +57,7 @@ The Test Inventory table from feature detailed design is the **primary source** 
 | **FUNC/error** | Known failures, invalid inputs | Invalid password returns 401 |
 | **BNDRY/\*** | Limits, empty, max, zero | Empty string; max-length password |
 | **SEC/\*** | Injection, authorization (if applicable) | SQL injection in username |
+| **INTG/\*** | Real infrastructure interaction (DB, API, filesystem) | DB connection failure; wrong API endpoint; timeout not handled |
 
 When a category doesn't apply, state it explicitly in a comment:
 ```python
@@ -110,6 +111,8 @@ Each feature's automated tests MUST cover two layers. Both are mandatory:
 |-------|---------|-------------|---------|
 | **Unit (UT)** | Individual functions/classes | Mock only at system boundaries (external HTTP, third-party APIs, file system, clock); use real or in-memory implementations for internal logic | ≥ 1 test exercising core logic with real internal dependencies (no mocking internal components) |
 | **Integration** | Components working against real infrastructure | NO mock for the primary dependency — use real test DB, real running service, or real file system | ≥ 1 test per feature that touches external systems |
+
+**INTG rows in Test Inventory:** When the Feature Design Test Inventory (§7) contains `INTG/*` category rows, these are the PRIMARY spec for integration tests in TDD Red. Each INTG row maps to one real integration test — no mock on the primary dependency. TDD Rule 5a (Real Test Standalone) verification applies to these tests.
 
 **Integration test exception** — if the feature has absolutely no external dependencies (pure computation, no IO, no DB, no network):
 - State explicitly in the test file:

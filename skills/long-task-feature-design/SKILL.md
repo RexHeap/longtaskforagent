@@ -66,7 +66,8 @@ You are a Feature Design execution SubAgent.
 - Write the complete design document to {output_path}
 - Every section (§2-§6) must be COMPLETE or have "N/A — [reason]"
 - Test Inventory negative ratio must be >= 40%
-- Test Inventory main categories (FUNC/BNDRY/SEC/UI/PERF) must cover all ATS-required categories for this feature's requirement(s)
+- Test Inventory main categories (FUNC/BNDRY/SEC/UI/PERF/INTG) must cover all ATS-required categories for this feature's requirement(s)
+- Features with external dependencies must have ≥1 INTG row per dependency type; pure-computation features: "INTG: N/A"
 - Do NOT start TDD — only produce the design document
 ```
 
